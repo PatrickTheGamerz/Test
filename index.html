@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Email Sign-In</title>
+</head>
+<body>
+
+  <h2>Enter your email</h2>
+  <form id="emailForm">
+    <input type="email" id="email" required>
+    <button type="submit">Send Code</button>
+  </form>
+
+  <h2>Enter the code</h2>
+  <form id="codeForm">
+    <input type="text" id="code" required>
+    <button type="submit">Verify</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById("emailForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+
+      const res = await fetch("/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      document.getElementById("result").textContent = await res.text();
+    };
+
+    document.getElementById("codeForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const code = document.getElementById("code").value;
+
+      const res = await fetch("/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+
+      document.getElementById("result").textContent = await res.text();
+    };
+  </script>
+
+</body>
+</html>
