@@ -1,52 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Email Sign-In</title>
+    <title>Sign In</title>
+    <style>
+        body { font-family: Arial; background:#f4f4f4; padding:40px; }
+        .box { background:white; padding:20px; width:300px; margin:auto; border-radius:8px; }
+        input { width:100%; padding:10px; margin:10px 0; }
+        button { width:100%; padding:10px; background:#4CAF50; color:white; border:none; }
+    </style>
 </head>
 <body>
 
-  <h2>Enter your email</h2>
-  <form id="emailForm">
-    <input type="email" id="email" required>
-    <button type="submit">Send Code</button>
-  </form>
+<div class="box">
+    <h2>Sign In</h2>
+    <input type="email" id="email" placeholder="Enter your email">
+    <button onclick="sendTicket()">Send Verification Ticket</button>
+    <p id="msg"></p>
+</div>
 
-  <h2>Enter the code</h2>
-  <form id="codeForm">
-    <input type="text" id="code" required>
-    <button type="submit">Verify</button>
-  </form>
+<script>
+function sendTicket() {
+    const email = document.getElementById("email").value;
 
-  <div id="result"></div>
-
-  <script>
-    document.getElementById("emailForm").onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email").value;
-
-      const res = await fetch("/send-code", {
+    fetch("/send-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
-      });
-
-      document.getElementById("result").textContent = await res.text();
-    };
-
-    document.getElementById("codeForm").onsubmit = async (e) => {
-      e.preventDefault();
-      const code = document.getElementById("code").value;
-
-      const res = await fetch("/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-
-      document.getElementById("result").textContent = await res.text();
-    };
-  </script>
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("msg").innerText = data.message;
+    });
+}
+</script>
 
 </body>
 </html>
