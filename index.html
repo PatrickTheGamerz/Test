@@ -2,127 +2,138 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini C++-Style Scratch</title>
+<title>Scratch‑like C++ Blocks (Draggable, Improved UI)</title>
+
 <style>
   body {
-    font-family: system-ui, sans-serif;
     margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
     display: flex;
     height: 100vh;
-    background: #1e1e2e;
-    color: #eee;
+    overflow: hidden;
   }
+
+  /* SIDEBAR */
   #sidebar {
     width: 260px;
     background: #11111b;
-    padding: 10px;
-    box-sizing: border-box;
     border-right: 2px solid #313244;
+    padding: 12px;
     overflow-y: auto;
   }
-  #main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  #sidebar h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #89b4fa;
   }
-  h2, h3 {
-    margin: 8px 0;
-    font-size: 16px;
+  .category h3 {
+    margin: 10px 0 4px;
+    font-size: 14px;
+    color: #b4befe;
   }
-  .category {
-    margin-bottom: 10px;
-  }
+
+  /* BLOCKS */
   .block {
-    background: #45475a;
-    border-radius: 6px;
-    padding: 6px 8px;
-    margin: 4px 0;
+    background: linear-gradient(135deg, #45475a, #585b70);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 6px 0;
     cursor: grab;
     font-size: 13px;
     color: #f5e0dc;
+    box-shadow: 0 3px 6px #0005;
     user-select: none;
+    transition: transform .1s;
   }
   .block:hover {
-    background: #585b70;
+    transform: scale(1.03);
   }
   .block input, .block select {
     font-size: 12px;
-    margin-left: 4px;
     width: 60px;
+    margin-left: 4px;
   }
+
+  /* WORKSPACE */
   #workspace {
     flex: 1;
     display: flex;
     padding: 10px;
-    box-sizing: border-box;
     gap: 10px;
   }
+
   #scriptArea {
     flex: 1;
     background: #181825;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 10px;
     overflow-y: auto;
     border: 1px solid #313244;
   }
   #scriptArea h3 {
     margin-top: 0;
+    color: #89b4fa;
   }
+
   .script-block {
-    background: #313244;
-    border-radius: 6px;
-    padding: 6px 8px;
-    margin: 4px 0;
+    background: linear-gradient(135deg, #313244, #45475a);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 6px 0;
     font-size: 13px;
     color: #f5e0dc;
+    box-shadow: 0 3px 6px #0005;
     position: relative;
+    cursor: grab;
   }
+
   .remove-btn {
     position: absolute;
-    right: 4px;
-    top: 4px;
+    right: 6px;
+    top: 6px;
     background: #f38ba8;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 10px;
+    padding: 2px 5px;
     cursor: pointer;
-    padding: 0 4px;
-    color: #11111b;
   }
-  .remove-btn:hover {
-    background: #f9e2af;
-  }
+
+  /* RIGHT PANEL */
   #rightPane {
-    width: 360px;
+    width: 380px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
+
   #cppCode, #output {
     flex: 1;
     background: #11111b;
-    border-radius: 8px;
-    padding: 8px;
-    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 10px;
     border: 1px solid #313244;
-    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 12px;
     white-space: pre-wrap;
     overflow-y: auto;
   }
+
   #controls {
-    padding: 8px 10px;
-    border-top: 2px solid #313244;
+    padding: 10px;
     background: #11111b;
+    border-top: 2px solid #313244;
     display: flex;
-    gap: 8px;
-    align-items: center;
+    gap: 10px;
   }
+
   button {
     background: #89b4fa;
     border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
+    border-radius: 6px;
+    padding: 6px 12px;
     cursor: pointer;
     font-size: 13px;
     color: #11111b;
@@ -130,347 +141,248 @@
   button:hover {
     background: #b4befe;
   }
-  #spriteInfo {
-    font-size: 12px;
-    color: #cdd6f4;
-  }
 </style>
 </head>
+
 <body>
+
 <div id="sidebar">
-  <h2>Blocks (C++-style)</h2>
+  <h2>Blocks</h2>
 
   <div class="category">
     <h3>Control</h3>
-    <div class="block" data-type="repeat">
-      repeat <input type="number" value="5" min="1"> times
-    </div>
-    <div class="block" data-type="if">
-      if ( <select>
-        <option value="x&lt;0">x &lt; 0</option>
-        <option value="x&gt;0">x &gt; 0</option>
-        <option value="x==0">x == 0</option>
-      </select> ) then
-    </div>
-    <div class="block" data-type="end">
-      end block
-    </div>
+    <div class="block" draggable="true" data-type="repeat">repeat <input type="number" value="5"> times</div>
+    <div class="block" draggable="true" data-type="if">if (<select>
+      <option value="x&lt;0">x &lt; 0</option>
+      <option value="x&gt;0">x &gt; 0</option>
+      <option value="x==0">x == 0</option>
+    </select>)</div>
+    <div class="block" draggable="true" data-type="end">end</div>
   </div>
 
   <div class="category">
     <h3>Motion</h3>
-    <div class="block" data-type="setx">
-      set x to <input type="number" value="0">
-    </div>
-    <div class="block" data-type="sety">
-      set y to <input type="number" value="0">
-    </div>
-    <div class="block" data-type="changex">
-      change x by <input type="number" value="10">
-    </div>
-    <div class="block" data-type="changey">
-      change y by <input type="number" value="10">
-    </div>
+    <div class="block" draggable="true" data-type="setx">set x to <input type="number" value="0"></div>
+    <div class="block" draggable="true" data-type="sety">set y to <input type="number" value="0"></div>
+    <div class="block" draggable="true" data-type="changex">change x by <input type="number" value="10"></div>
+    <div class="block" draggable="true" data-type="changey">change y by <input type="number" value="10"></div>
   </div>
 
   <div class="category">
-    <h3>Looks / Output</h3>
-    <div class="block" data-type="print">
-      print " <input type="text" value="hello"> "
-    </div>
-    <div class="block" data-type="printpos">
-      print position
-    </div>
+    <h3>Looks</h3>
+    <div class="block" draggable="true" data-type="print">print "<input type="text" value="hello">"</div>
+    <div class="block" draggable="true" data-type="printpos">print position</div>
   </div>
 
   <div class="category">
     <h3>Variables</h3>
-    <div class="block" data-type="setvar">
-      set <input type="text" value="a"> to <input type="number" value="0">
-    </div>
-    <div class="block" data-type="changevar">
-      change <input type="text" value="a"> by <input type="number" value="1">
-    </div>
-    <div class="block" data-type="printvar">
-      print var <input type="text" value="a">
-    </div>
+    <div class="block" draggable="true" data-type="setvar">set <input type="text" value="a"> to <input type="number" value="0"></div>
+    <div class="block" draggable="true" data-type="changevar">change <input type="text" value="a"> by <input type="number" value="1"></div>
+    <div class="block" draggable="true" data-type="printvar">print var <input type="text" value="a"></div>
   </div>
 </div>
 
-<div id="main">
-  <div id="workspace">
-    <div id="scriptArea">
-      <h3>Script</h3>
-      <!-- script blocks appear here -->
-    </div>
-    <div id="rightPane">
-      <div id="cppCode"></div>
-      <div id="output"></div>
-    </div>
+<div id="workspace">
+  <div id="scriptArea">
+    <h3>Script</h3>
   </div>
-  <div id="controls">
-    <button id="runBtn">Run</button>
-    <button id="clearBtn">Clear script</button>
-    <span id="spriteInfo">Sprite: x = 0, y = 0</span>
+
+  <div id="rightPane">
+    <div id="cppCode"></div>
+    <div id="output"></div>
   </div>
+</div>
+
+<div id="controls">
+  <button id="runBtn">Run</button>
+  <button id="clearBtn">Clear</button>
 </div>
 
 <script>
-  const sidebar = document.getElementById('sidebar');
-  const scriptArea = document.getElementById('scriptArea');
-  const cppCodeEl = document.getElementById('cppCode');
-  const outputEl = document.getElementById('output');
-  const spriteInfo = document.getElementById('spriteInfo');
-  const runBtn = document.getElementById('runBtn');
-  const clearBtn = document.getElementById('clearBtn');
+  const scriptArea = document.getElementById("scriptArea");
+  const cppCodeEl = document.getElementById("cppCode");
+  const outputEl = document.getElementById("output");
 
   let scriptBlocks = [];
 
-  function cloneBlock(block) {
+  /* DRAGGING */
+  let dragged = null;
+
+  document.addEventListener("dragstart", e => {
+    if (e.target.classList.contains("block")) {
+      dragged = e.target;
+    }
+  });
+
+  scriptArea.addEventListener("dragover", e => {
+    e.preventDefault();
+  });
+
+  scriptArea.addEventListener("drop", e => {
+    e.preventDefault();
+    if (!dragged) return;
+    addScriptBlock(dragged);
+    dragged = null;
+  });
+
+  function addScriptBlock(block) {
     const type = block.dataset.type;
-    const clone = document.createElement('div');
-    clone.className = 'script-block';
+    const clone = document.createElement("div");
+    clone.className = "script-block";
     clone.dataset.type = type;
+    clone.innerHTML = block.innerHTML;
 
-    // Copy inner HTML but freeze current input/select values as attributes
-    const temp = block.cloneNode(true);
-    const inputs = temp.querySelectorAll('input, select');
-    inputs.forEach((el, idx) => {
-      el.setAttribute('data-idx', idx);
-    });
-    clone.innerHTML = temp.innerHTML;
-
-    const remove = document.createElement('button');
-    remove.textContent = 'x';
-    remove.className = 'remove-btn';
+    const remove = document.createElement("button");
+    remove.className = "remove-btn";
+    remove.textContent = "x";
     remove.onclick = () => {
       scriptArea.removeChild(clone);
       scriptBlocks = scriptBlocks.filter(b => b.el !== clone);
-      updateCppCode();
+      updateCpp();
     };
     clone.appendChild(remove);
 
     scriptArea.appendChild(clone);
-    const record = { el: clone, type, getValues: () => readValues(clone, type) };
-    scriptBlocks.push(record);
-    updateCppCode();
+    scriptBlocks.push({ el: clone, type, getValues: () => readValues(clone) });
+    updateCpp();
   }
 
-  function readValues(el, type) {
-    const inputs = el.querySelectorAll('input, select');
-    const vals = [];
-    inputs.forEach(i => vals.push(i.value));
-    return vals;
+  function readValues(el) {
+    return [...el.querySelectorAll("input, select")].map(x => x.value);
   }
 
-  sidebar.addEventListener('click', e => {
-    const block = e.target.closest('.block');
-    if (!block) return;
-    cloneBlock(block);
-  });
-
-  function generateCpp() {
-    let code = '';
-    code += '#include <iostream>\n';
-    code += 'using namespace std;\n\n';
-    code += 'int main() {\n';
-    code += '    int x = 0;\n';
-    code += '    int y = 0;\n';
-    const vars = new Set();
-
-    let indentLevel = 1;
-    const indent = () => '    '.repeat(indentLevel);
-
-    function ensureVar(name) {
-      if (!name) return;
-      if (!vars.has(name)) {
-        vars.add(name);
-      }
-    }
-
-    // First pass: collect variable names
-    scriptBlocks.forEach(b => {
-      const t = b.type;
-      const v = b.getValues();
-      if (t === 'setvar' || t === 'changevar' || t === 'printvar') {
-        const name = v[0] || 'a';
-        ensureVar(name);
-      }
-    });
-
-    vars.forEach(v => {
-      code += `    int ${v} = 0;\n`;
-    });
-
-    scriptBlocks.forEach(b => {
-      const t = b.type;
-      const v = b.getValues();
-      if (t === 'setx') {
-        const val = Number(v[0]) || 0;
-        code += indent() + `x = ${val};\n`;
-      } else if (t === 'sety') {
-        const val = Number(v[0]) || 0;
-        code += indent() + `y = ${val};\n`;
-      } else if (t === 'changex') {
-        const val = Number(v[0]) || 0;
-        code += indent() + `x += ${val};\n`;
-      } else if (t === 'changey') {
-        const val = Number(v[0]) || 0;
-        code += indent() + `y += ${val};\n`;
-      } else if (t === 'print') {
-        const text = (v[0] || '').replace(/"/g, '\\"');
-        code += indent() + `cout << "${text}" << endl;\n`;
-      } else if (t === 'printpos') {
-        code += indent() + 'cout << "x=" << x << ", y=" << y << endl;\n';
-      } else if (t === 'setvar') {
-        const name = v[0] || 'a';
-        const val = Number(v[1]) || 0;
-        code += indent() + `${name} = ${val};\n`;
-      } else if (t === 'changevar') {
-        const name = v[0] || 'a';
-        const val = Number(v[1]) || 0;
-        code += indent() + `${name} += ${val};\n`;
-      } else if (t === 'printvar') {
-        const name = v[0] || 'a';
-        code += indent() + `cout << "${name}=" << ${name} << endl;\n`;
-      } else if (t === 'repeat') {
-        const times = Math.max(1, Number(v[0]) || 1);
-        code += indent() + `for (int i = 0; i < ${times}; ++i) {\n`;
-        indentLevel++;
-      } else if (t === 'if') {
-        const cond = v[0] || 'x>0';
-        code += indent() + `if (${cond}) {\n`;
-        indentLevel++;
-      } else if (t === 'end') {
-        indentLevel = Math.max(1, indentLevel - 1);
-        code += indent() + '}\n';
-      }
-    });
-
-    code += '    return 0;\n';
-    code += '}\n';
-    return code;
-  }
-
-  function updateCppCode() {
+  function updateCpp() {
     cppCodeEl.textContent = generateCpp();
   }
 
+  function generateCpp() {
+    let code = "";
+    code += "#include <iostream>\nusing namespace std;\n\nint main(){\n";
+    code += "    int x=0, y=0;\n";
+
+    let vars = new Set();
+    scriptBlocks.forEach(b => {
+      if (["setvar","changevar","printvar"].includes(b.type)) {
+        vars.add(b.getValues()[0]);
+      }
+    });
+    vars.forEach(v => code += `    int ${v}=0;\n`);
+
+    let indent = 1;
+    const tab = () => "    ".repeat(indent);
+
+    scriptBlocks.forEach(b => {
+      const t = b.type;
+      const v = b.getValues();
+
+      if (t === "setx") code += tab() + `x=${v[0]};\n`;
+      if (t === "sety") code += tab() + `y=${v[0]};\n`;
+      if (t === "changex") code += tab() + `x+=${v[0]};\n`;
+      if (t === "changey") code += tab() + `y+=${v[0]};\n`;
+
+      if (t === "print") code += tab() + `cout<<"${v[0]}"<<endl;\n`;
+      if (t === "printpos") code += tab() + `cout<<"x="<<x<<", y="<<y<<endl;\n`;
+
+      if (t === "setvar") code += tab() + `${v[0]}=${v[1]};\n`;
+      if (t === "changevar") code += tab() + `${v[0]}+=${v[1]};\n`;
+      if (t === "printvar") code += tab() + `cout<<"${v[0]}="<<${v[0]}<<endl;\n`;
+
+      if (t === "repeat") {
+        code += tab() + `for(int i=0;i<${v[0]};i++){\n`;
+        indent++;
+      }
+      if (t === "if") {
+        code += tab() + `if(${v[0]}){\n`;
+        indent++;
+      }
+      if (t === "end") {
+        indent--;
+        code += tab() + "}\n";
+      }
+    });
+
+    code += "    return 0;\n}\n";
+    return code;
+  }
+
   function runScript() {
-    let x = 0;
-    let y = 0;
-    const vars = {};
-    let out = '';
+    let x = 0, y = 0;
+    let vars = {};
+    let out = "";
 
-    function println(s) {
-      out += s + '\n';
-    }
+    function println(s){ out += s + "\n"; }
 
-    function execBlocks(blocks, startIndex = 0, endIndex = blocks.length) {
-      let i = startIndex;
-      while (i < endIndex) {
+    function exec(blocks, start=0, end=blocks.length) {
+      let i = start;
+      while (i < end) {
         const b = blocks[i];
         const t = b.type;
         const v = b.getValues();
 
-        if (t === 'setx') {
-          x = Number(v[0]) || 0;
-        } else if (t === 'sety') {
-          y = Number(v[0]) || 0;
-        } else if (t === 'changex') {
-          x += Number(v[0]) || 0;
-        } else if (t === 'changey') {
-          y += Number(v[0]) || 0;
-        } else if (t === 'print') {
-          println(String(v[0] || ''));
-        } else if (t === 'printpos') {
-          println(`x=${x}, y=${y}`);
-        } else if (t === 'setvar') {
-          const name = v[0] || 'a';
-          const val = Number(v[1]) || 0;
-          vars[name] = val;
-        } else if (t === 'changevar') {
-          const name = v[0] || 'a';
-          const val = Number(v[1]) || 0;
-          if (!(name in vars)) vars[name] = 0;
-          vars[name] += val;
-        } else if (t === 'printvar') {
-          const name = v[0] || 'a';
-          const val = vars[name] ?? 0;
-          println(`${name}=${val}`);
-        } else if (t === 'repeat') {
-          const times = Math.max(1, Number(v[0]) || 1);
-          // find matching end
-          let depth = 0;
-          let j = i + 1;
-          for (; j < endIndex; j++) {
-            const tt = blocks[j].type;
-            if (tt === 'repeat' || tt === 'if') depth++;
-            if (tt === 'end') {
+        if (t === "setx") x = Number(v[0]);
+        if (t === "sety") y = Number(v[0]);
+        if (t === "changex") x += Number(v[0]);
+        if (t === "changey") y += Number(v[0]);
+
+        if (t === "print") println(v[0]);
+        if (t === "printpos") println(`x=${x}, y=${y}`);
+
+        if (t === "setvar") vars[v[0]] = Number(v[1]);
+        if (t === "changevar") vars[v[0]] = (vars[v[0]]||0) + Number(v[1]);
+        if (t === "printvar") println(`${v[0]}=${vars[v[0]]||0}`);
+
+        if (t === "repeat") {
+          let depth = 0, j = i+1;
+          for (; j < end; j++) {
+            if (["repeat","if"].includes(blocks[j].type)) depth++;
+            if (blocks[j].type === "end") {
               if (depth === 0) break;
               depth--;
             }
           }
-          const bodyStart = i + 1;
-          const bodyEnd = j;
-          for (let k = 0; k < times; k++) {
-            execBlocks(blocks, bodyStart, bodyEnd);
-          }
-          i = j; // jump to end
-        } else if (t === 'if') {
-          const condStr = v[0] || 'x>0';
-          let cond = false;
-          try {
-            // very small safe-ish parser: only x,y, numbers, <,>,== allowed
-            const expr = condStr
-              .replace(/x/g, String(x))
-              .replace(/y/g, String(y));
-            // eslint-disable-next-line no-eval
-            cond = !!eval(expr);
-          } catch {
-            cond = false;
-          }
-          let depth = 0;
-          let j = i + 1;
-          for (; j < endIndex; j++) {
-            const tt = blocks[j].type;
-            if (tt === 'repeat' || tt === 'if') depth++;
-            if (tt === 'end') {
-              if (depth === 0) break;
-              depth--;
-            }
-          }
-          const bodyStart = i + 1;
-          const bodyEnd = j;
-          if (cond) {
-            execBlocks(blocks, bodyStart, bodyEnd);
-          }
+          for (let k=0;k<Number(v[0]);k++) exec(blocks, i+1, j);
           i = j;
         }
+
+        if (t === "if") {
+          let depth = 0, j = i+1;
+          for (; j < end; j++) {
+            if (["repeat","if"].includes(blocks[j].type)) depth++;
+            if (blocks[j].type === "end") {
+              if (depth === 0) break;
+              depth--;
+            }
+          }
+          let cond = false;
+          try {
+            cond = eval(v[0].replace(/x/g,x).replace(/y/g,y));
+          } catch {}
+          if (cond) exec(blocks, i+1, j);
+          i = j;
+        }
+
         i++;
       }
     }
 
-    execBlocks(scriptBlocks);
-    outputEl.textContent = out || '(no output)';
-    spriteInfo.textContent = `Sprite: x = ${x}, y = ${y}`;
+    exec(scriptBlocks);
+    outputEl.textContent = out || "(no output)";
   }
 
-  runBtn.addEventListener('click', () => {
-    updateCppCode();
+  document.getElementById("runBtn").onclick = () => {
+    updateCpp();
     runScript();
-  });
+  };
 
-  clearBtn.addEventListener('click', () => {
+  document.getElementById("clearBtn").onclick = () => {
     scriptBlocks = [];
-    const blocks = scriptArea.querySelectorAll('.script-block');
-    blocks.forEach(b => b.remove());
-    updateCppCode();
-    outputEl.textContent = '';
-    spriteInfo.textContent = 'Sprite: x = 0, y = 0';
-  });
+    scriptArea.querySelectorAll(".script-block").forEach(b => b.remove());
+    updateCpp();
+    outputEl.textContent = "";
+  };
 
-  updateCppCode();
+  updateCpp();
 </script>
+
 </body>
 </html>
