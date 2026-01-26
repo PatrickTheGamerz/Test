@@ -1,176 +1,476 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Cash Deposit</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .deposit-container {
-      background: #ffffff;
-      padding: 20px 24px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 360px;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-    p {
-      font-size: 13px;
-      color: #555;
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    input[type="number"],
-    input[type="text"],
-    select {
-      width: 100%;
-      padding: 8px 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      margin-bottom: 12px;
-    }
-    .methods {
-      margin-bottom: 12px;
-    }
-    .methods label {
-      font-weight: normal;
-      display: inline-flex;
-      align-items: center;
-      margin-right: 16px;
-      font-size: 14px;
-    }
-    .methods input {
-      margin-right: 4px;
-    }
-    .method-fields {
-      margin-bottom: 16px;
-    }
-    .btn {
-      width: 100%;
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 10px 0;
-      border-radius: 8px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #1d4ed8;
-    }
-    .note {
-      font-size: 11px;
-      color: #777;
-      margin-top: 10px;
-      line-height: 1.4;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Mini C++-Style Scratch</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    background: #1e1e2e;
+    color: #eee;
+  }
+  #sidebar {
+    width: 260px;
+    background: #11111b;
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: 2px solid #313244;
+    overflow-y: auto;
+  }
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  h2, h3 {
+    margin: 8px 0;
+    font-size: 16px;
+  }
+  .category {
+    margin-bottom: 10px;
+  }
+  .block {
+    background: #45475a;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin: 4px 0;
+    cursor: grab;
+    font-size: 13px;
+    color: #f5e0dc;
+    user-select: none;
+  }
+  .block:hover {
+    background: #585b70;
+  }
+  .block input, .block select {
+    font-size: 12px;
+    margin-left: 4px;
+    width: 60px;
+  }
+  #workspace {
+    flex: 1;
+    display: flex;
+    padding: 10px;
+    box-sizing: border-box;
+    gap: 10px;
+  }
+  #scriptArea {
+    flex: 1;
+    background: #181825;
+    border-radius: 8px;
+    padding: 10px;
+    overflow-y: auto;
+    border: 1px solid #313244;
+  }
+  #scriptArea h3 {
+    margin-top: 0;
+  }
+  .script-block {
+    background: #313244;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin: 4px 0;
+    font-size: 13px;
+    color: #f5e0dc;
+    position: relative;
+  }
+  .remove-btn {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    background: #f38ba8;
+    border: none;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 0 4px;
+    color: #11111b;
+  }
+  .remove-btn:hover {
+    background: #f9e2af;
+  }
+  #rightPane {
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #cppCode, #output {
+    flex: 1;
+    background: #11111b;
+    border-radius: 8px;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #313244;
+    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-y: auto;
+  }
+  #controls {
+    padding: 8px 10px;
+    border-top: 2px solid #313244;
+    background: #11111b;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  button {
+    background: #89b4fa;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #11111b;
+  }
+  button:hover {
+    background: #b4befe;
+  }
+  #spriteInfo {
+    font-size: 12px;
+    color: #cdd6f4;
+  }
+</style>
 </head>
 <body>
+<div id="sidebar">
+  <h2>Blocks (C++-style)</h2>
 
-<div class="deposit-container">
-  <h1>Deposit cash</h1>
-  <p>Choose a method and enter how much you want to deposit.</p>
-
-  <!-- Amount -->
-  <label for="amount">Amount (PLN)</label>
-  <input id="amount" type="number" min="1" step="1" placeholder="e.g. 100" />
-
-  <!-- Payment method -->
-  <label>Payment method</label>
-  <div class="methods">
-    <label>
-      <input type="radio" name="method" value="blik" checked />
-      BLIK
-    </label>
-    <label>
-      <input type="radio" name="method" value="paypal" />
-      PayPal
-    </label>
+  <div class="category">
+    <h3>Control</h3>
+    <div class="block" data-type="repeat">
+      repeat <input type="number" value="5" min="1"> times
+    </div>
+    <div class="block" data-type="if">
+      if ( <select>
+        <option value="x&lt;0">x &lt; 0</option>
+        <option value="x&gt;0">x &gt; 0</option>
+        <option value="x==0">x == 0</option>
+      </select> ) then
+    </div>
+    <div class="block" data-type="end">
+      end block
+    </div>
   </div>
 
-  <!-- Dynamic fields for methods -->
-  <div id="blik-fields" class="method-fields">
-    <label for="blik-code">BLIK code</label>
-    <input id="blik-code" type="text" maxlength="6" placeholder="6-digit BLIK code" />
+  <div class="category">
+    <h3>Motion</h3>
+    <div class="block" data-type="setx">
+      set x to <input type="number" value="0">
+    </div>
+    <div class="block" data-type="sety">
+      set y to <input type="number" value="0">
+    </div>
+    <div class="block" data-type="changex">
+      change x by <input type="number" value="10">
+    </div>
+    <div class="block" data-type="changey">
+      change y by <input type="number" value="10">
+    </div>
   </div>
 
-  <div id="paypal-fields" class="method-fields" style="display:none;">
-    <label for="paypal-email">PayPal email</label>
-    <input id="paypal-email" type="text" placeholder="your-email@example.com" />
+  <div class="category">
+    <h3>Looks / Output</h3>
+    <div class="block" data-type="print">
+      print " <input type="text" value="hello"> "
+    </div>
+    <div class="block" data-type="printpos">
+      print position
+    </div>
   </div>
 
-  <button class="btn" onclick="submitDeposit()">Deposit now</button>
+  <div class="category">
+    <h3>Variables</h3>
+    <div class="block" data-type="setvar">
+      set <input type="text" value="a"> to <input type="number" value="0">
+    </div>
+    <div class="block" data-type="changevar">
+      change <input type="text" value="a"> by <input type="number" value="1">
+    </div>
+    <div class="block" data-type="printvar">
+      print var <input type="text" value="a">
+    </div>
+  </div>
+</div>
 
-  <div class="note">
-    This is only a demo interface. Real payments require server-side integration with BLIK / PayPal APIs and proper security.
+<div id="main">
+  <div id="workspace">
+    <div id="scriptArea">
+      <h3>Script</h3>
+      <!-- script blocks appear here -->
+    </div>
+    <div id="rightPane">
+      <div id="cppCode"></div>
+      <div id="output"></div>
+    </div>
+  </div>
+  <div id="controls">
+    <button id="runBtn">Run</button>
+    <button id="clearBtn">Clear script</button>
+    <span id="spriteInfo">Sprite: x = 0, y = 0</span>
   </div>
 </div>
 
 <script>
-  const methodRadios = document.querySelectorAll('input[name="method"]');
-  const blikFields = document.getElementById('blik-fields');
-  const paypalFields = document.getElementById('paypal-fields');
+  const sidebar = document.getElementById('sidebar');
+  const scriptArea = document.getElementById('scriptArea');
+  const cppCodeEl = document.getElementById('cppCode');
+  const outputEl = document.getElementById('output');
+  const spriteInfo = document.getElementById('spriteInfo');
+  const runBtn = document.getElementById('runBtn');
+  const clearBtn = document.getElementById('clearBtn');
 
-  methodRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-      if (radio.value === 'blik') {
-        blikFields.style.display = 'block';
-        paypalFields.style.display = 'none';
-      } else {
-        blikFields.style.display = 'none';
-        paypalFields.style.display = 'block';
-      }
+  let scriptBlocks = [];
+
+  function cloneBlock(block) {
+    const type = block.dataset.type;
+    const clone = document.createElement('div');
+    clone.className = 'script-block';
+    clone.dataset.type = type;
+
+    // Copy inner HTML but freeze current input/select values as attributes
+    const temp = block.cloneNode(true);
+    const inputs = temp.querySelectorAll('input, select');
+    inputs.forEach((el, idx) => {
+      el.setAttribute('data-idx', idx);
     });
+    clone.innerHTML = temp.innerHTML;
+
+    const remove = document.createElement('button');
+    remove.textContent = 'x';
+    remove.className = 'remove-btn';
+    remove.onclick = () => {
+      scriptArea.removeChild(clone);
+      scriptBlocks = scriptBlocks.filter(b => b.el !== clone);
+      updateCppCode();
+    };
+    clone.appendChild(remove);
+
+    scriptArea.appendChild(clone);
+    const record = { el: clone, type, getValues: () => readValues(clone, type) };
+    scriptBlocks.push(record);
+    updateCppCode();
+  }
+
+  function readValues(el, type) {
+    const inputs = el.querySelectorAll('input, select');
+    const vals = [];
+    inputs.forEach(i => vals.push(i.value));
+    return vals;
+  }
+
+  sidebar.addEventListener('click', e => {
+    const block = e.target.closest('.block');
+    if (!block) return;
+    cloneBlock(block);
   });
 
-  function submitDeposit() {
-    const amount = document.getElementById('amount').value;
-    const method = document.querySelector('input[name="method"]:checked').value;
+  function generateCpp() {
+    let code = '';
+    code += '#include <iostream>\n';
+    code += 'using namespace std;\n\n';
+    code += 'int main() {\n';
+    code += '    int x = 0;\n';
+    code += '    int y = 0;\n';
+    const vars = new Set();
 
-    if (!amount || amount <= 0) {
-      alert('Please enter a valid amount.');
-      return;
+    let indentLevel = 1;
+    const indent = () => '    '.repeat(indentLevel);
+
+    function ensureVar(name) {
+      if (!name) return;
+      if (!vars.has(name)) {
+        vars.add(name);
+      }
     }
 
-    if (method === 'blik') {
-      const blikCode = document.getElementById('blik-code').value;
-      if (!blikCode || blikCode.length !== 6) {
-        alert('Please enter a 6-digit BLIK code.');
-        return;
+    // First pass: collect variable names
+    scriptBlocks.forEach(b => {
+      const t = b.type;
+      const v = b.getValues();
+      if (t === 'setvar' || t === 'changevar' || t === 'printvar') {
+        const name = v[0] || 'a';
+        ensureVar(name);
       }
-      // Here you would send amount + blikCode to your backend
-      alert('BLIK deposit simulated: ' + amount + ' PLN');
-    } else if (method === 'paypal') {
-      const paypalEmail = document.getElementById('paypal-email').value;
-      if (!paypalEmail || !paypalEmail.includes('@')) {
-        alert('Please enter a valid PayPal email.');
-        return;
+    });
+
+    vars.forEach(v => {
+      code += `    int ${v} = 0;\n`;
+    });
+
+    scriptBlocks.forEach(b => {
+      const t = b.type;
+      const v = b.getValues();
+      if (t === 'setx') {
+        const val = Number(v[0]) || 0;
+        code += indent() + `x = ${val};\n`;
+      } else if (t === 'sety') {
+        const val = Number(v[0]) || 0;
+        code += indent() + `y = ${val};\n`;
+      } else if (t === 'changex') {
+        const val = Number(v[0]) || 0;
+        code += indent() + `x += ${val};\n`;
+      } else if (t === 'changey') {
+        const val = Number(v[0]) || 0;
+        code += indent() + `y += ${val};\n`;
+      } else if (t === 'print') {
+        const text = (v[0] || '').replace(/"/g, '\\"');
+        code += indent() + `cout << "${text}" << endl;\n`;
+      } else if (t === 'printpos') {
+        code += indent() + 'cout << "x=" << x << ", y=" << y << endl;\n';
+      } else if (t === 'setvar') {
+        const name = v[0] || 'a';
+        const val = Number(v[1]) || 0;
+        code += indent() + `${name} = ${val};\n`;
+      } else if (t === 'changevar') {
+        const name = v[0] || 'a';
+        const val = Number(v[1]) || 0;
+        code += indent() + `${name} += ${val};\n`;
+      } else if (t === 'printvar') {
+        const name = v[0] || 'a';
+        code += indent() + `cout << "${name}=" << ${name} << endl;\n`;
+      } else if (t === 'repeat') {
+        const times = Math.max(1, Number(v[0]) || 1);
+        code += indent() + `for (int i = 0; i < ${times}; ++i) {\n`;
+        indentLevel++;
+      } else if (t === 'if') {
+        const cond = v[0] || 'x>0';
+        code += indent() + `if (${cond}) {\n`;
+        indentLevel++;
+      } else if (t === 'end') {
+        indentLevel = Math.max(1, indentLevel - 1);
+        code += indent() + '}\n';
       }
-      // Here you would redirect to PayPal or send data to backend
-      alert('PayPal deposit simulated: ' + amount + ' PLN');
-    }
+    });
+
+    code += '    return 0;\n';
+    code += '}\n';
+    return code;
   }
-</script>
 
+  function updateCppCode() {
+    cppCodeEl.textContent = generateCpp();
+  }
+
+  function runScript() {
+    let x = 0;
+    let y = 0;
+    const vars = {};
+    let out = '';
+
+    function println(s) {
+      out += s + '\n';
+    }
+
+    function execBlocks(blocks, startIndex = 0, endIndex = blocks.length) {
+      let i = startIndex;
+      while (i < endIndex) {
+        const b = blocks[i];
+        const t = b.type;
+        const v = b.getValues();
+
+        if (t === 'setx') {
+          x = Number(v[0]) || 0;
+        } else if (t === 'sety') {
+          y = Number(v[0]) || 0;
+        } else if (t === 'changex') {
+          x += Number(v[0]) || 0;
+        } else if (t === 'changey') {
+          y += Number(v[0]) || 0;
+        } else if (t === 'print') {
+          println(String(v[0] || ''));
+        } else if (t === 'printpos') {
+          println(`x=${x}, y=${y}`);
+        } else if (t === 'setvar') {
+          const name = v[0] || 'a';
+          const val = Number(v[1]) || 0;
+          vars[name] = val;
+        } else if (t === 'changevar') {
+          const name = v[0] || 'a';
+          const val = Number(v[1]) || 0;
+          if (!(name in vars)) vars[name] = 0;
+          vars[name] += val;
+        } else if (t === 'printvar') {
+          const name = v[0] || 'a';
+          const val = vars[name] ?? 0;
+          println(`${name}=${val}`);
+        } else if (t === 'repeat') {
+          const times = Math.max(1, Number(v[0]) || 1);
+          // find matching end
+          let depth = 0;
+          let j = i + 1;
+          for (; j < endIndex; j++) {
+            const tt = blocks[j].type;
+            if (tt === 'repeat' || tt === 'if') depth++;
+            if (tt === 'end') {
+              if (depth === 0) break;
+              depth--;
+            }
+          }
+          const bodyStart = i + 1;
+          const bodyEnd = j;
+          for (let k = 0; k < times; k++) {
+            execBlocks(blocks, bodyStart, bodyEnd);
+          }
+          i = j; // jump to end
+        } else if (t === 'if') {
+          const condStr = v[0] || 'x>0';
+          let cond = false;
+          try {
+            // very small safe-ish parser: only x,y, numbers, <,>,== allowed
+            const expr = condStr
+              .replace(/x/g, String(x))
+              .replace(/y/g, String(y));
+            // eslint-disable-next-line no-eval
+            cond = !!eval(expr);
+          } catch {
+            cond = false;
+          }
+          let depth = 0;
+          let j = i + 1;
+          for (; j < endIndex; j++) {
+            const tt = blocks[j].type;
+            if (tt === 'repeat' || tt === 'if') depth++;
+            if (tt === 'end') {
+              if (depth === 0) break;
+              depth--;
+            }
+          }
+          const bodyStart = i + 1;
+          const bodyEnd = j;
+          if (cond) {
+            execBlocks(blocks, bodyStart, bodyEnd);
+          }
+          i = j;
+        }
+        i++;
+      }
+    }
+
+    execBlocks(scriptBlocks);
+    outputEl.textContent = out || '(no output)';
+    spriteInfo.textContent = `Sprite: x = ${x}, y = ${y}`;
+  }
+
+  runBtn.addEventListener('click', () => {
+    updateCppCode();
+    runScript();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    scriptBlocks = [];
+    const blocks = scriptArea.querySelectorAll('.script-block');
+    blocks.forEach(b => b.remove());
+    updateCppCode();
+    outputEl.textContent = '';
+    spriteInfo.textContent = 'Sprite: x = 0, y = 0';
+  });
+
+  updateCppCode();
+</script>
 </body>
 </html>
-
