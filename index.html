@@ -222,31 +222,31 @@
   <div class="category">
     <h3>Program</h3>
     <div class="palette-block" draggable="true" data-type="programbase"
-         title="Adds #include lines, using namespace std; and int main(). Must be the first block.">
-      using namespace std; (basic C++ setup)
+         title="Adds #include lines, using namespace std; and int main(). Must be the first block. Everything else depends on it.">
+      using namespace std;
     </div>
   </div>
 
   <div class="category">
     <h3>Variables</h3>
     <div class="palette-block" draggable="true" data-type="intdecl"
-         title="Declare an int variable with an initial value.">
+         title="Declare an int variable with an initial value, e.g. int age = 16;">
       int <input type="text" value="age"> = <input type="number" value="16">;
     </div>
     <div class="palette-block" draggable="true" data-type="doubledecl"
-         title="Declare a double variable with an initial value.">
+         title="Declare a double variable with an initial value, e.g. double price = 19.99;">
       double <input type="text" value="price"> = <input type="text" value="19.99">;
     </div>
     <div class="palette-block" draggable="true" data-type="chardecl"
-         title="Declare a char variable with a single character.">
+         title="Declare a char variable with a single character, e.g. char letter = 'A';">
       char <input type="text" value="letter"> = '<input type="text" value="A" maxlength="1">';
     </div>
     <div class="palette-block" draggable="true" data-type="stringdecl"
-         title="Declare a string variable with an initial text.">
+         title="Declare a string variable with some text, e.g. string name = &quot;Roksana&quot;;">
       string <input type="text" value="name"> = "<input type="text" value="Roksana">";
     </div>
     <div class="palette-block" draggable="true" data-type="booldecl"
-         title="Declare a bool variable (true or false).">
+         title="Declare a bool variable, true or false, e.g. bool isSmart = true;">
       bool <input type="text" value="isSmart"> = 
       <select>
         <option value="true">true</option>
@@ -254,7 +254,7 @@
       </select>;
     </div>
     <div class="palette-block" draggable="true" data-type="assign"
-         title="Assign a new value or expression to an existing variable.">
+         title="Change the value of an existing variable, e.g. age = age + 1;">
       <input type="text" value="age"> = <input type="text" value="age + 1">;
     </div>
   </div>
@@ -262,15 +262,15 @@
   <div class="category">
     <h3>Print</h3>
     <div class="palette-block" draggable="true" data-type="print"
-         title="Print text without a newline at the end.">
+         title="Print text without a newline at the end, e.g. cout << &quot;Hello&quot;;">
       cout &lt;&lt; "<input type="text" value="text">";
     </div>
     <div class="palette-block" draggable="true" data-type="printline"
-         title="Print text followed by a newline (endl).">
+         title="Print text followed by a newline, e.g. cout << &quot;Hello&quot; << endl;">
       cout &lt;&lt; "<input type="text" value="text">" &lt;&lt; endl;
     </div>
     <div class="palette-block" draggable="true" data-type="printvar"
-         title="Print the value of a variable followed by a newline.">
+         title="Print the value of a variable followed by a newline, e.g. cout << age << endl;">
       cout &lt;&lt; <input type="text" value="age"> &lt;&lt; endl;
     </div>
   </div>
@@ -278,19 +278,19 @@
   <div class="category">
     <h3>Input</h3>
     <div class="palette-block" draggable="true" data-type="inputprompt"
-         title="Show a prompt before reading input (cin).">
+         title="Show a message before reading input, e.g. cout << &quot;Enter a number: &quot;;">
       cout &lt;&lt; "<input type="text" value="Enter a number: ">";
     </div>
     <div class="palette-block" draggable="true" data-type="inputint"
-         title="Read an int value from input into a variable (cin).">
+         title="Read an int from input into a variable, e.g. cin >> number;">
       cin &gt;&gt; <input type="text" value="number">;
     </div>
     <div class="palette-block" draggable="true" data-type="inputprompt"
-         title="Show a prompt before reading a string.">
+         title="Show a message before reading a string, e.g. cout << &quot;Enter your name: &quot;;">
       cout &lt;&lt; "<input type="text" value="Enter your name: ">";
     </div>
     <div class="palette-block" draggable="true" data-type="inputstring"
-         title="Read a string value from input into a variable (cin).">
+         title="Read a string from input into a variable, e.g. cin >> name;">
       cin &gt;&gt; <input type="text" value="name">;
     </div>
   </div>
@@ -298,7 +298,7 @@
   <div class="category">
     <h3>Math</h3>
     <div class="palette-block" draggable="true" data-type="mathprint"
-         title="Print a label and the result of an expression.">
+         title="Print a label and the result of an expression, e.g. cout << &quot;a + b = &quot; << a + b << endl;">
       cout &lt;&lt; "<input type="text" value="a + b = ">" &lt;&lt; <input type="text" value="a + b"> &lt;&lt; endl;
     </div>
   </div>
@@ -306,19 +306,19 @@
   <div class="category">
     <h3>Logic</h3>
     <div class="palette-block" draggable="true" data-type="if"
-         title="Start an if block with a condition. Needs a closing } block.">
+         title="Start an if block with a condition, e.g. if (number > 0) {">
       if (<input type="text" value="number > 0">) {
     </div>
     <div class="palette-block" draggable="true" data-type="elseif"
-         title="Else-if block, used after an if or another else-if.">
+         title="Else-if block used after if, e.g. else if (number < 0) {">
       else if (<input type="text" value="number < 0">) {
     </div>
     <div class="palette-block" draggable="true" data-type="else"
-         title="Else block, used after if/else-if.">
+         title="Else block used after if/else-if, e.g. else {">
       else {
     </div>
     <div class="palette-block" draggable="true" data-type="end"
-         title="Closing block for if/else/loops (adds }).">
+         title="Closing block for if/else/loops, adds a single } line.">
       }
     </div>
   </div>
@@ -326,15 +326,15 @@
   <div class="category">
     <h3>Loops</h3>
     <div class="palette-block" draggable="true" data-type="for"
-         title="Classic for loop with start, end and increment. Needs closing }.">
+         title="Classic for loop, e.g. for (int i = 1; i <= 5; i++) {">
       for (int <input type="text" value="i"> = <input type="number" value="1">; <input type="text" value="i"> &lt;= <input type="number" value="5">; <input type="text" value="i">++) {
     </div>
     <div class="palette-block" draggable="true" data-type="while"
-         title="While loop that repeats while the condition is true. Needs closing }.">
+         title="While loop that repeats while condition is true, e.g. while (i <= 5) {">
       while (<input type="text" value="i <= 5">) {
     </div>
     <div class="palette-block" draggable="true" data-type="end"
-         title="Closing block for loops or if/else (adds }).">
+         title="Closing block for loops or if/else, adds a single }.">
       }
     </div>
   </div>
@@ -342,11 +342,11 @@
   <div class="category">
     <h3>Arrays & Functions</h3>
     <div class="palette-block" draggable="true" data-type="arraydecl"
-         title="Declare a simple int array with 5 elements.">
+         title="Declare a simple int array with 5 elements, e.g. int arr[5] = {1,2,3,4,5};">
       int <input type="text" value="arr">[5] = {1,2,3,4,5};
     </div>
     <div class="palette-block" draggable="true" data-type="rangefor"
-         title="Range-based for loop over an array. Needs closing }.">
+         title="Range-based for loop over an array, e.g. for (int x : arr) {">
       for (int <input type="text" value="x"> : <input type="text" value="arr">) {
     </div>
     <div class="palette-block" draggable="true" data-type="callgreet"
@@ -365,7 +365,7 @@
     <div id="cppCode"></div>
 
     <div id="console">
-      (program output will appear here)
+      <span style="color:#ffffff;">(program output will appear here)</span>
     </div>
     <div id="consoleInputBar">
       <input id="consoleInput" type="text"
@@ -411,7 +411,7 @@
     if (!consoleBuffer) {
       consoleEl.innerHTML = '<span style="color:#ffffff;">(no output)</span>';
     } else {
-      consoleEl.innerHTML = consoleBuffer;
+      consoleEl.innerHTML = consoleBuffer.replace(/\n/g, "<br>");
     }
   }
 
@@ -581,17 +581,19 @@
   }
 
   function validateScript() {
+    const errors = [];
+    const warnings = [];
+
     if (scriptBlocks.length === 0) {
-      return { ok: false, message: "Error: No blocks placed." };
+      errors.push("Error: No blocks placed.");
+      return { ok: false, errors, warnings };
     }
 
     const hasProgramBase = scriptBlocks.some(b => b.type === "programbase");
     if (!hasProgramBase) {
-      return { ok: false, message: "Error: Missing program setup block (using namespace std;)." };
-    }
-
-    if (scriptBlocks[0].type !== "programbase") {
-      return { ok: false, message: "Error: Program setup block must be the first block." };
+      errors.push("Error: Missing program setup block (using namespace std;).");
+    } else if (scriptBlocks[0].type !== "programbase") {
+      errors.push("Error: Program setup block must be the first block.");
     }
 
     let depth = 0;
@@ -602,15 +604,15 @@
       } else if (t === "end") {
         depth--;
         if (depth < 0) {
-          return { ok: false, message: "Error: Extra closing block '}' near block #" + (i + 1) + "." };
+          errors.push("Error: Extra closing block '}' near block #" + (i + 1) + ".");
+          depth = 0;
         }
       }
     }
     if (depth > 0) {
-      return { ok: false, message: "Error: Missing closing block '}' for one or more structures." };
+      errors.push("Error: Missing closing block '}' for one or more structures.");
     }
 
-    // variable existence check
     const declared = new Set();
     scriptBlocks.forEach(b => {
       const t = b.type;
@@ -628,22 +630,34 @@
       if (t === "assign") {
         const name = v[0];
         if (name && !declared.has(name)) {
-          return { ok: false, message: "Error: Variable '" + name + "' used in assignment before declaration (block #" + (i + 1) + ")." };
+          errors.push("Error: Variable '" + name + "' used in assignment before declaration (block #" + (i + 1) + ").");
         }
       } else if (t === "printvar") {
         const name = v[0];
         if (name && !declared.has(name)) {
-          return { ok: false, message: "Error: Variable '" + name + "' printed before declaration (block #" + (i + 1) + ")." };
+          errors.push("Error: Variable '" + name + "' printed before declaration (block #" + (i + 1) + ").");
         }
       } else if (t === "inputint" || t === "inputstring") {
         const name = v[0];
         if (name && !declared.has(name)) {
-          return { ok: false, message: "Error: Variable '" + name + "' used in cin before declaration (block #" + (i + 1) + ")." };
+          errors.push("Error: Variable '" + name + "' used in cin before declaration (block #" + (i + 1) + ").");
         }
       }
     }
 
-    return { ok: true, message: "" };
+    const hasCin = scriptBlocks.some(b => b.type === "inputint" || b.type === "inputstring");
+    const inputLines = consoleInput.value.trim().length > 0
+      ? consoleInput.value.trim().split(/\r?\n/).length
+      : 0;
+
+    if (hasCin && inputLines === 0) {
+      warnings.push("Warning: cin blocks exist but no input lines are provided in the input box.");
+    }
+    if (!hasCin && inputLines > 0) {
+      warnings.push("Warning: Input lines are provided but there are no cin blocks to use them.");
+    }
+
+    return { ok: errors.length === 0, errors, warnings };
   }
 
   function generateCpp() {
@@ -674,7 +688,7 @@
       const v = b.getValues();
 
       if (t === "programbase") {
-        // no direct code, just enables includes/main
+        // no direct code
       } else if (t === "print") {
         code += tab() + `cout << "${v[0]}";\n`;
       } else if (t === "printline") {
@@ -900,7 +914,7 @@
           }
         } catch (err) {
           logErrorLine(String(err.message || err));
-          return; // stop at first runtime error
+          return;
         }
         i++;
       }
@@ -923,13 +937,17 @@
 
   function runProgram() {
     const validation = validateScript();
+    consoleBuffer = "";
+
     if (!validation.ok) {
-      consoleBuffer = "";
-      logErrorLine(validation.message);
+      validation.errors.forEach(msg => logErrorLine(msg));
+      validation.warnings.forEach(msg => logWarningLine(msg));
       flushConsole();
       cppCodeEl.textContent = generateCpp();
       return;
     }
+
+    validation.warnings.forEach(msg => logWarningLine(msg));
     consoleInput.disabled = true;
     updateCpp();
     simulateRun();
@@ -955,7 +973,6 @@
     }
   });
 
-  // saving/loading
   function serializeScript() {
     return scriptBlocks.map(b => ({
       type: b.type,
@@ -969,7 +986,6 @@
       const palette = document.querySelector(`.palette-block[data-type="${item.type}"]`);
       if (!palette) return;
       const block = makeScriptBlockFromPalette(palette);
-      // set values
       const inputs = block.el.querySelectorAll(".script-block-inner input, .script-block-inner select");
       item.values.forEach((val, idx) => {
         if (inputs[idx]) inputs[idx].value = val;
