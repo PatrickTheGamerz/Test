@@ -139,7 +139,7 @@
   }
 
   #rightPane {
-    width: 420px;
+    width: 460px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -178,21 +178,6 @@
     font-size: 12px;
   }
 
-  #consoleInputBtn {
-    background: #89b4fa;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #11111b;
-    font-weight: bold;
-  }
-
-  #consoleInputBtn:hover {
-    background: #b4befe;
-  }
-
   #controls {
     background: #11111b;
     border-radius: 10px;
@@ -201,6 +186,7 @@
     display: flex;
     justify-content: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .btn {
@@ -217,6 +203,15 @@
   .btn:hover {
     background: #b4befe;
   }
+
+  .btn-secondary {
+    background: #45475a;
+    color: #cdd6f4;
+  }
+
+  .btn-secondary:hover {
+    background: #585b70;
+  }
 </style>
 </head>
 <body>
@@ -226,111 +221,136 @@
 
   <div class="category">
     <h3>Program</h3>
-    <div class="palette-block" draggable="true" data-type="programbase">
-      using namespace std; (add basic C++ setup)
+    <div class="palette-block" draggable="true" data-type="programbase"
+         title="Adds #include lines, using namespace std; and int main(). Must be the first block.">
+      using namespace std; (basic C++ setup)
     </div>
   </div>
 
   <div class="category">
     <h3>Variables</h3>
-    <div class="palette-block" draggable="true" data-type="intdecl">
+    <div class="palette-block" draggable="true" data-type="intdecl"
+         title="Declare an int variable with an initial value.">
       int <input type="text" value="age"> = <input type="number" value="16">;
     </div>
-    <div class="palette-block" draggable="true" data-type="doubledecl">
+    <div class="palette-block" draggable="true" data-type="doubledecl"
+         title="Declare a double variable with an initial value.">
       double <input type="text" value="price"> = <input type="text" value="19.99">;
     </div>
-    <div class="palette-block" draggable="true" data-type="chardecl">
+    <div class="palette-block" draggable="true" data-type="chardecl"
+         title="Declare a char variable with a single character.">
       char <input type="text" value="letter"> = '<input type="text" value="A" maxlength="1">';
     </div>
-    <div class="palette-block" draggable="true" data-type="stringdecl">
+    <div class="palette-block" draggable="true" data-type="stringdecl"
+         title="Declare a string variable with an initial text.">
       string <input type="text" value="name"> = "<input type="text" value="Roksana">";
     </div>
-    <div class="palette-block" draggable="true" data-type="booldecl">
+    <div class="palette-block" draggable="true" data-type="booldecl"
+         title="Declare a bool variable (true or false).">
       bool <input type="text" value="isSmart"> = 
       <select>
         <option value="true">true</option>
         <option value="false">false</option>
       </select>;
     </div>
-    <div class="palette-block" draggable="true" data-type="assign">
+    <div class="palette-block" draggable="true" data-type="assign"
+         title="Assign a new value or expression to an existing variable.">
       <input type="text" value="age"> = <input type="text" value="age + 1">;
     </div>
   </div>
 
   <div class="category">
     <h3>Print</h3>
-    <div class="palette-block" draggable="true" data-type="print">
+    <div class="palette-block" draggable="true" data-type="print"
+         title="Print text without a newline at the end.">
       cout &lt;&lt; "<input type="text" value="text">";
     </div>
-    <div class="palette-block" draggable="true" data-type="printline">
+    <div class="palette-block" draggable="true" data-type="printline"
+         title="Print text followed by a newline (endl).">
       cout &lt;&lt; "<input type="text" value="text">" &lt;&lt; endl;
     </div>
-    <div class="palette-block" draggable="true" data-type="printvar">
+    <div class="palette-block" draggable="true" data-type="printvar"
+         title="Print the value of a variable followed by a newline.">
       cout &lt;&lt; <input type="text" value="age"> &lt;&lt; endl;
     </div>
   </div>
 
   <div class="category">
     <h3>Input</h3>
-    <div class="palette-block" draggable="true" data-type="inputprompt">
+    <div class="palette-block" draggable="true" data-type="inputprompt"
+         title="Show a prompt before reading input (cin).">
       cout &lt;&lt; "<input type="text" value="Enter a number: ">";
     </div>
-    <div class="palette-block" draggable="true" data-type="inputint">
+    <div class="palette-block" draggable="true" data-type="inputint"
+         title="Read an int value from input into a variable (cin).">
       cin &gt;&gt; <input type="text" value="number">;
     </div>
-    <div class="palette-block" draggable="true" data-type="inputprompt">
+    <div class="palette-block" draggable="true" data-type="inputprompt"
+         title="Show a prompt before reading a string.">
       cout &lt;&lt; "<input type="text" value="Enter your name: ">";
     </div>
-    <div class="palette-block" draggable="true" data-type="inputstring">
+    <div class="palette-block" draggable="true" data-type="inputstring"
+         title="Read a string value from input into a variable (cin).">
       cin &gt;&gt; <input type="text" value="name">;
     </div>
   </div>
 
   <div class="category">
     <h3>Math</h3>
-    <div class="palette-block" draggable="true" data-type="mathprint">
+    <div class="palette-block" draggable="true" data-type="mathprint"
+         title="Print a label and the result of an expression.">
       cout &lt;&lt; "<input type="text" value="a + b = ">" &lt;&lt; <input type="text" value="a + b"> &lt;&lt; endl;
     </div>
   </div>
 
   <div class="category">
     <h3>Logic</h3>
-    <div class="palette-block" draggable="true" data-type="if">
+    <div class="palette-block" draggable="true" data-type="if"
+         title="Start an if block with a condition. Needs a closing } block.">
       if (<input type="text" value="number > 0">) {
     </div>
-    <div class="palette-block" draggable="true" data-type="elseif">
+    <div class="palette-block" draggable="true" data-type="elseif"
+         title="Else-if block, used after an if or another else-if.">
       else if (<input type="text" value="number < 0">) {
     </div>
-    <div class="palette-block" draggable="true" data-type="else">
+    <div class="palette-block" draggable="true" data-type="else"
+         title="Else block, used after if/else-if.">
       else {
     </div>
-    <div class="palette-block" draggable="true" data-type="end">
+    <div class="palette-block" draggable="true" data-type="end"
+         title="Closing block for if/else/loops (adds }).">
       }
     </div>
   </div>
 
   <div class="category">
     <h3>Loops</h3>
-    <div class="palette-block" draggable="true" data-type="for">
+    <div class="palette-block" draggable="true" data-type="for"
+         title="Classic for loop with start, end and increment. Needs closing }.">
       for (int <input type="text" value="i"> = <input type="number" value="1">; <input type="text" value="i"> &lt;= <input type="number" value="5">; <input type="text" value="i">++) {
     </div>
-    <div class="palette-block" draggable="true" data-type="while">
+    <div class="palette-block" draggable="true" data-type="while"
+         title="While loop that repeats while the condition is true. Needs closing }.">
       while (<input type="text" value="i <= 5">) {
     </div>
-    <div class="palette-block" draggable="true" data-type="end">
+    <div class="palette-block" draggable="true" data-type="end"
+         title="Closing block for loops or if/else (adds }).">
       }
     </div>
   </div>
 
   <div class="category">
     <h3>Arrays & Functions</h3>
-    <div class="palette-block" draggable="true" data-type="arraydecl">
+    <div class="palette-block" draggable="true" data-type="arraydecl"
+         title="Declare a simple int array with 5 elements.">
       int <input type="text" value="arr">[5] = {1,2,3,4,5};
     </div>
-    <div class="palette-block" draggable="true" data-type="rangefor">
+    <div class="palette-block" draggable="true" data-type="rangefor"
+         title="Range-based for loop over an array. Needs closing }.">
       for (int <input type="text" value="x"> : <input type="text" value="arr">) {
     </div>
-    <div class="palette-block" draggable="true" data-type="callgreet">
+    <div class="palette-block" draggable="true" data-type="callgreet"
+         title="Call greet(name). greet() is auto-added if used.">
       greet(<input type="text" value="name">);
     </div>
   </div>
@@ -348,13 +368,17 @@
       (program output will appear here)
     </div>
     <div id="consoleInputBar">
-      <input id="consoleInput" type="text" placeholder="inputs for cin (one per line, before Run)..." autocomplete="off">
-      <button id="consoleInputBtn">Run Program</button>
+      <input id="consoleInput" type="text"
+             placeholder="inputs for cin (one per line, before Run). After run, input is locked."
+             autocomplete="off">
     </div>
 
     <div id="controls">
       <button class="btn" id="runBtn">Run Program</button>
       <button class="btn" id="clearBtn">CLEAR SCRIPT</button>
+      <button class="btn btn-secondary" id="saveBtn">Save Script</button>
+      <button class="btn btn-secondary" id="loadBtn">Load Script</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none;">
     </div>
   </div>
 </div>
@@ -364,14 +388,66 @@
   const cppCodeEl = document.getElementById("cppCode");
   const consoleEl = document.getElementById("console");
   const consoleInput = document.getElementById("consoleInput");
-  const consoleInputBtn = document.getElementById("consoleInputBtn");
   const runBtn = document.getElementById("runBtn");
   const clearBtn = document.getElementById("clearBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const loadBtn = document.getElementById("loadBtn");
+  const fileInput = document.getElementById("fileInput");
 
   let scriptBlocks = [];
   let dragData = { type: null, index: -1 };
   let currentDropIndex = -1;
   let dropIndicator = null;
+
+  // console coloring helpers
+  let consoleBuffer = "";
+
+  function resetConsole() {
+    consoleBuffer = "";
+    consoleEl.innerHTML = '<span style="color:#ffffff;">(program output will appear here)</span>';
+  }
+
+  function flushConsole() {
+    if (!consoleBuffer) {
+      consoleEl.innerHTML = '<span style="color:#ffffff;">(no output)</span>';
+    } else {
+      consoleEl.innerHTML = consoleBuffer;
+    }
+  }
+
+  function logNormal(text) {
+    if (!text) return;
+    consoleBuffer += `<span style="color:#ffffff;">${escapeHtml(text)}</span>`;
+  }
+
+  function logNormalLine(text) {
+    logNormal(text + "\n");
+  }
+
+  function logError(text) {
+    if (!text) return;
+    consoleBuffer += `<span style="color:#f38ba8;">${escapeHtml(text)}</span>`;
+  }
+
+  function logErrorLine(text) {
+    logError(text + "\n");
+  }
+
+  function logWarning(text) {
+    if (!text) return;
+    consoleBuffer += `<span style="color:#f9e2af;">${escapeHtml(text)}</span>`;
+  }
+
+  function logWarningLine(text) {
+    logWarning(text + "\n");
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
   function createDropIndicator() {
     const div = document.createElement("div");
@@ -481,7 +557,7 @@
     };
     wrapper.appendChild(remove);
 
-    wrapper.addEventListener("dragstart", e => {
+    wrapper.addEventListener("dragstart", () => {
       dragData.type = "script";
       dragData.index = scriptBlocks.findIndex(b => b.el === wrapper);
     });
@@ -532,6 +608,39 @@
     }
     if (depth > 0) {
       return { ok: false, message: "Error: Missing closing block '}' for one or more structures." };
+    }
+
+    // variable existence check
+    const declared = new Set();
+    scriptBlocks.forEach(b => {
+      const t = b.type;
+      const v = b.getValues();
+      if (t === "intdecl" || t === "doubledecl" || t === "chardecl" ||
+          t === "stringdecl" || t === "booldecl" || t === "arraydecl") {
+        if (v[0]) declared.add(v[0]);
+      }
+    });
+
+    for (let i = 0; i < scriptBlocks.length; i++) {
+      const b = scriptBlocks[i];
+      const t = b.type;
+      const v = b.getValues();
+      if (t === "assign") {
+        const name = v[0];
+        if (name && !declared.has(name)) {
+          return { ok: false, message: "Error: Variable '" + name + "' used in assignment before declaration (block #" + (i + 1) + ")." };
+        }
+      } else if (t === "printvar") {
+        const name = v[0];
+        if (name && !declared.has(name)) {
+          return { ok: false, message: "Error: Variable '" + name + "' printed before declaration (block #" + (i + 1) + ")." };
+        }
+      } else if (t === "inputint" || t === "inputstring") {
+        const name = v[0];
+        if (name && !declared.has(name)) {
+          return { ok: false, message: "Error: Variable '" + name + "' used in cin before declaration (block #" + (i + 1) + ")." };
+        }
+      }
     }
 
     return { ok: true, message: "" };
@@ -635,9 +744,7 @@
   }
 
   function simulateRun() {
-    let out = "";
-    function print(s) { out += s; }
-    function println(s) { out += s + "\n"; }
+    consoleBuffer = "";
 
     let env = {
       int: {},
@@ -659,12 +766,14 @@
         const fn = new Function(...Object.keys(scope), "return " + expr + ";");
         return fn(...Object.values(scope));
       } catch {
-        return 0;
+        throw new Error("Runtime error in expression: " + expr);
       }
     }
 
     function nextInput() {
-      if (inputQueue.length === 0) return "";
+      if (inputQueue.length === 0) {
+        throw new Error("Runtime error: cin requested but no more input lines.");
+      }
       return inputQueue.shift();
     }
 
@@ -675,111 +784,123 @@
         const t = b.type;
         const v = b.getValues();
 
-        if (t === "programbase") {
-          // no runtime effect
-        } else if (t === "print") {
-          print(String(v[0]));
-        } else if (t === "printline") {
-          println(String(v[0]));
-        } else if (t === "printvar") {
-          const name = v[0];
-          let val = env.int[name];
-          if (val === undefined) val = env.double[name];
-          if (val === undefined) val = env.bool[name];
-          if (val === undefined) val = env.string[name];
-          if (val === undefined) val = env.char[name];
-          if (val === undefined) val = 0;
-          println(String(val));
-        } else if (t === "callgreet") {
-          const name = v[0];
-          let val = env.string[name] ?? name;
-          println("Hello, " + val + "!");
-        } else if (t === "intdecl") {
-          env.int[v[0]] = Number(v[1]) || 0;
-        } else if (t === "doubledecl") {
-          env.double[v[0]] = Number(v[1]) || 0;
-        } else if (t === "chardecl") {
-          env.char[v[0]] = (v[1] || "A")[0];
-        } else if (t === "stringdecl") {
-          env.string[v[0]] = v[1];
-        } else if (t === "booldecl") {
-          env.bool[v[0]] = (v[1] === "true");
-        } else if (t === "assign") {
-          const name = v[0];
-          const val = getVal(v[1]);
-          if (name in env.int) env.int[name] = Number(val);
-          else if (name in env.double) env.double[name] = Number(val);
-          else if (name in env.bool) env.bool[name] = !!val;
-          else if (name in env.string) env.string[name] = String(val);
-          else env.int[name] = Number(val);
-        } else if (t === "inputprompt") {
-          print(String(v[0]));
-        } else if (t === "inputint") {
-          const name = v[0];
-          const raw = nextInput();
-          print(raw + "\n");
-          const num = Number(raw) || 0;
-          env.int[name] = num;
-        } else if (t === "inputstring") {
-          const name = v[0];
-          const raw = nextInput();
-          print(raw + "\n");
-          env.string[name] = raw;
-        } else if (t === "mathprint") {
-          const label = v[0];
-          const val = getVal(v[1]);
-          println(label + String(val));
-        } else if (t === "if" || t === "elseif" || t === "else" ||
-                   t === "for" || t === "while" || t === "rangefor") {
-          let depth = 0;
-          let j = i + 1;
-          for (; j < end; j++) {
-            const tt = blocks[j].type;
-            if (["if","elseif","else","for","while","rangefor"].includes(tt)) depth++;
-            if (tt === "end") {
-              if (depth === 0) break;
-              depth--;
+        try {
+          if (t === "programbase") {
+            // no runtime effect
+          } else if (t === "print") {
+            logNormal(v[0]);
+          } else if (t === "printline") {
+            logNormalLine(v[0]);
+          } else if (t === "printvar") {
+            const name = v[0];
+            let val = env.int[name];
+            if (val === undefined) val = env.double[name];
+            if (val === undefined) val = env.bool[name];
+            if (val === undefined) val = env.string[name];
+            if (val === undefined) val = env.char[name];
+            if (val === undefined) {
+              throw new Error("Runtime error: variable '" + name + "' has no value.");
             }
-          }
-          const bodyStart = i + 1;
-          const bodyEnd = j;
+            logNormalLine(String(val));
+          } else if (t === "callgreet") {
+            const name = v[0];
+            let val = env.string[name] ?? name;
+            logNormalLine("Hello, " + val + "!");
+          } else if (t === "intdecl") {
+            env.int[v[0]] = Number(v[1]) || 0;
+          } else if (t === "doubledecl") {
+            env.double[v[0]] = Number(v[1]) || 0;
+          } else if (t === "chardecl") {
+            env.char[v[0]] = (v[1] || "A")[0];
+          } else if (t === "stringdecl") {
+            env.string[v[0]] = v[1];
+          } else if (t === "booldecl") {
+            env.bool[v[0]] = (v[1] === "true");
+          } else if (t === "assign") {
+            const name = v[0];
+            const val = getVal(v[1]);
+            if (name in env.int) env.int[name] = Number(val);
+            else if (name in env.double) env.double[name] = Number(val);
+            else if (name in env.bool) env.bool[name] = !!val;
+            else if (name in env.string) env.string[name] = String(val);
+            else if (name in env.char) env.char[name] = String(val)[0];
+            else throw new Error("Runtime error: variable '" + name + "' not declared.");
+          } else if (t === "inputprompt") {
+            logNormal(v[0]);
+          } else if (t === "inputint") {
+            const name = v[0];
+            const raw = nextInput();
+            logNormalLine(raw);
+            const num = Number(raw);
+            if (Number.isNaN(num)) {
+              throw new Error("Runtime error: input '" + raw + "' is not a valid number for '" + name + "'.");
+            }
+            env.int[name] = num;
+          } else if (t === "inputstring") {
+            const name = v[0];
+            const raw = nextInput();
+            logNormalLine(raw);
+            env.string[name] = raw;
+          } else if (t === "mathprint") {
+            const label = v[0];
+            const val = getVal(v[1]);
+            logNormalLine(label + String(val));
+          } else if (t === "if" || t === "elseif" || t === "else" ||
+                     t === "for" || t === "while" || t === "rangefor") {
+            let depth = 0;
+            let j = i + 1;
+            for (; j < end; j++) {
+              const tt = blocks[j].type;
+              if (["if","elseif","else","for","while","rangefor"].includes(tt)) depth++;
+              if (tt === "end") {
+                if (depth === 0) break;
+                depth--;
+              }
+            }
+            const bodyStart = i + 1;
+            const bodyEnd = j;
 
-          if (t === "if" || t === "elseif") {
-            let cond = !!getVal(v[0]);
-            if (cond) {
+            if (t === "if" || t === "elseif") {
+              let cond = !!getVal(v[0]);
+              if (cond) {
+                execBlocks(blocks, bodyStart, bodyEnd);
+                i = j;
+              } else {
+                i++;
+                continue;
+              }
+            } else if (t === "else") {
               execBlocks(blocks, bodyStart, bodyEnd);
               i = j;
-            } else {
-              i++;
-              continue;
+            } else if (t === "for") {
+              const varName = v[0] || "i";
+              const startVal = Number(v[1]) || 1;
+              const endVal = Number(v[2]) || 5;
+              env.int[varName] = startVal;
+              for (; env.int[varName] <= endVal; env.int[varName]++) {
+                execBlocks(blocks, bodyStart, bodyEnd);
+              }
+              i = j;
+            } else if (t === "while") {
+              while (getVal(v[0])) {
+                execBlocks(blocks, bodyStart, bodyEnd);
+              }
+              i = j;
+            } else if (t === "rangefor") {
+              const varName = v[0] || "x";
+              const arrName = v[1] || "arr";
+              const arr = [1,2,3,4,5];
+              env.int[varName] = 0;
+              for (let val of arr) {
+                env.int[varName] = val;
+                execBlocks(blocks, bodyStart, bodyEnd);
+              }
+              i = j;
             }
-          } else if (t === "else") {
-            execBlocks(blocks, bodyStart, bodyEnd);
-            i = j;
-          } else if (t === "for") {
-            const varName = v[0] || "i";
-            const startVal = Number(v[1]) || 1;
-            const endVal = Number(v[2]) || 5;
-            env.int[varName] = startVal;
-            for (; env.int[varName] <= endVal; env.int[varName]++) {
-              execBlocks(blocks, bodyStart, bodyEnd);
-            }
-            i = j;
-          } else if (t === "while") {
-            while (getVal(v[0])) {
-              execBlocks(blocks, bodyStart, bodyEnd);
-            }
-            i = j;
-          } else if (t === "rangefor") {
-            const varName = v[0] || "x";
-            const arrName = v[1] || "arr";
-            const arr = [1,2,3,4,5];
-            for (let val of arr) {
-              env.int[varName] = val;
-              execBlocks(blocks, bodyStart, bodyEnd);
-            }
-            i = j;
           }
+        } catch (err) {
+          logErrorLine(String(err.message || err));
+          return; // stop at first runtime error
         }
         i++;
       }
@@ -793,7 +914,7 @@
     }
 
     execBlocks(scriptBlocks);
-    consoleEl.textContent = out || "(no output)";
+    flushConsole();
   }
 
   function updateCpp() {
@@ -803,7 +924,9 @@
   function runProgram() {
     const validation = validateScript();
     if (!validation.ok) {
-      consoleEl.textContent = validation.message;
+      consoleBuffer = "";
+      logErrorLine(validation.message);
+      flushConsole();
       cppCodeEl.textContent = generateCpp();
       return;
     }
@@ -816,15 +939,11 @@
     runProgram();
   });
 
-  consoleInputBtn.addEventListener("click", () => {
-    runProgram();
-  });
-
   clearBtn.addEventListener("click", () => {
     scriptBlocks = [];
     renderScriptBlocks();
     cppCodeEl.textContent = "";
-    consoleEl.textContent = "(program output will appear here)";
+    resetConsole();
     consoleInput.value = "";
     consoleInput.disabled = false;
   });
@@ -836,6 +955,72 @@
     }
   });
 
+  // saving/loading
+  function serializeScript() {
+    return scriptBlocks.map(b => ({
+      type: b.type,
+      values: b.getValues()
+    }));
+  }
+
+  function deserializeScript(data) {
+    scriptBlocks = [];
+    data.forEach(item => {
+      const palette = document.querySelector(`.palette-block[data-type="${item.type}"]`);
+      if (!palette) return;
+      const block = makeScriptBlockFromPalette(palette);
+      // set values
+      const inputs = block.el.querySelectorAll(".script-block-inner input, .script-block-inner select");
+      item.values.forEach((val, idx) => {
+        if (inputs[idx]) inputs[idx].value = val;
+      });
+      scriptBlocks.push(block);
+    });
+    renderScriptBlocks();
+    updateCpp();
+  }
+
+  saveBtn.addEventListener("click", () => {
+    const data = serializeScript();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cpp_block_script.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  loadBtn.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (Array.isArray(data)) {
+          deserializeScript(data);
+          resetConsole();
+          consoleInput.value = "";
+          consoleInput.disabled = false;
+        } else {
+          alert("Invalid script file.");
+        }
+      } catch {
+        alert("Failed to load script file.");
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = "";
+  });
+
+  resetConsole();
   cppCodeEl.textContent = "";
 </script>
 
