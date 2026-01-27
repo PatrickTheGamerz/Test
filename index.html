@@ -80,11 +80,6 @@
     border: 1px solid #313244;
   }
 
-  #scriptArea h3 {
-    margin-top: 0;
-    color: #89b4fa;
-  }
-
   .script-block {
     background: linear-gradient(135deg, #313244, #45475a);
     border-radius: 10px;
@@ -160,7 +155,6 @@
     white-space: pre-wrap;
     overflow-y: auto;
     max-height: 40vh;
-    user-select: none;
   }
 
   #console {
@@ -232,6 +226,9 @@
 
   <div class="category">
     <h3>Program</h3>
+    <div class="palette-block" draggable="true" data-type="programbase">
+      Basic C++ program (includes + main)
+    </div>
     <div class="palette-block" draggable="true" data-type="printline">
       cout &lt;&lt; "<input type="text" value="=== BASIC C++ EXAMPLE ===">" &lt;&lt; endl;
     </div>
@@ -344,7 +341,7 @@
 
 <div id="workspace">
   <div id="scriptArea">
-    <h3>Script (inside main)</h3>
+    <!-- script blocks go here -->
   </div>
 
   <div id="rightPane">
@@ -354,23 +351,18 @@
       (program output will appear here)
     </div>
     <div id="consoleInputBar">
-      <input id="consoleInput" type="text" placeholder="console input (for cin)..." autocomplete="off">
+      <input id="consoleInput" type="text" placeholder="command console (e.g. print Hello)..." autocomplete="off">
       <button id="consoleInputBtn">SEND</button>
     </div>
 
     <div id="controls">
-      <button class="btn" id="runBtn">RUN PROGRAM (SIMULATED)</button>
+      <button class="btn" id="runBtn">Run Program</button>
       <button class="btn" id="clearBtn">CLEAR SCRIPT</button>
     </div>
   </div>
 </div>
 
 <script>
-  // prevent copying text (code / console)
-  document.addEventListener("copy", e => {
-    e.preventDefault();
-  });
-
   const scriptArea = document.getElementById("scriptArea");
   const cppCodeEl = document.getElementById("cppCode");
   const consoleEl = document.getElementById("console");
@@ -516,23 +508,35 @@
   }
 
   function generateCpp() {
-    let code = "";
-    code += "#include <iostream>\n";
-    code += "#include <string>\n";
-    code += "using namespace std;\n\n";
-    code += "void greet(string name) {\n";
-    code += "    cout << \"Hello, \" << name << \"!\" << endl;\n";
-    code += "}\n\n";
-    code += "int main() {\n";
+    if (scriptBlocks.length === 0) return "";
 
-    let indent = 1;
+    const hasProgramBase = scriptBlocks.some(b => b.type === "programbase");
+    const usesGreet = scriptBlocks.some(b => b.type === "callgreet");
+
+    let code = "";
+
+    if (hasProgramBase) {
+      code += "#include <iostream>\n";
+      code += "#include <string>\n";
+      code += "using namespace std;\n\n";
+      if (usesGreet) {
+        code += "void greet(string name) {\n";
+        code += "    cout << \"Hello, \" << name << \"!\" << endl;\n";
+        code += "}\n\n";
+      }
+      code += "int main() {\n";
+    }
+
+    let indent = hasProgramBase ? 1 : 0;
     const tab = () => "    ".repeat(indent);
 
     scriptBlocks.forEach(b => {
       const t = b.type;
       const v = b.getValues();
 
-      if (t === "print") {
+      if (t === "programbase") {
+        // no direct code, just enables includes/main
+      } else if (t === "print") {
         code += tab() + `cout << "${v[0]}";\n`;
       } else if (t === "printline") {
         code += tab() + `cout << "${v[0]}" << endl;\n`;
@@ -587,13 +591,16 @@
         code += tab() + `for (int ${v[0]} : ${v[1]}) {\n`;
         indent++;
       } else if (t === "end") {
-        indent = Math.max(1, indent - 1);
+        indent = Math.max(hasProgramBase ? 1 : 0, indent - 1);
         code += tab() + "}\n";
       }
     });
 
-    code += "    return 0;\n";
-    code += "}\n";
+    if (hasProgramBase) {
+      code += "    return 0;\n";
+      code += "}\n";
+    }
+
     return code;
   }
 
@@ -638,7 +645,9 @@
         const t = b.type;
         const v = b.getValues();
 
-        if (t === "print") {
+        if (t === "programbase") {
+          // no runtime effect
+        } else if (t === "print") {
           print(String(v[0]));
         } else if (t === "printline") {
           println(String(v[0]));
@@ -678,11 +687,13 @@
         } else if (t === "inputint") {
           const name = v[0];
           const raw = nextInput();
+          print(raw + "\n");
           const num = Number(raw) || 0;
           env.int[name] = num;
         } else if (t === "inputstring") {
           const name = v[0];
           const raw = nextInput();
+          print(raw + "\n");
           env.string[name] = raw;
         } else if (t === "mathprint") {
           const label = v[0];
@@ -755,25 +766,56 @@
     consoleEl.textContent = out || "(no output)";
   }
 
-  runBtn.addEventListener("click", () => {
+  function runCommandConsole() {
+    const cmd = consoleInput.value.trim();
+    if (!cmd) return;
+    let out = consoleEl.textContent;
+    if (!out || out === "(program output will appear here)" || out === "(no output)") {
+      out = "";
+    }
+    out += (out ? "\n" : "") + "[COMMAND]\n> " + cmd + "\n";
+
+    if (cmd.toLowerCase().startsWith("print ")) {
+      out += cmd.slice(6) + "\n";
+    } else if (cmd.toLowerCase() === "help") {
+      out += "Commands: print <text>, help\n";
+    } else {
+      out += "(unknown command)\n";
+    }
+
+    consoleEl.textContent = out;
+    consoleInput.value = "";
+  }
+
+  function updateCpp() {
     cppCodeEl.textContent = generateCpp();
+  }
+
+  runBtn.addEventListener("click", () => {
+    updateCpp();
     simulateRun();
   });
 
   clearBtn.addEventListener("click", () => {
     scriptBlocks = [];
     renderScriptBlocks();
-    cppCodeEl.textContent = generateCpp();
+    cppCodeEl.textContent = "";
     consoleEl.textContent = "(program output will appear here)";
     consoleInput.value = "";
   });
 
   consoleInputBtn.addEventListener("click", () => {
-    cppCodeEl.textContent = generateCpp();
-    simulateRun();
+    runCommandConsole();
   });
 
-  cppCodeEl.textContent = generateCpp();
+  consoleInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      runCommandConsole();
+    }
+  });
+
+  cppCodeEl.textContent = "";
 </script>
 
 </body>
