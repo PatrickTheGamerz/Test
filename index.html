@@ -227,10 +227,7 @@
   <div class="category">
     <h3>Program</h3>
     <div class="palette-block" draggable="true" data-type="programbase">
-      Basic C++ program (includes + main)
-    </div>
-    <div class="palette-block" draggable="true" data-type="printline">
-      cout &lt;&lt; "<input type="text" value="=== BASIC C++ EXAMPLE ===">" &lt;&lt; endl;
+      using namespace std; (add basic C++ setup)
     </div>
   </div>
 
@@ -351,8 +348,8 @@
       (program output will appear here)
     </div>
     <div id="consoleInputBar">
-      <input id="consoleInput" type="text" placeholder="command console (e.g. print Hello)..." autocomplete="off">
-      <button id="consoleInputBtn">SEND</button>
+      <input id="consoleInput" type="text" placeholder="inputs for cin (one per line, before Run)..." autocomplete="off">
+      <button id="consoleInputBtn">Run Program</button>
     </div>
 
     <div id="controls">
@@ -505,6 +502,39 @@
 
   function readValues(container) {
     return [...container.querySelectorAll("input, select")].map(x => x.value);
+  }
+
+  function validateScript() {
+    if (scriptBlocks.length === 0) {
+      return { ok: false, message: "Error: No blocks placed." };
+    }
+
+    const hasProgramBase = scriptBlocks.some(b => b.type === "programbase");
+    if (!hasProgramBase) {
+      return { ok: false, message: "Error: Missing program setup block (using namespace std;)." };
+    }
+
+    if (scriptBlocks[0].type !== "programbase") {
+      return { ok: false, message: "Error: Program setup block must be the first block." };
+    }
+
+    let depth = 0;
+    for (let i = 0; i < scriptBlocks.length; i++) {
+      const t = scriptBlocks[i].type;
+      if (["if","elseif","else","for","while","rangefor"].includes(t)) {
+        depth++;
+      } else if (t === "end") {
+        depth--;
+        if (depth < 0) {
+          return { ok: false, message: "Error: Extra closing block '}' near block #" + (i + 1) + "." };
+        }
+      }
+    }
+    if (depth > 0) {
+      return { ok: false, message: "Error: Missing closing block '}' for one or more structures." };
+    }
+
+    return { ok: true, message: "" };
   }
 
   function generateCpp() {
@@ -766,34 +796,28 @@
     consoleEl.textContent = out || "(no output)";
   }
 
-  function runCommandConsole() {
-    const cmd = consoleInput.value.trim();
-    if (!cmd) return;
-    let out = consoleEl.textContent;
-    if (!out || out === "(program output will appear here)" || out === "(no output)") {
-      out = "";
-    }
-    out += (out ? "\n" : "") + "[COMMAND]\n> " + cmd + "\n";
-
-    if (cmd.toLowerCase().startsWith("print ")) {
-      out += cmd.slice(6) + "\n";
-    } else if (cmd.toLowerCase() === "help") {
-      out += "Commands: print <text>, help\n";
-    } else {
-      out += "(unknown command)\n";
-    }
-
-    consoleEl.textContent = out;
-    consoleInput.value = "";
-  }
-
   function updateCpp() {
     cppCodeEl.textContent = generateCpp();
   }
 
-  runBtn.addEventListener("click", () => {
+  function runProgram() {
+    const validation = validateScript();
+    if (!validation.ok) {
+      consoleEl.textContent = validation.message;
+      cppCodeEl.textContent = generateCpp();
+      return;
+    }
+    consoleInput.disabled = true;
     updateCpp();
     simulateRun();
+  }
+
+  runBtn.addEventListener("click", () => {
+    runProgram();
+  });
+
+  consoleInputBtn.addEventListener("click", () => {
+    runProgram();
   });
 
   clearBtn.addEventListener("click", () => {
@@ -802,16 +826,13 @@
     cppCodeEl.textContent = "";
     consoleEl.textContent = "(program output will appear here)";
     consoleInput.value = "";
-  });
-
-  consoleInputBtn.addEventListener("click", () => {
-    runCommandConsole();
+    consoleInput.disabled = false;
   });
 
   consoleInput.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
-      runCommandConsole();
+      runProgram();
     }
   });
 
