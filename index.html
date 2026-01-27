@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>C++ Block Builder</title>
+<title>C++ Block Builder – Console Style</title>
 <style>
   * { box-sizing: border-box; }
+
   body {
     margin: 0;
     font-family: system-ui, sans-serif;
@@ -13,11 +14,6 @@
     display: flex;
     height: 100vh;
     overflow: hidden;
-    user-select: none;
-  }
-
-  input, select {
-    user-select: text;
   }
 
   #sidebar {
@@ -59,8 +55,13 @@
   .palette-block input,
   .palette-block select {
     font-size: 12px;
-    width: 70px;
+    width: 80px;
     margin-left: 4px;
+    background: #2b2b3c;
+    color: #f5e0dc;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 4px;
   }
 
   #workspace {
@@ -94,7 +95,7 @@
     box-shadow: 0 3px 6px #0005;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .script-block .handle {
@@ -112,8 +113,13 @@
   .script-block input,
   .script-block select {
     font-size: 12px;
-    width: 70px;
+    width: 80px;
     margin-left: 4px;
+    background: #2b2b3c;
+    color: #f5e0dc;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 4px;
   }
 
   .remove-btn {
@@ -121,8 +127,13 @@
     border: none;
     border-radius: 4px;
     font-size: 10px;
-    padding: 2px 5px;
+    padding: 2px 6px;
     cursor: pointer;
+  }
+
+  .remove-btn:hover {
+    background: #f9e2af;
+    color: #11111b;
   }
 
   .drop-indicator {
@@ -139,7 +150,7 @@
     gap: 10px;
   }
 
-  #cppCode, #output {
+  #cppCode, #console {
     background: #11111b;
     border-radius: 10px;
     padding: 10px;
@@ -149,11 +160,43 @@
     white-space: pre-wrap;
     overflow-y: auto;
     max-height: 40vh;
-    pointer-events: none;
+    user-select: none;
   }
 
-  #output {
-    max-height: 25vh;
+  #console {
+    max-height: 30vh;
+  }
+
+  #consoleInputBar {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  #consoleInput {
+    flex: 1;
+    background: #2b2b3c;
+    color: #f5e0dc;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+  }
+
+  #consoleInputBtn {
+    background: #89b4fa;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #11111b;
+    font-weight: bold;
+  }
+
+  #consoleInputBtn:hover {
+    background: #b4befe;
   }
 
   #controls {
@@ -189,17 +232,8 @@
 
   <div class="category">
     <h3>Program</h3>
-    <div class="palette-block" draggable="true" data-type="print">
-      cout &lt;&lt; "<input type="text" value="text">";
-    </div>
     <div class="palette-block" draggable="true" data-type="printline">
-      cout &lt;&lt; "<input type="text" value="text">" &lt;&lt; endl;
-    </div>
-    <div class="palette-block" draggable="true" data-type="printvar">
-      cout &lt;&lt; <input type="text" value="name"> &lt;&lt; endl;
-    </div>
-    <div class="palette-block" draggable="true" data-type="callgreet">
-      greet(<input type="text" value="name">);
+      cout &lt;&lt; "<input type="text" value="=== BASIC C++ EXAMPLE ===">" &lt;&lt; endl;
     </div>
   </div>
 
@@ -218,23 +252,43 @@
       string <input type="text" value="name"> = "<input type="text" value="Roksana">";
     </div>
     <div class="palette-block" draggable="true" data-type="booldecl">
-      bool <input type="text" value="isSmart"> = <select>
+      bool <input type="text" value="isSmart"> = 
+      <select>
         <option value="true">true</option>
         <option value="false">false</option>
       </select>;
     </div>
     <div class="palette-block" draggable="true" data-type="assign">
-      <input type="text" value="a"> = <input type="text" value="a+1">;
+      <input type="text" value="age"> = <input type="text" value="age + 1">;
+    </div>
+  </div>
+
+  <div class="category">
+    <h3>Print</h3>
+    <div class="palette-block" draggable="true" data-type="print">
+      cout &lt;&lt; "<input type="text" value="text">";
+    </div>
+    <div class="palette-block" draggable="true" data-type="printline">
+      cout &lt;&lt; "<input type="text" value="text">" &lt;&lt; endl;
+    </div>
+    <div class="palette-block" draggable="true" data-type="printvar">
+      cout &lt;&lt; <input type="text" value="age"> &lt;&lt; endl;
     </div>
   </div>
 
   <div class="category">
     <h3>Input</h3>
+    <div class="palette-block" draggable="true" data-type="inputprompt">
+      cout &lt;&lt; "<input type="text" value="Enter a number: ">";
+    </div>
     <div class="palette-block" draggable="true" data-type="inputint">
       cin &gt;&gt; <input type="text" value="number">;
     </div>
     <div class="palette-block" draggable="true" data-type="inputprompt">
-      cout &lt;&lt; "<input type="text" value="Enter a number: ">";
+      cout &lt;&lt; "<input type="text" value="Enter your name: ">";
+    </div>
+    <div class="palette-block" draggable="true" data-type="inputstring">
+      cin &gt;&gt; <input type="text" value="name">;
     </div>
   </div>
 
@@ -246,7 +300,7 @@
   </div>
 
   <div class="category">
-    <h3>Control</h3>
+    <h3>Logic</h3>
     <div class="palette-block" draggable="true" data-type="if">
       if (<input type="text" value="number > 0">) {
     </div>
@@ -256,6 +310,13 @@
     <div class="palette-block" draggable="true" data-type="else">
       else {
     </div>
+    <div class="palette-block" draggable="true" data-type="end">
+      }
+    </div>
+  </div>
+
+  <div class="category">
+    <h3>Loops</h3>
     <div class="palette-block" draggable="true" data-type="for">
       for (int <input type="text" value="i"> = <input type="number" value="1">; <input type="text" value="i"> &lt;= <input type="number" value="5">; <input type="text" value="i">++) {
     </div>
@@ -268,12 +329,15 @@
   </div>
 
   <div class="category">
-    <h3>Arrays</h3>
+    <h3>Arrays & Functions</h3>
     <div class="palette-block" draggable="true" data-type="arraydecl">
       int <input type="text" value="arr">[5] = {1,2,3,4,5};
     </div>
     <div class="palette-block" draggable="true" data-type="rangefor">
       for (int <input type="text" value="x"> : <input type="text" value="arr">) {
+    </div>
+    <div class="palette-block" draggable="true" data-type="callgreet">
+      greet(<input type="text" value="name">);
     </div>
   </div>
 </div>
@@ -281,12 +345,19 @@
 <div id="workspace">
   <div id="scriptArea">
     <h3>Script (inside main)</h3>
-    <!-- script blocks go here -->
   </div>
 
   <div id="rightPane">
     <div id="cppCode"></div>
-    <div id="output"></div>
+
+    <div id="console">
+      (program output will appear here)
+    </div>
+    <div id="consoleInputBar">
+      <input id="consoleInput" type="text" placeholder="console input (for cin)..." autocomplete="off">
+      <button id="consoleInputBtn">SEND</button>
+    </div>
+
     <div id="controls">
       <button class="btn" id="runBtn">RUN PROGRAM (SIMULATED)</button>
       <button class="btn" id="clearBtn">CLEAR SCRIPT</button>
@@ -295,12 +366,21 @@
 </div>
 
 <script>
+  // prevent copying text (code / console)
+  document.addEventListener("copy", e => {
+    e.preventDefault();
+  });
+
   const scriptArea = document.getElementById("scriptArea");
   const cppCodeEl = document.getElementById("cppCode");
-  const outputEl = document.getElementById("output");
+  const consoleEl = document.getElementById("console");
+  const consoleInput = document.getElementById("consoleInput");
+  const consoleInputBtn = document.getElementById("consoleInputBtn");
+  const runBtn = document.getElementById("runBtn");
+  const clearBtn = document.getElementById("clearBtn");
 
   let scriptBlocks = [];
-  let dragData = { type: null, fromList: null, index: -1 };
+  let dragData = { type: null, index: -1 };
   let currentDropIndex = -1;
   let dropIndicator = null;
 
@@ -329,12 +409,10 @@
     const scriptBlock = e.target.closest(".script-block");
     if (palette) {
       dragData.type = "palette";
-      dragData.fromList = null;
       dragData.index = -1;
     } else if (scriptBlock) {
       dragData.type = "script";
-      dragData.fromList = scriptBlocks.findIndex(b => b.el === scriptBlock);
-      dragData.index = dragData.fromList;
+      dragData.index = scriptBlocks.findIndex(b => b.el === scriptBlock);
     } else {
       dragData.type = null;
     }
@@ -342,7 +420,6 @@
 
   document.addEventListener("dragend", () => {
     dragData.type = null;
-    dragData.fromList = null;
     dragData.index = -1;
     currentDropIndex = -1;
     if (dropIndicator && dropIndicator.parentElement) {
@@ -367,29 +444,16 @@
 
   scriptArea.addEventListener("drop", e => {
     e.preventDefault();
-    const palette = e.dataTransfer ? null : null;
     if (!dragData.type) return;
 
     if (dragData.type === "palette") {
-      const source = document.querySelector(".palette-block:active");
-    }
-
-    const targetPalette = document.querySelector(".palette-block:hover");
-    let paletteBlock = null;
-    if (dragData.type === "palette") {
-      paletteBlock = document.querySelector(".palette-block[draggable='true']:active");
-    }
-    if (!paletteBlock && dragData.type === "palette") {
-      const all = [...document.querySelectorAll(".palette-block")];
-      paletteBlock = all.find(b => b.matches(":hover"));
-    }
-
-    if (dragData.type === "palette" && paletteBlock) {
+      const paletteBlock = document.querySelector(".palette-block:hover");
+      if (!paletteBlock) return;
       const newBlock = makeScriptBlockFromPalette(paletteBlock);
       insertScriptBlock(newBlock, currentDropIndex);
-    } else if (dragData.type === "script" && dragData.fromList >= 0) {
-      const moving = scriptBlocks[dragData.fromList];
-      scriptBlocks.splice(dragData.fromList, 1);
+    } else if (dragData.type === "script" && dragData.index >= 0) {
+      const moving = scriptBlocks[dragData.index];
+      scriptBlocks.splice(dragData.index, 1);
       let insertIndex = currentDropIndex;
       if (insertIndex > scriptBlocks.length) insertIndex = scriptBlocks.length;
       scriptBlocks.splice(insertIndex, 0, moving);
@@ -430,8 +494,7 @@
 
     wrapper.addEventListener("dragstart", e => {
       dragData.type = "script";
-      dragData.fromList = scriptBlocks.findIndex(b => b.el === wrapper);
-      dragData.index = dragData.fromList;
+      dragData.index = scriptBlocks.findIndex(b => b.el === wrapper);
     });
 
     return { el: wrapper, type, getValues: () => readValues(inner) };
@@ -482,17 +545,19 @@
       } else if (t === "doubledecl") {
         code += tab() + `double ${v[0]} = ${v[1]};\n`;
       } else if (t === "chardecl") {
-        code += tab() + `char ${v[0]} = '${v[1] || "A"}';\n`;
+        code += tab() + `char ${v[0]} = '${(v[1] || "A")[0]}';\n`;
       } else if (t === "stringdecl") {
         code += tab() + `string ${v[0]} = "${v[1]}";\n`;
       } else if (t === "booldecl") {
         code += tab() + `bool ${v[0]} = ${v[1]};\n`;
       } else if (t === "assign") {
         code += tab() + `${v[0]} = ${v[1]};\n`;
-      } else if (t === "inputint") {
-        code += tab() + `cin >> ${v[0]};\n`;
       } else if (t === "inputprompt") {
         code += tab() + `cout << "${v[0]}";\n`;
+      } else if (t === "inputint") {
+        code += tab() + `cin >> ${v[0]};\n`;
+      } else if (t === "inputstring") {
+        code += tab() + `cin >> ${v[0]};\n`;
       } else if (t === "mathprint") {
         code += tab() + `cout << "${v[0]}" << ${v[1]} << endl;\n`;
       } else if (t === "if") {
@@ -534,8 +599,8 @@
 
   function simulateRun() {
     let out = "";
-    function println(s) { out += s + "\n"; }
     function print(s) { out += s; }
+    function println(s) { out += s + "\n"; }
 
     let env = {
       int: {},
@@ -545,18 +610,25 @@
       bool: {}
     };
 
+    let inputQueue = [];
+
     function getVal(expr) {
       try {
         const scope = {};
         Object.keys(env.int).forEach(k => scope[k] = env.int[k]);
         Object.keys(env.double).forEach(k => scope[k] = env.double[k]);
         Object.keys(env.bool).forEach(k => scope[k] = env.bool[k]);
-        Object.keys(env.string).forEach(k => scope[k] = `"${env.string[k]}"`);
+        Object.keys(env.string).forEach(k => scope[k] = env.string[k]);
         const fn = new Function(...Object.keys(scope), "return " + expr + ";");
         return fn(...Object.values(scope));
       } catch {
         return 0;
       }
+    }
+
+    function nextInput() {
+      if (inputQueue.length === 0) return "";
+      return inputQueue.shift();
     }
 
     function execBlocks(blocks, start = 0, end = blocks.length) {
@@ -572,7 +644,12 @@
           println(String(v[0]));
         } else if (t === "printvar") {
           const name = v[0];
-          let val = env.int[name] ?? env.double[name] ?? env.bool[name] ?? env.string[name] ?? 0;
+          let val = env.int[name];
+          if (val === undefined) val = env.double[name];
+          if (val === undefined) val = env.bool[name];
+          if (val === undefined) val = env.string[name];
+          if (val === undefined) val = env.char[name];
+          if (val === undefined) val = 0;
           println(String(val));
         } else if (t === "callgreet") {
           const name = v[0];
@@ -594,13 +671,19 @@
           if (name in env.int) env.int[name] = Number(val);
           else if (name in env.double) env.double[name] = Number(val);
           else if (name in env.bool) env.bool[name] = !!val;
+          else if (name in env.string) env.string[name] = String(val);
           else env.int[name] = Number(val);
         } else if (t === "inputprompt") {
           print(String(v[0]));
         } else if (t === "inputint") {
           const name = v[0];
-          const ans = prompt("Input for " + name + ":") || "0";
-          env.int[name] = Number(ans) || 0;
+          const raw = nextInput();
+          const num = Number(raw) || 0;
+          env.int[name] = num;
+        } else if (t === "inputstring") {
+          const name = v[0];
+          const raw = nextInput();
+          env.string[name] = raw;
         } else if (t === "mathprint") {
           const label = v[0];
           const val = getVal(v[1]);
@@ -661,21 +744,34 @@
       }
     }
 
+    const rawInput = consoleInput.value.trim();
+    if (rawInput.length > 0) {
+      inputQueue = rawInput.split(/\r?\n/);
+    } else {
+      inputQueue = [];
+    }
+
     execBlocks(scriptBlocks);
-    outputEl.textContent = out || "(no output)";
+    consoleEl.textContent = out || "(no output)";
   }
 
-  document.getElementById("runBtn").onclick = () => {
+  runBtn.addEventListener("click", () => {
     cppCodeEl.textContent = generateCpp();
     simulateRun();
-  };
+  });
 
-  document.getElementById("clearBtn").onclick = () => {
+  clearBtn.addEventListener("click", () => {
     scriptBlocks = [];
     renderScriptBlocks();
     cppCodeEl.textContent = generateCpp();
-    outputEl.textContent = "";
-  };
+    consoleEl.textContent = "(program output will appear here)";
+    consoleInput.value = "";
+  });
+
+  consoleInputBtn.addEventListener("click", () => {
+    cppCodeEl.textContent = generateCpp();
+    simulateRun();
+  });
 
   cppCodeEl.textContent = generateCpp();
 </script>
