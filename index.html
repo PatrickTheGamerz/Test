@@ -1,164 +1,177 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Advanced Flappy Bird</title>
+    <title>Flappy Ultra</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body oncontextmenu="return false;"> <div id="custom-cursor"></div>
 
     <div id="game-container">
-        <div id="main-menu" class="menu-layer">
-            <h1>FLAPPY PRO</h1>
-            <button onclick="changeState('playing')">PLAY GAME</button>
-            <button onclick="changeState('skins')">SKINS</button>
-            <button onclick="changeState('achievements')">ACHIEVEMENTS</button>
+        <div id="score-display" style="position:absolute; width:100%; text-align:center; top:40px; font-size:60px; font-weight:900; color:white; text-shadow:4px 4px 0 #000; z-index:50;">0</div>
+
+        <div id="menu-gui" class="gui-panel">
+            <h1 style="margin-top:0;">FLAPPY ULTRA</h1>
+            <button onclick="changeState('playing')">START ENGINE</button>
+            <button onclick="toggleGUI('skins-gui')">HANGAR (SKINS)</button>
+            <button onclick="toggleGUI('ach-gui')">MEDALS</button>
         </div>
 
-        <div id="skins-menu" class="menu-layer hidden">
-            <h2>SELECT SKIN</h2>
-            <button onclick="setSkin('skin-default')">Yellow (Free)</button>
-            <button id="red-skin-btn" onclick="setSkin('skin-red')" style="opacity:0.5">Red (Score 10)</button>
-            <button id="gold-skin-btn" onclick="setSkin('skin-gold')" style="opacity:0.5">Gold (Score 50)</button>
-            <button onclick="changeState('menu')">BACK</button>
+        <div id="skins-gui" class="gui-panel" style="display:none;">
+            <h3>SELECT SKIN</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="selectSkin('skin-default')">Yellow</button>
+                <button id="btn-phantom" style="opacity:0.3" onclick="selectSkin('skin-phantom')">Phantom (Score 20)</button>
+                <button id="btn-neon" style="opacity:0.3" onclick="selectSkin('skin-neon')">Neon (Score 50)</button>
+            </div>
+            <button style="background:#95a5a6; box-shadow: 0 5px 0 #7f8c8d;" onclick="toggleGUI('menu-gui')">BACK</button>
         </div>
 
-        <div id="achievements-menu" class="menu-layer hidden">
-            <h2>ACHIEVEMENTS</h2>
-            <div id="ach-1" class="achievement-item">Beginner (Score 10)</div>
-            <div id="ach-2" class="achievement-item">Master (Score 50)</div>
-            <div id="ach-3" class="achievement-item">Survivor (1 Minute)</div>
-            <button onclick="changeState('menu')">BACK</button>
+        <div id="ach-gui" class="gui-panel" style="display:none;">
+            <h3>ACHIEVEMENTS</h3>
+            <div id="ach-list">
+                <div id="ach0" class="achievement-card"><b>Pilot:</b> Score 10 pts</div>
+                <div id="ach1" class="achievement-card"><b>Ghost:</b> Score 20 pts (Unlocks Phantom)</div>
+                <div id="ach2" class="achievement-card"><b>God:</b> Score 50 pts (Unlocks Neon)</div>
+            </div>
+            <button onclick="toggleGUI('menu-gui')">BACK</button>
         </div>
 
-        <div id="score">0</div>
         <div id="bird" class="skin-default"></div>
-        <div id="pipe-container"></div>
+        <div id="world"></div>
     </div>
 
     <script>
         const bird = document.getElementById('bird');
-        const pipeContainer = document.getElementById('pipe-container');
-        const scoreBoard = document.getElementById('score');
+        const world = document.getElementById('world');
+        const cursor = document.getElementById('custom-cursor');
         
-        // GAME STATE
-        let currentState = 'menu';
-        let birdY = 250;
-        let velocity = 0;
-        let gravity = 0.4;
-        let score = 0;
-        let pipes = [];
-        let pipeDistance = 250; // FIXED: Pipes are now further apart
+        // ENGINE VARS
+        let state = 'menu';
+        let birdY = 300, velocity = 0, gravity = 0.45;
+        let score = 0, pipes = [], frame = 0;
+        let pipeFrequency = 110; // High number = More distance between pipes
+        let unlocked = { phantom: false, neon: false };
 
-        // PERSISTENT DATA
-        let highscore = 0;
-        let unlockedSkins = { 'skin-default': true };
+        // CURSOR FOLLOW
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
 
-        function changeState(state) {
-            document.querySelectorAll('.menu-layer').forEach(m => m.classList.add('hidden'));
-            if (state === 'menu') document.getElementById('main-menu').classList.remove('hidden');
-            if (state === 'skins') document.getElementById('skins-menu').classList.remove('hidden');
-            if (state === 'achievements') document.getElementById('achievements-menu').classList.remove('hidden');
-            
-            if (state === 'playing') {
-                resetGame();
-                requestAnimationFrame(update);
-            }
-            currentState = state;
-        }
-
-        function setSkin(skinName) {
-            if (unlockedSkins[skinName]) {
-                bird.className = skinName;
-                changeState('menu');
-            } else {
-                alert("This skin is locked!");
+        function changeState(s) {
+            state = s;
+            document.querySelectorAll('.gui-panel').forEach(g => g.style.display = 'none');
+            if (s === 'menu') toggleGUI('menu-gui');
+            if (s === 'playing') {
+                resetEngine();
+                requestAnimationFrame(loop);
             }
         }
 
-        function resetGame() {
-            birdY = 250; velocity = 0; score = 0; pipes = [];
-            pipeContainer.innerHTML = '';
-            scoreBoard.innerText = "0";
+        function toggleGUI(id) {
+            document.querySelectorAll('.gui-panel').forEach(g => g.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
         }
 
-        function createPipe() {
-            const gap = 140;
-            const topH = Math.random() * 250 + 50;
-            const type = Math.random() > 0.8 ? 'pipe-lava' : (Math.random() > 0.8 ? 'pipe-ice' : 'pipe-standard');
+        function resetEngine() {
+            birdY = 300; velocity = 0; score = 0; pipes = []; frame = 0;
+            world.innerHTML = '';
+            document.getElementById('score-display').innerText = '0';
+        }
+
+        function selectSkin(s) {
+            if (s === 'skin-phantom' && !unlocked.phantom) return;
+            if (s === 'skin-neon' && !unlocked.neon) return;
+            bird.className = s;
+            changeState('menu');
+        }
+
+        function spawnPipe() {
+            const gap = 160;
+            const topH = Math.random() * 250 + 80;
+            const type = Math.random() > 0.85 ? 'pipe-lava' : 'pipe-standard';
             
-            const topPipe = document.createElement('div');
-            topPipe.className = `pipe ${type}`;
-            topPipe.style.height = topH + 'px';
-            topPipe.style.left = '400px';
-            topPipe.style.top = '0';
+            const p = { 
+                x: 500, th: topH, bh: 650 - topH - gap, 
+                type: type, passed: false,
+                divT: document.createElement('div'),
+                divB: document.createElement('div')
+            };
 
-            const bottomPipe = document.createElement('div');
-            bottomPipe.className = `pipe ${type}`;
-            bottomPipe.style.height = (600 - topH - gap) + 'px';
-            bottomPipe.style.left = '400px';
-            bottomPipe.style.bottom = '0';
+            p.divT.className = `pipe ${type}`;
+            p.divT.style.height = p.th + 'px';
+            p.divT.innerHTML = '<div class="pipe-cap" style="bottom:-5px"></div>';
 
-            pipeContainer.appendChild(topPipe);
-            pipeContainer.appendChild(bottomPipe);
-            pipes.push({ x: 400, top: topPipe, bottom: bottomPipe, passed: false, type: type });
+            p.divB.className = `pipe ${type}`;
+            p.divB.style.height = p.bh + 'px';
+            p.divB.style.bottom = '0';
+            p.divB.innerHTML = '<div class="pipe-cap" style="top:-5px"></div>';
+
+            world.appendChild(p.divT);
+            world.appendChild(p.divB);
+            pipes.push(p);
         }
 
-        function update() {
-            if (currentState !== 'playing') return;
+        function loop() {
+            if (state !== 'playing') return;
 
+            frame++;
             velocity += gravity;
             birdY += velocity;
             bird.style.top = birdY + 'px';
+            bird.style.transform = `rotate(${Math.min(velocity * 3, 45)}deg)`;
 
-            // Pipe spawning logic
-            if (pipes.length === 0 || pipes[pipes.length - 1].x < (400 - pipeDistance)) {
-                createPipe();
-            }
+            if (frame % pipeFrequency === 0) spawnPipe();
 
             pipes.forEach((p, i) => {
-                p.x -= (p.type === 'pipe-lava' ? 5 : 3); // Lava pipes move faster!
-                p.top.style.left = p.x + 'px';
-                p.bottom.style.left = p.x + 'px';
+                p.x -= (p.type === 'pipe-lava' ? 5 : 3.5);
+                p.divT.style.left = p.x + 'px';
+                p.divB.style.left = p.x + 'px';
 
-                // Scored
-                if (p.x < 50 && !p.passed) {
-                    score++;
-                    scoreBoard.innerText = score;
-                    p.passed = true;
-                    checkAchievements();
+                // PIXEL-PERFECT COLLISION
+                const b = bird.getBoundingClientRect();
+                const pt = p.divT.getBoundingClientRect();
+                const pb = p.divB.getBoundingClientRect();
+
+                // Narrow hitboxes by 5px for fairness
+                if (b.right-5 > pt.left && b.left+5 < pt.right) {
+                    if (b.top+5 < pt.bottom || b.bottom-5 > pb.top) changeState('menu');
                 }
 
-                // Collision
-                const bRect = bird.getBoundingClientRect();
-                const tRect = p.top.getBoundingClientRect();
-                const btRect = p.bottom.getBoundingClientRect();
-
-                if (bRect.right > tRect.left && bRect.left < tRect.right) {
-                    if (bRect.top < tRect.bottom || bRect.bottom > btRect.top) {
-                        changeState('menu');
-                    }
+                if (p.x < 30 && !p.passed) {
+                    p.passed = true;
+                    score++;
+                    document.getElementById('score-display').innerText = score;
+                    handleAchievements();
                 }
             });
 
-            if (birdY > 580 || birdY < 0) changeState('menu');
-            requestAnimationFrame(update);
+            if (pipes.length > 0 && pipes[0].x < -100) {
+                pipes[0].divT.remove(); pipes[0].divB.remove();
+                pipes.shift();
+            }
+
+            if (birdY > 630 || birdY < -20) changeState('menu');
+            requestAnimationFrame(loop);
         }
 
-        function checkAchievements() {
-            if (score >= 10) {
-                document.getElementById('ach-1').classList.add('unlocked');
-                unlockedSkins['skin-red'] = true;
-                document.getElementById('red-skin-btn').style.opacity = "1";
+        function handleAchievements() {
+            if (score >= 10) document.getElementById('ach0').classList.add('ach-unlocked');
+            if (score >= 20) {
+                document.getElementById('ach1').classList.add('ach-unlocked');
+                unlocked.phantom = true;
+                document.getElementById('btn-phantom').style.opacity = '1';
             }
             if (score >= 50) {
-                document.getElementById('ach-2').classList.add('unlocked');
-                unlockedSkins['skin-gold'] = true;
-                document.getElementById('gold-skin-btn').style.opacity = "1";
+                document.getElementById('ach2').classList.add('ach-unlocked');
+                unlocked.neon = true;
+                document.getElementById('btn-neon').style.opacity = '1';
             }
         }
 
-        window.addEventListener('keydown', (e) => { if(e.code === 'Space') velocity = -7; });
-        document.getElementById('game-container').addEventListener('mousedown', () => { velocity = -7; });
+        const flap = () => { if(state === 'playing') velocity = -8; };
+        window.addEventListener('keydown', e => { if(e.code === 'Space') flap(); });
+        window.addEventListener('mousedown', flap);
 
     </script>
 </body>
