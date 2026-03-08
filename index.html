@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ultimate CSS Flappy Bird</title>
+    <style>
+        /* =========================================
+           CSS: STYLING & ANIMATION
+           ========================================= */
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(to bottom, #4ec0ca 0%, #d2f4f7 100%);
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #333;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        /* The Bird: Made purely with CSS */
+        #bird {
+            width: 40px;
+            height: 30px;
+            background-color: #f1c40f;
+            border: 3px solid #000;
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            top: 250px;
+            left: 50px;
+            z-index: 5;
+            transition: transform 0.1s;
+        }
+
+        /* Eye and Wing */
+        #bird::before { content: ''; position: absolute; top: 5px; right: 8px; width: 6px; height: 6px; background: black; border-radius: 50%; }
+        #bird::after { content: ''; position: absolute; top: 12px; left: 5px; width: 15px; height: 10px; background: white; border: 2px solid black; border-radius: 10px; }
+
+        /* The Pipes */
+        .pipe {
+            width: 70px;
+            background: linear-gradient(to right, #73bf2e, #a5e82a, #548c22);
+            border-left: 3px solid #000;
+            border-right: 3px solid #000;
+            position: absolute;
+            left: 450px;
+        }
+
+        .pipe-top { top: 0; border-bottom: 5px solid #000; border-radius: 0 0 5px 5px; }
+        .pipe-bottom { bottom: 0; border-top: 5px solid #000; border-radius: 5px 5px 0 0; }
+
+        /* Score & UI */
+        #score {
+            position: absolute;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            font-size: 50px;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 #000;
+            z-index: 10;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 20;
+            display: block;
+        }
+
+        button {
+            background: #ff4757;
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score">0</div>
+        <div id="message">
+            <h2>FLAPPY BIRD</h2>
+            <p>Use SPACE or CLICK to fly</p>
+            <button onclick="startGame()">START GAME</button>
+        </div>
+        <div id="bird"></div>
+        <div id="pipe-container"></div>
+    </div>
+
+    <script>
+        /* =========================================
+           JAVASCRIPT: THE ENGINE
+           ========================================= */
+        const bird = document.getElementById('bird');
+        const container = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const message = document.getElementById('message');
+        const pipeContainer = document.getElementById('pipe-container');
+
+        let birdY = 250;
+        let velocity = 0;
+        let gravity = 0.4;
+        let isGameRunning = false;
+        let score = 0;
+        let pipes = [];
+
+        function startGame() {
+            birdY = 250;
+            velocity = 0;
+            score = 0;
+            pipes = [];
+            pipeContainer.innerHTML = '';
+            scoreElement.innerText = '0';
+            message.style.display = 'none';
+            isGameRunning = true;
+            requestAnimationFrame(update);
+        }
+
+        function createPipe() {
+            const gap = 150;
+            const minHeight = 50;
+            const topHeight = Math.random() * (container.offsetHeight - gap - 2 * minHeight) + minHeight;
+            
+            const topPipe = document.createElement('div');
+            topPipe.className = 'pipe pipe-top';
+            topPipe.style.height = topHeight + 'px';
+            topPipe.style.left = '400px';
+
+            const bottomPipe = document.createElement('div');
+            bottomPipe.className = 'pipe pipe-bottom';
+            bottomPipe.style.height = (container.offsetHeight - topHeight - gap) + 'px';
+            bottomPipe.style.left = '400px';
+
+            pipeContainer.appendChild(topPipe);
+            pipeContainer.appendChild(bottomPipe);
+            
+            pipes.push({ top: topPipe, bottom: bottomPipe, x: 400, passed: false });
+        }
+
+        function update() {
+            if (!isGameRunning) return;
+
+            // Bird Physics
+            velocity += gravity;
+            birdY += velocity;
+            bird.style.top = birdY + 'px';
+            bird.style.transform = `rotate(${Math.min(velocity * 3, 90)}deg)`;
+
+            // Pipe Logic
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < 200) {
+                createPipe();
+            }
+
+            pipes.forEach((pipe, index) => {
+                pipe.x -= 3;
+                pipe.top.style.left = pipe.x + 'px';
+                pipe.bottom.style.left = pipe.x + 'px';
+
+                // Score Check
+                if (pipe.x < 50 && !pipe.passed) {
+                    score++;
+                    scoreElement.innerText = score;
+                    pipe.passed = true;
+                }
+
+                // Collision Detection
+                const birdRect = bird.getBoundingClientRect();
+                const topRect = pipe.top.getBoundingClientRect();
+                const bottomRect = pipe.bottom.getBoundingClientRect();
+
+                if (birdRect.right > topRect.left && birdRect.left < topRect.right) {
+                    if (birdRect.top < topRect.bottom || birdRect.bottom > bottomRect.top) {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Clean up old pipes
+            if (pipes.length > 0 && pipes[0].x < -100) {
+                pipes[0].top.remove();
+                pipes[0].bottom.remove();
+                pipes.shift();
+            }
+
+            // Floor/Ceiling check
+            if (birdY > 570 || birdY < 0) gameOver();
+
+            if (isGameRunning) requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            message.innerHTML = `<h2>GAME OVER!</h2><p>Score: ${score}</p><button onclick="startGame()">RESTART</button>`;
+            message.style.display = 'block';
+        }
+
+        // Input
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') velocity = -7; });
+        container.addEventListener('mousedown', () => { velocity = -7; });
+
+    </script>
+</body>
+</html>
