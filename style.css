@@ -1,97 +1,112 @@
-/* --- ORANGEBIRD GLOBAL STYLES --- */
+/* --- GLOBAL CONFIG --- */
 :root {
-    --day: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+    --orange: #ff9f43;
+    --orange-dark: #ee5253;
+    --pipe-green: #1dd1a1;
+    --pipe-dark: #10ac84;
+    --steam-blue: #66c0f4;
+    --day: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
     --midnight: radial-gradient(circle, #2c3e50 0%, #000 100%);
-    --sunset: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%);
-    --orange: #ff7f50;
+    --sunset: linear-gradient(180deg, #ff9a9e 0%, #fecfef 100%);
 }
 
 * { cursor: none !important; user-select: none; box-sizing: border-box; }
 
 body {
-    background: #0a0a0a; margin: 0; height: 100vh;
+    background: #050505; margin: 0; height: 100vh;
     display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', sans-serif; overflow: hidden;
+    font-family: 'Segoe UI', Impact, sans-serif; overflow: hidden;
 }
 
 #cursor {
-    width: 20px; height: 20px; border: 2px solid white;
-    background: rgba(255,255,255,0.2); border-radius: 50%;
+    width: 25px; height: 25px; border: 2px solid white;
+    background: rgba(255,165,0,0.3); border-radius: 50%;
     position: fixed; pointer-events: none; z-index: 10000;
+    box-shadow: 0 0 10px var(--orange);
 }
 
-#game-box {
+/* --- THE MONITOR --- */
+#game-container {
     width: 500px; height: 750px; background: var(--day);
-    position: relative; overflow: hidden; border: 10px solid #222;
-    border-radius: 30px; transition: background 0.8s ease;
+    position: relative; overflow: hidden; border: 12px solid #222;
+    border-radius: 40px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    transition: background 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- THE BIRD --- */
+/* --- THE ORANGEBIRD --- */
 #bird {
-    width: 44px; height: 32px; background: var(--orange);
-    position: absolute; left: 80px; z-index: 100;
+    width: 44px; height: 34px; position: absolute; left: 80px; z-index: 100;
+    background: radial-gradient(circle at 30% 30%, var(--orange), var(--orange-dark));
     border: 3px solid #000; border-radius: 50% 50% 42% 42%;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+}
+#bird::before { /* Eye */
+    content: ''; position: absolute; top: 8px; right: 10px;
+    width: 6px; height: 6px; background: #000; border-radius: 50%;
 }
 #bird::after { /* Wing */
-    content: ''; position: absolute; left: 5px; top: 12px;
-    width: 18px; height: 12px; background: white; border: 2px solid #000;
-    border-radius: 50%; animation: flap 0.1s infinite alternate;
+    content: ''; position: absolute; left: 6px; top: 14px;
+    width: 20px; height: 14px; background: white; border: 2px solid #000;
+    border-radius: 50%; animation: flap 0.12s infinite alternate;
 }
-@keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(-40deg); } }
+@keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(-35deg); } }
 
-/* --- THE HANGAR (INFINITE PANNING) --- */
-#hangar-view {
+/* --- THE HANGAR (EXPANDED) --- */
+#hangar-viewport {
     position: absolute; width: 3000px; height: 3000px;
-    background-image: 
-        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
-    top: 0; left: 0; transform: translate(-1250px, -1125px); /* Start centered */
+    background-image: radial-gradient(rgba(255,255,255,0.1) 1.5px, transparent 1.5px);
+    background-size: 60px 60px; top: 0; left: 0;
+    transform: translate(-1250px, -1125px); transition: transform 0.1s ease-out;
 }
 
-.skill-node {
-    width: 90px; height: 90px; background: #1a1a1a; border: 4px solid #444;
+.node {
+    width: 100px; height: 100px; background: #1b2838; border: 4px solid #444;
     border-radius: 20px; position: absolute; display: flex;
     flex-direction: column; align-items: center; justify-content: center;
-    color: white; font-size: 10px; text-align: center; padding: 5px;
-    transition: 0.3s; z-index: 10;
+    color: white; font-size: 11px; text-align: center; padding: 10px;
+    z-index: 10; box-shadow: 0 10px 0 rgba(0,0,0,0.4);
 }
-.node-ready { border-color: var(--orange); cursor: pointer; }
-.node-owned { background: var(--orange); border-color: #fff; color: #000; box-shadow: 0 0 20px var(--orange); }
+.node-active { border-color: var(--orange); cursor: pointer; }
+.node-owned { background: var(--orange); border-color: #fff; color: #000; box-shadow: 0 0 25px var(--orange); }
 
-.connector { stroke: #444; stroke-width: 5; fill: none; }
-.connector-on { stroke: var(--orange); filter: drop-shadow(0 0 5px var(--orange)); }
+.connector { stroke: #333; stroke-width: 6; fill: none; transition: 0.4s; }
+.connector-active { stroke: var(--orange); filter: drop-shadow(0 0 8px var(--orange)); }
 
-/* --- STEAM ACHIEVEMENT TOAST --- */
+/* --- PIPES --- */
+.pipe {
+    width: 90px; position: absolute; border: 4px solid #000;
+    background: linear-gradient(90deg, var(--pipe-green), var(--pipe-dark));
+}
+.pipe-cap {
+    width: 105px; height: 30px; background: inherit; border: 4px solid #000;
+    position: absolute; left: -11.5px;
+}
+
+/* --- STEAM ACHIEVEMENTS --- */
 #toast {
-    position: absolute; bottom: -100px; right: 20px;
-    width: 300px; height: 80px; background: #1b2838;
-    border-radius: 5px; border-left: 5px solid #66c0f4;
-    display: flex; align-items: center; padding: 10px;
-    transition: 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    z-index: 2000;
+    position: absolute; bottom: -120px; right: 20px;
+    width: 320px; height: 85px; background: #171a21;
+    border-left: 5px solid var(--steam-blue); border-radius: 4px;
+    display: flex; align-items: center; padding: 12px;
+    transition: 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 2000;
 }
 #toast.pop { bottom: 20px; }
-.toast-icon { width: 50px; height: 50px; background: var(--orange); border-radius: 4px; margin-right: 15px; }
-.toast-text b { color: #66c0f4; font-size: 15px; display: block; }
-.toast-text span { color: #acb2b8; font-size: 12px; }
+.toast-img { width: 55px; height: 55px; background: var(--orange); border-radius: 4px; margin-right: 15px; }
+.toast-body b { color: var(--steam-blue); font-size: 16px; display: block; }
+.toast-body span { color: #8e979b; font-size: 13px; }
 
-/* --- UI LAYERS --- */
-.ui-screen {
+/* --- GUI OVERLAYS --- */
+.gui {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 500;
-    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.3); backdrop-filter: blur(8px);
 }
 
 .btn {
-    background: var(--orange); border: none; padding: 15px;
-    color: white; font-weight: 900; border-radius: 5px;
-    margin: 10px; width: 260px; box-shadow: 0 5px 0 #b33921;
+    background: var(--orange); border: none; padding: 18px;
+    color: white; font-weight: 900; border-radius: 8px;
+    margin: 12px; width: 280px; box-shadow: 0 6px 0 #b33921;
+    font-size: 18px; transition: 0.2s;
 }
-.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b33921; }
-
-.pipe {
-    width: 85px; position: absolute; border: 4px solid #111;
-    background: linear-gradient(90deg, #2ecc71, #27ae60);
-}
+.btn:hover { filter: brightness(1.2); transform: translateY(-3px); }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b33921; }
