@@ -1,92 +1,97 @@
-/* --- ORANGEBIRD CORE STYLES --- */
+/* --- ORANGEBIRD GLOBAL STYLES --- */
 :root {
-    --bg-day: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
-    --bg-midnight: radial-gradient(circle at center, #2c3e50 0%, #000000 100%);
-    --bg-sunset: linear-gradient(180deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    --day: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+    --midnight: radial-gradient(circle, #2c3e50 0%, #000 100%);
+    --sunset: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%);
+    --orange: #ff7f50;
 }
 
 * { cursor: none !important; user-select: none; box-sizing: border-box; }
 
-#cursor-custom {
-    width: 24px; height: 24px; border: 2px solid orange;
-    background: rgba(255, 165, 0, 0.2); border-radius: 50%;
+body {
+    background: #0a0a0a; margin: 0; height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', sans-serif; overflow: hidden;
+}
+
+#cursor {
+    width: 20px; height: 20px; border: 2px solid white;
+    background: rgba(255,255,255,0.2); border-radius: 50%;
     position: fixed; pointer-events: none; z-index: 10000;
 }
 
-body {
-    background: #111; margin: 0; height: 100vh;
-    display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+#game-box {
+    width: 500px; height: 750px; background: var(--day);
+    position: relative; overflow: hidden; border: 10px solid #222;
+    border-radius: 30px; transition: background 0.8s ease;
 }
 
-#game-container {
-    width: 500px; height: 750px; background: var(--bg-day);
-    position: relative; overflow: hidden; border: 12px solid #222;
-    border-radius: 40px; transition: background 1s ease;
-}
-
-/* --- THE ORANGE BIRD --- */
+/* --- THE BIRD --- */
 #bird {
-    width: 42px; height: 32px; background: #ff7f50; /* Coral/Orange */
+    width: 44px; height: 32px; background: var(--orange);
     position: absolute; left: 80px; z-index: 100;
     border: 3px solid #000; border-radius: 50% 50% 42% 42%;
-    transition: width 0.3s, height 0.3s;
-}
-#bird::before { /* Eye */
-    content: ''; position: absolute; top: 6px; right: 8px;
-    width: 6px; height: 6px; background: #000; border-radius: 50%;
 }
 #bird::after { /* Wing */
-    content: ''; position: absolute; left: 4px; top: 12px;
-    width: 18px; height: 12px; background: #fff; border: 2px solid #000;
+    content: ''; position: absolute; left: 5px; top: 12px;
+    width: 18px; height: 12px; background: white; border: 2px solid #000;
     border-radius: 50%; animation: flap 0.1s infinite alternate;
 }
-@keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(-30deg); } }
+@keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(-40deg); } }
 
-/* --- THE INFINITE HANGAR PANNING --- */
-#hangar-canvas {
-    position: absolute; width: 2000px; height: 2000px;
-    top: -625px; left: -750px; cursor: grab;
-    background-image: radial-gradient(#ffffff11 1px, transparent 1px);
-    background-size: 40px 40px; transition: transform 0.1s ease-out;
+/* --- THE HANGAR (INFINITE PANNING) --- */
+#hangar-view {
+    position: absolute; width: 3000px; height: 3000px;
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    top: 0; left: 0; transform: translate(-1250px, -1125px); /* Start centered */
 }
 
 .skill-node {
-    width: 70px; height: 70px; background: #222; border: 4px solid #444;
-    border-radius: 18px; position: absolute; display: flex;
+    width: 90px; height: 90px; background: #1a1a1a; border: 4px solid #444;
+    border-radius: 20px; position: absolute; display: flex;
     flex-direction: column; align-items: center; justify-content: center;
-    transition: 0.3s; z-index: 2; color: #fff; font-size: 10px; text-align: center;
+    color: white; font-size: 10px; text-align: center; padding: 5px;
+    transition: 0.3s; z-index: 10;
 }
-.skill-node.available { border-color: #ff7f50; cursor: pointer; }
-.skill-node.bought { background: #ff7f50; border-color: #fff; color: #000; box-shadow: 0 0 20px #ff7f50; }
+.node-ready { border-color: var(--orange); cursor: pointer; }
+.node-owned { background: var(--orange); border-color: #fff; color: #000; box-shadow: 0 0 20px var(--orange); }
 
-.skill-line { stroke: #444; stroke-width: 4; fill: none; transition: 0.5s; }
-.line-active { stroke: #ff7f50; filter: drop-shadow(0 0 5px #ff7f50); }
+.connector { stroke: #444; stroke-width: 5; fill: none; }
+.connector-on { stroke: var(--orange); filter: drop-shadow(0 0 5px var(--orange)); }
 
-/* --- STEAM-STYLE NOTIFICATION --- */
-#achievement-toast {
+/* --- STEAM ACHIEVEMENT TOAST --- */
+#toast {
     position: absolute; bottom: -100px; right: 20px;
-    width: 280px; height: 70px; background: #1b2838;
-    border-radius: 4px; border-left: 4px solid #66c0f4;
+    width: 300px; height: 80px; background: #1b2838;
+    border-radius: 5px; border-left: 5px solid #66c0f4;
     display: flex; align-items: center; padding: 10px;
-    transition: bottom 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    z-index: 1000;
+    transition: 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    z-index: 2000;
 }
-#achievement-toast.show { bottom: 20px; }
-.toast-img { width: 45px; height: 45px; background: #ff7f50; border-radius: 3px; margin-right: 12px; }
-.toast-info b { color: #66c0f4; font-size: 14px; display: block; }
-.toast-info span { color: #acb2b8; font-size: 12px; }
+#toast.pop { bottom: 20px; }
+.toast-icon { width: 50px; height: 50px; background: var(--orange); border-radius: 4px; margin-right: 15px; }
+.toast-text b { color: #66c0f4; font-size: 15px; display: block; }
+.toast-text span { color: #acb2b8; font-size: 12px; }
 
-/* --- UI COMPONENTS --- */
-.gui-layer {
+/* --- UI LAYERS --- */
+.ui-screen {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 500;
-    backdrop-filter: blur(5px); transition: opacity 0.5s;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
 }
 
-.btn-orange {
-    background: #ff7f50; border: none; padding: 15px 40px;
-    color: white; font-weight: 900; border-radius: 4px;
-    margin: 10px; width: 250px; box-shadow: 0 4px 0 #d35400;
+.btn {
+    background: var(--orange); border: none; padding: 15px;
+    color: white; font-weight: 900; border-radius: 5px;
+    margin: 10px; width: 260px; box-shadow: 0 5px 0 #b33921;
 }
-.btn-orange:hover { background: #ff8e66; transform: translateY(-2px); }
+.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b33921; }
+
+.pipe {
+    width: 85px; position: absolute; border: 4px solid #111;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
