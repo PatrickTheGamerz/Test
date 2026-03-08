@@ -2,8 +2,10 @@
     --orange: #ff9f43;
     --orange-dark: #ee5253;
     --accent: #00d2ff;
+    --gold: #f1c40f;
+    --silver: #bdc3c7;
+    --bronze: #cd7f32;
     --bg-dark: #0f172a;
-    --panel: rgba(15, 23, 42, 0.9);
 }
 
 * { cursor: none !important; user-select: none; box-sizing: border-box; }
@@ -14,86 +16,81 @@ body {
     font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden;
 }
 
-#loading-screen {
-    position: fixed; inset: 0; background: #000; z-index: 9999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: opacity 1s;
+/* --- CURSOR FIX --- */
+#cursor {
+    width: 20px; height: 20px; border: 2px solid #fff; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 99999;
+    background: rgba(255,159,67,0.3); box-shadow: 0 0 10px var(--orange);
+    transition: transform 0.1s ease; transform: translate(-50%, -50%);
 }
 
-.loader {
-    width: 50px; height: 50px; border: 5px solid #333;
-    border-top-color: var(--orange); border-radius: 50%;
-    animation: spin 1s linear infinite;
+/* --- LOADING SCREEN --- */
+#loading-screen {
+    position: fixed; inset: 0; background: #020617; z-index: 10000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
+.loader-container { position: relative; width: 80px; height: 80px; margin-bottom: 20px; }
+.loader { width: 100%; height: 100%; border: 4px solid #1e293b; border-top-color: var(--orange); border-radius: 50%; animation: spin 1s linear infinite; }
+.loader-inner { position: absolute; inset: 15px; border: 4px solid #1e293b; border-bottom-color: var(--accent); border-radius: 50%; animation: spin 0.5s linear reverse infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* --- THE CONTAINER --- */
 #game-container {
-    width: 500px; height: 750px; background: #4facfe;
-    position: relative; overflow: hidden; border: 8px solid #1e293b;
-    border-radius: 20px; box-shadow: 0 0 100px rgba(0,0,0,0.5);
+    width: 500px; height: 750px; background: #0f172a;
+    position: relative; overflow: hidden; border: 10px solid #1e293b;
+    border-radius: 20px; box-shadow: 0 0 100px rgba(0,0,0,0.8);
 }
 
-/* Backgrounds */
-#bg-far { position: absolute; inset: 0; background: url('https://i.imgur.com/vH9fXbU.png'); opacity: 0.5; }
-#bg-near { position: absolute; inset: 0; background: url('https://i.imgur.com/vH9fXbU.png') repeat-x bottom; background-size: 200%; }
-
-/* Bird Graphics */
-#bird {
-    width: 44px; height: 34px; position: absolute; left: 80px; z-index: 100;
-    background: radial-gradient(circle at 30% 30%, #ff9f43, #ff6b6b);
-    border: 3px solid #000; border-radius: 12px 18px 12px 12px;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+/* --- MISSION SELECT --- */
+.mission-grid { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
+.mission-card {
+    width: 320px; padding: 20px; background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; transition: 0.2s;
 }
-#bird::after {
-    content: ''; position: absolute; left: -10px; top: 10px;
-    width: 20px; height: 10px; background: white; border: 2px solid #000;
-    border-radius: 2px; animation: flap 0.1s infinite alternate;
-}
-@keyframes flap { from { transform: rotate(10deg); } to { transform: rotate(-40deg); } }
+.mission-card:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); transform: scale(1.02); }
+.mission-card h3 { margin: 0; color: var(--accent); }
+.mission-card p { margin: 5px 0 0; font-size: 13px; color: #94a3b8; }
+.mission-card.advanced h3 { color: #f87171; }
+.mission-card.locked { opacity: 0.4; cursor: not-allowed; }
 
-/* UI Styling */
+/* --- HANGAR & NODES --- */
+#hangar-viewport { position: absolute; width: 4000px; height: 4000px; background: radial-gradient(#1e293b 2px, transparent 2px) 0 0 / 60px 60px; }
+.node {
+    width: 130px; height: 130px; background: #1e293b; border: 4px solid #334155;
+    border-radius: 24px; position: absolute; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: white; text-align: center;
+    padding: 10px; transition: 0.3s; transform: translate(-50%, -50%);
+}
+.node-ready { border-color: var(--accent); cursor: pointer; }
+.node-owned { background: var(--orange); color: #000; border-color: #fff; box-shadow: 0 0 30px var(--orange); }
+.node b { font-size: 14px; }
+.connector { stroke: #334155; stroke-width: 6; fill: none; transition: 0.5s; }
+.connector-active { stroke: var(--orange); filter: drop-shadow(0 0 5px var(--orange)); }
+
+/* --- MEDALS --- */
+.medal-card {
+    display: flex; align-items: center; gap: 20px; padding: 15px;
+    background: rgba(255,255,255,0.05); margin: 10px; border-radius: 12px; width: 400px;
+}
+.medal-icon { font-size: 40px; }
+.gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+.silver { color: var(--silver); text-shadow: 0 0 10px var(--silver); }
+.bronze { color: var(--bronze); text-shadow: 0 0 10px var(--bronze); }
+.locked-medal { opacity: 0.2; filter: grayscale(1); }
+
+/* --- PIPES --- */
+.pipe { width: 85px; position: absolute; background: linear-gradient(90deg, #2ecc71, #27ae60); border: 4px solid #000; }
+.pipe.moving { animation: pipe-wobble 2s ease-in-out infinite alternate; }
+@keyframes pipe-wobble { from { transform: translateX(-20px); } to { transform: translateX(20px); } }
+
+/* --- GUI OVERLAYS --- */
 .gui {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 500;
-    background: var(--panel); backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
 }
-
-.logo-area h1 { color: white; font-size: 60px; margin: 0; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-.version { background: var(--orange); padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-
-.stats-bar { display: flex; gap: 20px; margin: 20px 0; }
-.stat { background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 10px; text-align: center; color: white; }
-.stat span { font-size: 10px; display: block; opacity: 0.7; }
-
 .btn {
-    background: var(--orange); border: none; padding: 15px; color: white;
-    font-weight: 900; border-radius: 8px; margin: 8px; width: 280px;
-    box-shadow: 0 4px 0 #b33921; transition: 0.2s; cursor: pointer;
-}
-.btn-sec { background: #475569; box-shadow: 0 4px 0 #1e293b; }
-.btn.lock { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
-
-/* Hangar Tree */
-#hangar-viewport {
-    position: absolute; width: 4000px; height: 4000px;
-    background-image: radial-gradient(#ffffff11 2px, transparent 2px);
-    background-size: 100px 100px;
-}
-.node {
-    width: 120px; height: 120px; background: #1e293b; border: 3px solid #334155;
-    border-radius: 50%; position: absolute; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; color: white; text-align: center;
-    padding: 10px; transition: 0.3s; font-size: 10px;
-}
-.node-ready { border-color: var(--accent); cursor: pointer; }
-.node-owned { background: var(--accent); color: #000; border-color: #fff; box-shadow: 0 0 20px var(--accent); }
-.connector { stroke: #334155; stroke-width: 4; fill: none; }
-.connector-active { stroke: var(--accent); }
-
-/* Pipes */
-.pipe { width: 80px; position: absolute; background: linear-gradient(90deg, #2ecc71, #27ae60); border: 4px solid #000; }
-
-.ingame-ui {
-    position: absolute; width: 100%; text-align: center; top: 40px;
-    font-size: 80px; font-weight: 900; color: white; pointer-events: none; z-index: 10;
+    background: var(--orange); border: none; padding: 16px; color: white;
+    font-weight: 900; border-radius: 8px; width: 280px; margin: 8px;
+    box-shadow: 0 5px 0 #b33921; cursor: pointer;
 }
