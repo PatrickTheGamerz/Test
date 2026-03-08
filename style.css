@@ -1,98 +1,87 @@
-/* --- CORE & CUSTOM CURSOR --- */
-* { cursor: none !important; user-select: none; }
+/* --- ORANGEBIRD CORE --- */
+* { cursor: none !important; user-select: none; box-sizing: border-box; }
+
 #cursor {
-    width: 20px; height: 20px; border: 2px solid #fff;
-    background: rgba(255,255,255,0.3); border-radius: 50%;
+    width: 24px; height: 24px; border: 2px solid #fff;
+    background: rgba(255, 165, 0, 0.4); border-radius: 50%;
     position: fixed; pointer-events: none; z-index: 10000;
-    transition: transform 0.1s ease-out;
 }
 
 body {
-    background-color: #050505; color: white;
-    display: flex; justify-content: center; align-items: center;
-    height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif;
+    background-color: #000; margin: 0; 
+    height: 100vh; display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', sans-serif; overflow: hidden;
 }
 
 #game-container {
-    width: 480px; height: 700px;
-    background: linear-gradient(180deg, #1e3799 0%, #4a69bd 100%);
-    position: relative; overflow: hidden;
-    border: 12px solid #111; border-radius: 30px;
-    box-shadow: 0 0 50px rgba(0,0,0,0.9);
+    width: 500px; height: 750px; position: relative;
+    border: 12px solid #222; border-radius: 35px;
+    overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.8);
 }
 
-/* --- THE BIRD (ADVANCED CSS) --- */
+/* --- DYNAMIC BACKGROUNDS --- */
+.bg-day { background: linear-gradient(180deg, #4ec0ca 0%, #d2f4f7 100%); }
+.bg-midnight { background: radial-gradient(circle, #1e272e 0%, #050505 100%); }
+.bg-industrial { background: #111 url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAAAAAABAQECAgIDAwMEBAQFBQUGBgcHCAgIAAAAC0lEQVQ4y2NgGAUDAAABAAEAAQAAAABJRU5ErkJggg=='); }
+
+/* --- THE BIRD (ORANGEBIRD VERSION) --- */
 #bird {
-    width: 40px; height: 30px; position: absolute; left: 70px; z-index: 50;
+    width: 42px; height: 32px; position: absolute; left: 80px; z-index: 50;
     border-radius: 50% 50% 40% 40%; border: 3px solid #000;
-    background: var(--bird-color, #f1c40f);
-    transition: transform 0.1s, background 0.3s;
+    background: #ff9f43; transition: transform 0.1s;
 }
-#bird::before { /* Beak */
-    content: ''; position: absolute; right: -10px; top: 12px;
-    width: 12px; height: 8px; background: #e67e22; border: 2px solid #000; border-radius: 0 5px 5px 0;
+#bird::before { /* Orange Beak */
+    content: ''; position: absolute; right: -12px; top: 10px;
+    width: 14px; height: 10px; background: #ee5253; border: 2px solid #000; border-radius: 0 8px 8px 0;
 }
-#bird::after { /* Wing */
-    content: ''; position: absolute; left: 6px; top: 10px;
-    width: 18px; height: 12px; background: rgba(255,255,255,0.8);
-    border: 2px solid #000; border-radius: 50%;
-    animation: flap 0.15s infinite alternate;
-}
-@keyframes flap { from { transform: scaleY(1); } to { transform: scaleY(0.4); } }
 
-/* --- THE HANGAR / SKILL TREE (IMAGE-INSPIRED) --- */
-.hangar-grid {
-    display: flex; justify-content: center; align-items: center;
-    width: 100%; height: 80%; position: relative;
+/* --- THE HANGAR PANNING SYSTEM --- */
+#hangar-viewport {
+    width: 100%; height: 100%; position: absolute;
+    overflow: hidden; cursor: grab;
+}
+#hangar-map {
+    width: 2000px; height: 2000px; position: absolute;
+    transform: translate(var(--pan-x, -750px), var(--pan-y, -600px));
+    transition: transform 0.1s ease-out;
 }
 
 .skill-node {
-    width: 60px; height: 60px; border-radius: 50%;
-    border: 4px solid #444; background: #222;
-    display: flex; justify-content: center; align-items: center;
-    position: absolute; cursor: none; transition: 0.3s;
+    width: 80px; height: 80px; position: absolute;
+    background: #222; border: 4px solid #444; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; text-align: center; color: #aaa; z-index: 2;
 }
+.skill-node.unlocked { border-color: #ff9f43; color: white; box-shadow: 0 0 20px rgba(255,159,67,0.5); }
+.skill-node b { display: block; font-size: 12px; color: #ff9f43; }
 
-.skill-node.unlocked { border-color: var(--node-color); box-shadow: 0 0 15px var(--node-color); }
-.skill-node i { font-size: 12px; font-weight: bold; }
+.skill-line {
+    position: absolute; height: 4px; background: #444; 
+    transform-origin: left center; z-index: 1;
+}
+.skill-line.active { background: #ff9f43; box-shadow: 0 0 10px #ff9f43; }
 
-/* Positioning the nodes like your image */
-#node-red { --node-color: #ff4757; transform: translateY(-120px); }
-#node-blue { --node-color: #00d2ff; transform: translate(100px, -60px); }
-#node-yellow { --node-color: #eccc68; transform: translate(-100px, -60px); }
-#node-green { --node-color: #7bed9f; transform: translate(100px, 60px); }
-#node-purple { --node-color: #a29bfe; transform: translate(-100px, 60px); }
+/* --- STEAM-STYLE NOTIFICATION --- */
+#achievement-popup {
+    position: absolute; bottom: -100px; right: 20px;
+    width: 280px; height: 70px; background: rgba(30, 39, 46, 0.95);
+    border-left: 5px solid #ff9f43; display: flex; align-items: center;
+    padding: 10px; transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+}
+#achievement-popup.show { bottom: 20px; }
+#achievement-popup .icon { width: 45px; height: 45px; background: #ff9f43; border-radius: 5px; margin-right: 15px; }
 
 /* --- PIPES --- */
 .pipe {
-    width: 80px; position: absolute; border: 4px solid #111;
-    background: linear-gradient(90deg, #2ecc71, #27ae60);
-    box-shadow: inset 10px 0 20px rgba(0,0,0,0.3);
-}
-.pipe-top { border-radius: 0 0 10px 10px; }
-.pipe-bottom { border-radius: 10px 10px 0 0; }
-
-/* --- GUI PANELS --- */
-.gui {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.85);
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; z-index: 100; padding: 20px;
+    width: 85px; position: absolute; border: 4px solid #111;
+    background: linear-gradient(90deg, #576574, #222f3e);
 }
 
-.hidden { display: none !important; }
-
-h1 { font-size: 48px; margin: 0; color: #fff; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-
+/* --- GUI BUTTONS --- */
 .btn {
-    background: #fff; color: #000; border: none; padding: 15px 40px;
-    font-weight: 900; border-radius: 50px; margin: 10px;
-    width: 250px; transition: 0.2s;
+    padding: 15px 40px; background: #ff9f43; border: none;
+    color: #fff; font-weight: 900; border-radius: 5px;
+    box-shadow: 0 6px 0 #ee5253; margin: 10px; width: 220px;
 }
-.btn:hover { transform: scale(1.1); background: #ff4757; color: #fff; }
-
-#save-pop {
-    position: absolute; bottom: 20px; right: 20px;
-    background: #2ecc71; padding: 5px 15px; border-radius: 20px;
-    font-size: 12px; animation: slideUp 2s forwards; display: none;
-}
-@keyframes slideUp { 0% { opacity:0; } 20% { opacity:1; } 80% { opacity:1; } 100% { opacity:0; } }
+.btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #ee5253; }
