@@ -2,105 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ORANGEBIRD PRO | ELITE AEROSPACE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORANGEBIRD PRO | MASTERPIECE</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body oncontextmenu="return false;">
 
     <div id="loading-screen">
-        <div id="loading-sim-world"></div>
-        <div class="loading-overlay">
-            <div class="loader-circle"></div>
-            <h2 id="loading-text">CALIBRATING FLIGHT SENSORS</h2>
-            <div class="progress-bar"><div class="progress-fill"></div></div>
-            <p id="loading-tip">TIP: Advanced missions yield 2x Credits per pipe.</p>
+        <div id="loading-sim"></div> <div class="load-content">
+            <div class="spinner"></div>
+            <h1>ORANGEBIRD <span style="color:var(--primary)">PRO</span></h1>
+            <div class="progress-container"><div id="load-bar"></div></div>
+            <p id="load-tip">TIP: Use the Hangar to unlock the 'Slim Frame' for tighter pipes.</p>
         </div>
     </div>
 
     <div id="cursor"></div>
 
     <div id="game-container">
-        <div class="sky-bg"></div>
-        <div class="cloud-layer"></div>
-        <div class="city-layer"></div>
+        <div class="layer sky"></div>
+        <div class="layer clouds"></div>
+        <div class="layer city"></div>
         
-        <div id="top-score" class="ingame-ui">0</div>
+        <div id="top-score" class="score-display">0</div>
 
-        <div id="menu-ui" class="gui">
-            <div class="logo-wrap">
-                <span class="tag">AEROSPACE PRO</span>
+        <div id="menu-ui" class="gui-overlay">
+            <div class="logo-box">
+                <p class="sub-logo">AEROSPACE TECHNOLOGY</p>
                 <h1>ORANGEBIRD</h1>
             </div>
-            <div class="stats-row">
-                <div class="stat-box"><span>RECORD</span><b id="high-val">0</b></div>
-                <div class="stat-box"><span>CREDITS</span><b id="points-val">0</b></div>
+            <div class="stats-panel">
+                <div class="stat"><span>MAX ALTITUDE</span><b id="high-val">0</b></div>
+                <div class="stat"><span>CREDITS</span><b id="points-val">0</b></div>
             </div>
-            <div class="btn-group">
-                <button class="btn main-btn" onclick="switchUI('lobby')">LAUNCH MISSION</button>
-                <button class="btn sub-btn" onclick="switchUI('hangar')">ENGINEERING HANGAR</button>
-                <button class="btn sub-btn" onclick="switchUI('medals')">PILOT RECORDS</button>
+            <div class="action-stack">
+                <button class="btn btn-primary" onclick="switchUI('lobby')">LAUNCH MISSION</button>
+                <button class="btn btn-secondary" onclick="switchUI('hangar')">ENGINEERING HANGAR</button>
+                <button class="btn btn-secondary" onclick="switchUI('medals')">PILOT RECORDS</button>
             </div>
         </div>
 
-        <div id="lobby-ui" class="gui" style="display:none;">
-            <h2 class="title">DEPLOYMENT CENTER</h2>
-            <div class="mode-toggle">
-                <button id="mode-single" class="mode-btn active" onclick="selectMode('single')">SINGLEPLAYER</button>
-                <button id="mode-multi" class="mode-btn" onclick="selectMode('multi')">MULTIPLAYER</button>
+        <div id="lobby-ui" class="gui-overlay" style="display:none;">
+            <h2 class="gui-title">MISSION CONTROL</h2>
+            <div class="lobby-tabs">
+                <button id="tab-single" class="tab active" onclick="setLobbyMode('single')">SINGLEPLAYER</button>
+                <button id="tab-multi" class="tab" onclick="setLobbyMode('multi')">MULTIPLAYER</button>
             </div>
-            
-            <div id="single-setup">
-                <div class="mission-card" onclick="startGame('original')">
-                    <div class="m-info"><h3>ORIGINAL</h3><p>Class 1 Airspace - 1x Rewards</p></div>
-                    <div class="m-tag">SAFE</div>
+            <div id="lobby-content">
                 </div>
-                <div class="mission-card adv" onclick="startGame('advanced')">
-                    <div class="m-info"><h3>ADVANCED</h3><p>Heavy Turbulence - 2x Rewards</p></div>
-                    <div class="m-tag">ELITE</div>
-                </div>
-            </div>
-
-            <div id="server-list" style="display:none;">
-                <div class="server-item" onclick="startGame('advanced')"><span>[EU] ORANGE_NET_PRO</span><b>12/20</b></div>
-                <div class="server-item" onclick="startGame('original')"><span>[US] NOOB_FRIENDLY</span><b>5/20</b></div>
-            </div>
-            
-            <button class="btn sub-btn" onclick="switchUI('menu')">RETURN</button>
+            <button class="btn btn-secondary" onclick="switchUI('menu')">BACK TO BASE</button>
         </div>
 
-        <div id="hangar-ui" class="gui" style="display:none; background:transparent;">
+        <div id="hangar-ui" class="gui-overlay" style="display:none; background:transparent; backdrop-filter:none;">
             <div id="hangar-viewport">
-                <svg id="lines" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
+                <svg id="skill-lines"></svg>
+                <div id="node-container"></div>
             </div>
             <div class="hangar-hud">
-                <div class="hud-pill">CREDITS: <span id="hangar-pts">0</span></div>
-                <div class="hud-center">DRAG TO NAVIGATE RESEARCH</div>
-                <button class="btn exit-btn" onclick="switchUI('menu')">EXIT HANGAR</button>
+                <div class="hud-item">CREDITS: <span id="hangar-pts">0</span></div>
+                <div class="hud-item">DRAG TO NAVIGATE RESEARCH</div>
+                <button class="btn btn-exit" onclick="switchUI('menu')">EXIT HANGAR</button>
             </div>
         </div>
 
-        <div id="medals-ui" class="gui" style="display:none;">
-            <h2 class="title">SERVICE MEDALS</h2>
-            <div id="ach-list" class="medal-scroll"></div>
-            <button class="btn sub-btn" onclick="switchUI('menu')">BACK</button>
+        <div id="medals-ui" class="gui-overlay" style="display:none;">
+            <h2 class="gui-title">SERVICE MEDALS</h2>
+            <div id="medal-list" class="scroll-area"></div>
+            <button class="btn btn-secondary" onclick="switchUI('menu')">BACK</button>
         </div>
 
-        <div id="gameover-ui" class="gui" style="display:none;">
-            <h2 class="death-title">MISSION ABORTED</h2>
-            <div class="result-card">
-                <div class="r-row"><span>PIPES PASSED</span><b id="res-score">0</b></div>
-                <div class="r-row"><span>CREDITS EARNED</span><b id="res-points">0</b></div>
-                <div class="r-row"><span>HIGHSCORE</span><b id="res-high">0</b></div>
+        <div id="gameover-ui" class="gui-overlay" style="display:none;">
+            <h1 class="critical-text">MISSION FAILED</h1>
+            <div class="results-card">
+                <div class="r-item"><span>SCORE</span><b id="res-score">0</b></div>
+                <div class="r-item"><span>CREDITS EARNED</span><b id="res-points">0</b></div>
+                <div class="r-item"><span>NEW RECORD?</span><b id="res-high">NO</b></div>
             </div>
-            <div class="btn-group">
-                <button class="btn main-btn" onclick="startGame(currentGameMode)">RE-DEPLOY</button>
-                <button class="btn sub-btn" onclick="switchUI('menu')">BASE</button>
+            <div class="action-stack">
+                <button class="btn btn-primary" onclick="startGame(currentGameMode)">RE-DEPLOY</button>
+                <button class="btn btn-secondary" onclick="switchUI('menu')">RETURN TO BASE</button>
             </div>
         </div>
 
         <div id="toast">
-            <div class="t-icon">🏅</div>
-            <div class="t-body"><b id="t-name"></b><br><span id="t-desc"></span></div>
+            <div class="toast-hex">🏆</div>
+            <div class="toast-content">
+                <b id="t-name">UNLOCKED</b><br>
+                <span id="t-desc">Description goes here</span>
+            </div>
         </div>
 
         <div id="bird"></div>
