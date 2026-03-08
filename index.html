@@ -6,215 +6,231 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="cursor"></div>
+    <div id="cursor-custom"></div>
 
-    <div id="game-container" class="bg-day">
-        <div id="achievement-popup">
-            <div class="icon"></div>
-            <div>
-                <div style="font-size:10px; color:#ff9f43; font-weight:bold;">ACHIEVEMENT UNLOCKED</div>
-                <div id="ach-name" style="color:white; font-size:14px; font-weight:bold;">Veteran Pilot</div>
+    <div id="game-container">
+        <div id="score-text" style="position:absolute; width:100%; text-align:center; top:40px; font-size:50px; font-weight:900; z-index:10;">0</div>
+
+        <div id="menu-gui" class="gui-layer">
+            <h1 style="color:#fff; font-size:60px; margin:0;">ORANGEBIRD</h1>
+            <p style="color:#fff;">POINTS: <span id="points-val">0</span></p>
+            <button class="btn-orange" onclick="setTheme('day'); startGame();">FLY MISSION</button>
+            <button class="btn-orange" onclick="setTheme('midnight'); openHangar();">HANGAR</button>
+            <button class="btn-orange" onclick="setTheme('sunset'); openAchievements();">MEDALS</button>
+        </div>
+
+        <div id="hangar-gui" class="gui-layer" style="display:none; background:transparent;">
+            <div id="hangar-canvas">
+                <svg id="skill-lines" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
+                </div>
+            <button class="btn-orange" style="position:absolute; bottom:30px;" onclick="closeHangar()">EXIT HANGAR</button>
+            <div style="position:absolute; top:20px; color:#aaa;">Right-Click & Drag to Pan Hangar</div>
+        </div>
+
+        <div id="ach-gui" class="gui-layer" style="display:none;">
+            <h2>ACHIEVEMENTS</h2>
+            <div id="ach-list" style="width:80%; max-height:400px; overflow-y:auto;"></div>
+            <button class="btn-orange" onclick="closeAchievements()">BACK</button>
+        </div>
+
+        <div id="achievement-toast">
+            <div class="toast-img"></div>
+            <div class="toast-info">
+                <b id="toast-title">Achievement Unlocked!</b>
+                <span id="toast-desc">You are a pro.</span>
             </div>
         </div>
 
-        <div id="ui-layer" style="position:absolute; inset:0; z-index:200;">
-            <div id="screen-title" class="gui" style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.4)">
-                <h1 style="font-size:60px; color:#ff9f43; -webkit-text-stroke:2px black;">ORANGEBIRD</h1>
-                <p>POINTS: <span id="pts-val">0</span> | BEST: <span id="best-val">0</span></p>
-                <button class="btn" onclick="startGame()">MISSION START</button>
-                <button class="btn" onclick="openHangar()">HANGAR</button>
-                <button class="btn" onclick="openAchievements()">MEDALS</button>
-            </div>
-
-            <div id="screen-hangar" class="gui hidden" style="height:100%; width:100%;">
-                <div id="hangar-viewport">
-                    <div id="hangar-map">
-                        </div>
-                </div>
-                <div style="position:absolute; top:20px; left:20px; pointer-events:none;">
-                    <h2>SKILL TREE</h2>
-                    <p>Right-Click & Drag to move</p>
-                </div>
-                <button class="btn" onclick="closeHangar()" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%)">RETURN</button>
-            </div>
-        </div>
-
-        <div id="score-text" style="position:absolute; width:100%; text-align:center; top:10%; font-size:80px; font-weight:900; z-index:10; pointer-events:none; color:#fff; text-shadow:0 5px 15px rgba(0,0,0,0.5)">0</div>
         <div id="bird"></div>
         <div id="world"></div>
     </div>
 
     <script>
+        const container = document.getElementById('game-container');
+        const hangar = document.getElementById('hangar-canvas');
         const bird = document.getElementById('bird');
         const world = document.getElementById('world');
-        const hMap = document.getElementById('hangar-map');
-        const container = document.getElementById('game-container');
-        const cursor = document.getElementById('cursor');
+        const cursor = document.getElementById('cursor-custom');
 
-        // GAME STATE
-        let state = 'title';
-        let birdY = 300, velocity = 0, gravity = 0.5;
-        let pipeCount = 0, score = 0, pipes = [], frame = 0;
-        let points = parseInt(localStorage.getItem('ob_pts')) || 0;
-        let highscore = parseInt(localStorage.getItem('ob_high')) || 0;
-        
-        // HANGAR PANNING
-        let isDragging = false, lastX, lastY, panX = -750, panY = -600;
+        // GAME VARS
+        let gameState = 'menu';
+        let birdY = 300, velocity = 0, gravity = 0.45, jump = -8;
+        let pipesPassed = 0, points = parseInt(localStorage.getItem('ob_points')) || 0;
+        let pipes = [], frame = 0;
+        let skillEffects = { slim: 0, slower: 0, bigScore: false };
 
-        // SKILL DATA
-        const skills = [
-            { id: 0, name: "Core", x: 1000, y: 1000, price: 0, unlocked: true, effect: null },
-            { id: 1, name: "Agility", x: 1200, y: 850, price: 5, parent: 0, effect: () => gravity = 0.4 },
-            { id: 2, name: "Glider", x: 1200, y: 1150, price: 5, parent: 0, effect: () => velocity *= 0.9 },
-            { id: 3, name: "Wide Gap", x: 1450, y: 850, price: 15, parent: 1, effect: () => pipeGap = 200 },
-            { id: 4, name: "Slow Pipes", x: 1450, y: 1150, price: 20, parent: 2, effect: () => pipeSpeed = 2.5 }
-        ];
+        // PANNING LOGIC
+        let isPanning = false, startX, startY, scrollLeft, scrollTop;
+        let hangarPos = { x: -750, y: -625 };
 
-        function startGame() {
-            state = 'playing';
-            document.getElementById('screen-title').classList.add('hidden');
-            container.className = 'bg-day';
-            birdY = 300; velocity = 0; pipeCount = 0; score = 0; pipes = []; frame = 0;
-            world.innerHTML = '';
-            gameLoop();
+        // MOUSE & CURSOR
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            if(isPanning) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                hangarPos.x = scrollLeft + dx;
+                hangarPos.y = scrollTop + dy;
+                hangar.style.transform = `translate(${hangarPos.x}px, ${hangarPos.y}px)`;
+            }
+        });
+
+        document.addEventListener('mousedown', e => {
+            if(e.button === 2 || e.button === 1) { // Right or Middle click to pan
+                isPanning = true;
+                startX = e.clientX; startY = e.clientY;
+                scrollLeft = hangarPos.x; scrollTop = hangarPos.y;
+            }
+        });
+        document.addEventListener('mouseup', () => isPanning = false);
+
+        // THEME ENGINE
+        function setTheme(theme) {
+            container.style.background = `var(--bg-${theme})`;
         }
 
-        function gameLoop() {
-            if (state !== 'playing') return;
+        // START GAME
+        function startGame() {
+            gameState = 'playing';
+            document.getElementById('menu-gui').style.display = 'none';
+            birdY = 300; velocity = 0; pipesPassed = 0; pipes = []; frame = 0;
+            world.innerHTML = '';
+            document.getElementById('score-text').innerText = '0';
+            loop();
+        }
+
+        function spawnPipe() {
+            const gap = 170 + (skillEffects.slim * 10);
+            const topH = Math.random() * 300 + 100;
+            const p = { x: 550, th: topH, bh: 750 - topH - gap, passed: false,
+                       dt: document.createElement('div'), db: document.createElement('div') };
+            p.dt.className = 'pipe pipe-top'; p.dt.style.height = p.th + 'px';
+            p.db.className = 'pipe pipe-bottom'; p.db.style.height = p.bh + 'px'; p.db.style.bottom = '0';
+            world.appendChild(p.dt); world.appendChild(p.db);
+            pipes.push(p);
+        }
+
+        function loop() {
+            if(gameState !== 'playing') return;
             frame++;
             velocity += gravity; birdY += velocity;
             bird.style.top = birdY + 'px';
             bird.style.transform = `rotate(${Math.min(velocity * 4, 90)}deg)`;
 
-            if (frame % 180 === 0) spawnPipe();
+            if(frame % 160 === 0) spawnPipe();
 
             pipes.forEach((p, i) => {
-                p.x -= 3.5;
-                p.divT.style.left = p.x + 'px'; p.divB.style.left = p.x + 'px';
-                
+                p.x -= (3.5 - (skillEffects.slower * 0.5));
+                p.dt.style.left = p.x + 'px'; p.db.style.left = p.x + 'px';
+
                 const b = bird.getBoundingClientRect();
-                const pt = p.divT.getBoundingClientRect();
-                const pb = p.divB.getBoundingClientRect();
+                const pt = p.dt.getBoundingClientRect();
+                const pb = p.db.getBoundingClientRect();
 
-                if (b.right-8 > pt.left && b.left+8 < pt.right && (b.top+8 < pt.bottom || b.bottom-8 > pb.top)) endGame();
-                
-                if (p.x < 50 && !p.passed) {
+                if(b.right-10 > pt.left && b.left+10 < pt.right) {
+                    if(b.top+10 < pt.bottom || b.bottom-10 > pb.top) gameOver();
+                }
+
+                if(p.x < 50 && !p.passed) {
                     p.passed = true;
-                    pipeCount++;
-                    // 1 Point every 5 Pipes
-                    if (pipeCount % 5 === 0) {
-                        score++;
-                        document.getElementById('score-text').innerText = score;
+                    pipesPassed++;
+                    // 5 Pipes = 1 Point
+                    if(pipesPassed % 5 === 0) {
+                        points++;
+                        saveData();
                     }
+                    document.getElementById('score-text').innerText = Math.floor(pipesPassed / 5);
                 }
             });
 
-            if (birdY > 720 || birdY < -20) endGame();
-            requestAnimationFrame(gameLoop);
+            if(birdY > 720 || birdY < -20) gameOver();
+            requestAnimationFrame(loop);
         }
 
-        function endGame() {
-            state = 'title';
-            points += score;
-            if (pipeCount > highscore) highscore = pipeCount;
-            localStorage.setItem('ob_pts', points);
-            localStorage.setItem('ob_high', highscore);
-            updateUI();
-            document.getElementById('screen-title').classList.remove('hidden');
-            if(score > 0) notify("Mission Complete", `Earned ${score} Points`);
-        }
-
-        function spawnPipe() {
-            const gap = 160;
-            const topH = Math.random() * 350 + 50;
-            const p = { x: 550, divT: document.createElement('div'), divB: document.createElement('div'), passed: false };
-            p.divT.className = 'pipe pipe-top'; p.divT.style.height = topH + 'px';
-            p.divB.className = 'pipe pipe-bottom'; p.divB.style.height = (750 - topH - gap) + 'px'; p.divB.style.bottom = '0';
-            world.appendChild(p.divT); world.appendChild(p.divB);
-            pipes.push(p);
-        }
-
-        // HANGAR LOGIC
-        function openHangar() {
-            container.className = 'bg-midnight';
-            document.getElementById('screen-title').classList.add('hidden');
-            document.getElementById('screen-hangar').classList.remove('hidden');
-            renderHangar();
-        }
-
-        function closeHangar() {
-            document.getElementById('screen-hangar').classList.add('hidden');
-            document.getElementById('screen-title').classList.remove('hidden');
-            container.className = 'bg-day';
-        }
-
-        function renderHangar() {
-            hMap.innerHTML = '';
-            skills.forEach(s => {
-                const node = document.createElement('div');
-                node.className = `skill-node ${s.unlocked ? 'unlocked' : ''}`;
-                node.style.left = s.x + 'px'; node.style.top = s.y + 'px';
-                node.innerHTML = `<b>${s.name}</b>${s.unlocked ? 'OWNED' : s.price + ' PTS'}`;
-                node.onclick = () => buySkill(s);
-                hMap.appendChild(node);
-
-                if (s.parent !== undefined) {
-                    const p = skills[s.parent];
-                    const line = document.createElement('div');
-                    line.className = `skill-line ${s.unlocked ? 'active' : ''}`;
-                    const dist = Math.hypot(s.x - p.x, s.y - p.y);
-                    const angle = Math.atan2(s.y - p.y, s.x - p.x) * 180 / Math.PI;
-                    line.style.width = dist + 'px';
-                    line.style.left = (p.x + 40) + 'px'; line.style.top = (p.y + 40) + 'px';
-                    line.style.transform = `rotate(${angle}deg)`;
-                    hMap.appendChild(line);
-                }
-            });
-        }
-
-        function buySkill(s) {
-            if (s.unlocked) return;
-            const parent = skills[s.parent];
-            if (!parent.unlocked) return notify("Locked", "Buy parent skill first");
-            if (points >= s.price) {
-                points -= s.price;
-                s.unlocked = true;
-                localStorage.setItem('ob_pts', points);
-                if (s.effect) s.effect();
-                renderHangar();
-                notify("Skill Unlocked", s.name);
-            }
+        function gameOver() {
+            gameState = 'menu';
+            document.getElementById('menu-gui').style.display = 'flex';
+            document.getElementById('points-val').innerText = points;
+            setTheme('day');
         }
 
         // STEAM NOTIFICATION
-        function notify(title, desc) {
-            const pop = document.getElementById('achievement-popup');
-            document.getElementById('ach-name').innerText = title;
-            pop.classList.add('show');
-            setTimeout(() => pop.classList.remove('show'), 3000);
+        function unlockAchievement(name, desc) {
+            const toast = document.getElementById('achievement-toast');
+            document.getElementById('toast-title').innerText = name;
+            document.getElementById('toast-desc').innerText = desc;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 5000);
         }
 
-        // PANNING ENGINE
-        container.onmousedown = (e) => { if(e.button === 2) isDragging = true; lastX = e.clientX; lastY = e.clientY; };
-        window.onmouseup = () => isDragging = false;
-        window.onmousemove = (e) => {
-            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
-            if (!isDragging) return;
-            panX += e.clientX - lastX; panY += e.clientY - lastY;
-            hMap.style.setProperty('--pan-x', panX + 'px');
-            hMap.style.setProperty('--pan-y', panY + 'px');
-            lastX = e.clientX; lastY = e.clientY;
-        };
+        // HANGAR & SKILLS
+        const skills = [
+            { id: 'S1', name: 'Aero Shell', desc: 'Easier Hitbox', cost: 1, x: 1000, y: 1000, parent: null },
+            { id: 'S2', name: 'Engine Tuner', desc: 'Slow Pipes', cost: 5, x: 1150, y: 900, parent: 'S1' },
+            { id: 'S3', name: 'Light Frame', desc: 'Higher Jump', cost: 10, x: 1300, y: 1000, parent: 'S2' }
+        ];
+        let boughtSkills = JSON.parse(localStorage.getItem('ob_skills')) || [];
 
-        function updateUI() {
-            document.getElementById('pts-val').innerText = points;
-            document.getElementById('best-val').innerText = highscore;
+        function openHangar() {
+            document.getElementById('menu-gui').style.display = 'none';
+            document.getElementById('hangar-gui').style.display = 'flex';
+            renderSkills();
         }
 
-        window.onclick = () => { if(state === 'playing') velocity = -9; };
-        window.onkeydown = (e) => { if(e.code === 'Space' && state === 'playing') velocity = -9; };
-        updateUI();
+        function renderSkills() {
+            const svg = document.getElementById('skill-lines');
+            svg.innerHTML = '';
+            // Remove old nodes
+            document.querySelectorAll('.skill-node').forEach(n => n.remove());
 
+            skills.forEach(s => {
+                const node = document.createElement('div');
+                node.className = `skill-node ${boughtSkills.includes(s.id) ? 'bought' : (s.parent == null || boughtSkills.includes(s.parent) ? 'available' : '')}`;
+                node.style.left = s.x + 'px'; node.style.top = s.y + 'px';
+                node.innerHTML = `<b>${s.name}</b><br>${s.desc}<br>(${s.cost} PT)`;
+                
+                node.onclick = () => {
+                    if(points >= s.cost && !boughtSkills.includes(s.id) && (s.parent == null || boughtSkills.includes(s.parent))) {
+                        points -= s.cost;
+                        boughtSkills.push(s.id);
+                        saveData();
+                        renderSkills();
+                        applySkills();
+                        unlockAchievement("Researcher", "Bought your first skill!");
+                    }
+                };
+                hangar.appendChild(node);
+
+                if(s.parent) {
+                    const parent = skills.find(p => p.id === s.parent);
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", parent.x + 35); line.setAttribute("y1", parent.y + 35);
+                    line.setAttribute("x2", s.x + 35); line.setAttribute("y2", s.y + 35);
+                    line.setAttribute("class", `skill-line ${boughtSkills.includes(s.id) ? 'line-active' : ''}`);
+                    svg.appendChild(line);
+                }
+            });
+        }
+
+        function applySkills() {
+            if(boughtSkills.includes('S1')) skillEffects.slim = 2;
+            if(boughtSkills.includes('S2')) skillEffects.slower = 1;
+        }
+
+        function saveData() {
+            localStorage.setItem('ob_points', points);
+            localStorage.setItem('ob_skills', JSON.stringify(boughtSkills));
+        }
+
+        function closeHangar() { document.getElementById('hangar-gui').style.display = 'none'; gameOver(); }
+        function openAchievements() { document.getElementById('menu-gui').style.display = 'none'; document.getElementById('ach-gui').style.display = 'flex'; }
+        function closeAchievements() { document.getElementById('ach-gui').style.display = 'none'; gameOver(); }
+
+        window.addEventListener('mousedown', e => { if(e.button === 0) { velocity = jump; } });
+        window.addEventListener('keydown', e => { if(e.code === 'Space') velocity = jump; });
+
+        applySkills();
     </script>
 </body>
 </html>
