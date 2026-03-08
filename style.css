@@ -1,91 +1,109 @@
 :root {
-    --primary: #ff9f43;
-    --primary-glow: rgba(255, 159, 67, 0.4);
-    --secondary: #475569;
+    --orange: #ff9f43;
+    --orange-glow: rgba(255, 159, 67, 0.5);
     --accent: #00d2ff;
-    --danger: #ef4444;
-    --panel: rgba(15, 23, 42, 0.95);
+    --bg-dark: #020617;
+    --panel: rgba(15, 23, 42, 0.9);
+    --tier-1: #5eead4; /* Cyan/Bronze replacement */
+    --tier-2: #818cf8; /* Purple/Silver replacement */
+    --tier-3: #fcd34d; /* Gold replacement */
 }
 
-* { cursor: none !important; user-select: none; box-sizing: border-box; margin: 0; padding: 0; }
+* { cursor: none !important; user-select: none; box-sizing: border-box; }
 
-body { background: #020617; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
-
-/* CUSTOM CURSOR */
-#cursor {
-    width: 22px; height: 22px; border: 2px solid white; border-radius: 50%;
-    position: fixed; pointer-events: none; z-index: 100000;
-    background: var(--primary-glow); transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px var(--primary); mix-blend-mode: hard-light;
+body {
+    background: #000; margin: 0; height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden;
 }
 
-/* CONTAINER & LAYERS */
-#game-container {
-    width: 500px; height: 750px; position: relative; overflow: hidden;
-    border: 6px solid #1e293b; border-radius: 24px; box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-    background: #4facfe;
-}
-
-.layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.sky { background: linear-gradient(180deg, #2563eb 0%, #0ea5e9 100%); }
-.clouds { background: url('https://i.imgur.com/vH9fXbU.png') repeat-x 0 100px; opacity: 0.6; animation: scroll-parallax 30s linear infinite; }
-.city { background: url('https://i.imgur.com/Y8G5YhU.png') repeat-x bottom; background-size: contain; animation: scroll-parallax 15s linear infinite; }
-
-@keyframes scroll-parallax { from { background-position-x: 0; } to { background-position-x: -1000px; } }
-
-/* LOADING SCREEN */
-#loading-screen { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; align-items: center; justify-content: center; }
-#loading-sim { position: absolute; inset: 0; opacity: 0.2; }
-.load-content { position: relative; text-align: center; color: white; width: 80%; }
-.spinner { width: 60px; height: 60px; border: 4px solid #1e293b; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-.progress-container { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; margin: 20px 0; overflow: hidden; }
-#load-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.1s; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* GUI SYSTEM */
-.gui-overlay {
-    position: absolute; inset: 0; background: var(--panel); 
-    backdrop-filter: blur(12px); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; z-index: 5000;
-}
-
-.btn {
-    width: 280px; padding: 18px; margin: 10px; border: none; border-radius: 12px;
-    font-weight: 900; letter-spacing: 1px; color: white; transition: 0.2s;
-}
-.btn-primary { background: var(--primary); box-shadow: 0 6px 0 #b33921; }
-.btn-secondary { background: var(--secondary); box-shadow: 0 6px 0 #1e293b; }
-.btn:hover { transform: translateY(-4px); filter: brightness(1.1); }
-.btn:active { transform: translateY(2px); box-shadow: none; }
-
-/* BIRD */
-#bird {
-    width: 44px; height: 34px; position: absolute; left: 80px; z-index: 100;
-    background: radial-gradient(circle at 30% 30%, #ff9f43, #ee5253);
-    border: 3px solid #000; border-radius: 14px 18px 10px 10px;
-}
-
-/* HANGAR TREE */
-#hangar-viewport { position: absolute; width: 4000px; height: 4000px; background: radial-gradient(#ffffff0a 2px, transparent 2px) 0 0 / 60px 60px; cursor: grab; }
-#hangar-viewport:active { cursor: grabbing; }
-.node {
-    width: 140px; height: 140px; background: #1e293b; border: 4px solid #334155;
-    border-radius: 20px; position: absolute; color: white; text-align: center;
+/* --- IMPROVED LOADING --- */
+#loading-screen {
+    position: fixed; inset: 0; background: var(--bg-dark); z-index: 10000;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transform: translate(-50%, -50%); transition: background 0.3s, border-color 0.3s;
-    font-size: 12px; pointer-events: auto;
 }
-.node-ready { border-color: var(--accent); }
-.node-owned { background: var(--accent); color: black; border-color: #fff; box-shadow: 0 0 30px var(--accent); }
-#skill-lines { position: absolute; width: 100%; height: 100%; pointer-events: none; }
-.connector { stroke: #334155; stroke-width: 8; fill: none; transition: stroke 0.5s; }
-.connector-active { stroke: var(--accent); }
-
-/* PIPES */
-.pipe { width: 90px; position: absolute; background: linear-gradient(90deg, #22c55e, #15803d); border: 4px solid #000; }
-
-/* SCORE */
-.score-display {
-    position: absolute; top: 40px; width: 100%; text-align: center;
-    font-size: 80px; font-weight: 900; color: white; text-shadow: 4px 4px 0 #000; z-index: 10;
+.loading-bg-sim {
+    position: absolute; inset: 0; opacity: 0.1;
+    background: linear-gradient(0deg, transparent 50%, #1e293b 50%);
+    background-size: 100% 4px;
+    animation: scan 2s linear infinite;
 }
+.progress-bar { width: 200px; height: 4px; background: #1e293b; margin: 20px; border-radius: 2px; overflow: hidden;}
+.progress-fill { width: 0%; height: 100%; background: var(--accent); animation: fill 2.5s ease-in-out forwards; }
+@keyframes fill { to { width: 100%; } }
+@keyframes scan { from { background-position: 0 0; } to { background-position: 0 100%; } }
+
+/* --- GAME CONTAINER & UI --- */
+#game-container {
+    width: 500px; height: 750px; background: #070b14;
+    position: relative; overflow: hidden; border: 4px solid #334155;
+    border-radius: 12px; box-shadow: 0 0 50px rgba(0,0,0,1);
+}
+
+.gui {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 500;
+    background: var(--panel); backdrop-filter: blur(20px);
+}
+
+.scanline {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%; z-index: 100;
+}
+
+/* --- BUTTONS --- */
+.btn {
+    background: #1e293b; border: 1px solid #334155; padding: 14px; color: #94a3b8;
+    font-weight: 700; border-radius: 4px; width: 300px; margin: 6px;
+    cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
+}
+.btn-main { background: var(--orange); color: white; border: none; box-shadow: 0 4px 0 #b33921; }
+.btn-main:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.btn:active { transform: translateY(2px); }
+
+/* --- MISSION SELECT --- */
+.server-setup { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 10px; width: 340px; }
+.server-setup label { font-size: 10px; color: var(--accent); display: block; margin-bottom: 8px; }
+.mode-toggle { display: flex; gap: 5px; }
+.mode-btn { flex: 1; padding: 8px; background: #0f172a; border: 1px solid #1e293b; color: #475569; font-size: 10px; cursor: pointer; }
+.mode-btn.active { border-color: var(--accent); color: white; background: rgba(0, 210, 255, 0.1); }
+
+.mission-card {
+    width: 340px; padding: 20px; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; position: relative;
+}
+.card-tag { position: absolute; top: 10px; right: 10px; font-size: 9px; padding: 2px 6px; background: #334155; color: white; border-radius: 3px; }
+.mission-card:hover { border-color: var(--accent); background: rgba(255,255,255,0.07); }
+
+/* --- HANGAR & NODES --- */
+#hangar-viewport { position: absolute; width: 4000px; height: 4000px; background: radial-gradient(#1e293b 1px, transparent 1px) 0 0 / 40px 40px; }
+.node {
+    width: 140px; height: 140px; background: #0f172a; border: 2px solid #1e293b;
+    border-radius: 50%; position: absolute; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #94a3b8; text-align: center;
+    padding: 15px; transition: 0.3s; transform: translate(-50%, -50%);
+}
+.node-ready { border-color: var(--accent); color: white; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+.node-owned { background: var(--orange); color: #000; border-color: #fff; box-shadow: 0 0 30px var(--orange); }
+
+/* --- MEDALS --- */
+.medal-card {
+    display: flex; align-items: center; gap: 15px; padding: 15px;
+    background: rgba(255,255,255,0.03); margin: 8px; border-radius: 4px; width: 380px;
+    border-left: 4px solid #1e293b;
+}
+.medal-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 50%; background: #0f172a; }
+.vanguard { border: 2px solid var(--tier-1); color: var(--tier-1); box-shadow: 0 0 10px var(--tier-1); }
+.ace { border: 2px solid var(--tier-2); color: var(--tier-2); box-shadow: 0 0 10px var(--tier-2); }
+.commander { border: 2px solid var(--tier-3); color: var(--tier-3); box-shadow: 0 0 15px var(--tier-3); }
+.locked-medal { opacity: 0.3; filter: grayscale(1); }
+
+/* --- CURSOR --- */
+#cursor {
+    width: 24px; height: 24px; border: 1px solid #fff; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 99999;
+    background: rgba(255,255,255,0.1); transition: transform 0.05s linear; transform: translate(-50%, -50%);
+}
+
+#bird { width: 34px; height: 24px; background: var(--orange); position: absolute; border-radius: 4px; z-index: 100; box-shadow: 0 0 15px var(--orange); }
