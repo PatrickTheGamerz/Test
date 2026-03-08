@@ -3,54 +3,42 @@ const world = document.getElementById('world');
 const hangar = document.getElementById('hangar-viewport');
 const cursor = document.getElementById('cursor');
 
-// --- GAME DATA ---
+// STATE
 let mode = 'menu';
+let lobbyMode = 'single';
 let currentGameMode = 'original';
 let birdY = 300, vel = 0;
 let pipesPassed = 0, pipes = [], frame = 0;
 let isPanning = false, lastX, lastY, panX = -1750, panY = -1625;
 
+// SAVE DATA
 let points = parseInt(localStorage.getItem('ob_pts')) || 0;
 let highscore = parseInt(localStorage.getItem('ob_hi')) || 0;
 let owned = JSON.parse(localStorage.getItem('ob_own')) || [];
 let achievements = JSON.parse(localStorage.getItem('ob_ach')) || [];
 
-const tips = [
-    "TIP: Drag the hangar to explore upgrades!",
-    "TIP: Advanced mode grants 2x Credits per pipe.",
-    "TIP: Buy 'Slim Frame' to dodge tight gaps.",
-    "TIP: Highscores unlock Pilot Medals.",
-    "TIP: Click to flap, don't hit the ceiling!"
-];
-
-// --- SKILL TREE DATA ---
-const skills = [
-    { id: 'core', name: 'CORE DRIVE', d: 'Enables Flight', cost: 0, x: 2000, y: 2000, pre: null },
-    // Branch 1: Agility
-    { id: 'ag1', name: 'SLIM FRAME', d: 'Smaller Hitbox', cost: 15, x: 2000, y: 1800, pre: 'core' },
-    { id: 'ag2', name: 'NITRO FLAP', d: 'Quick Response', cost: 40, x: 2000, y: 1600, pre: 'ag1' },
-    // Branch 2: Wealth
-    { id: 'wt1', name: 'CREDIT CHIP', d: '+1 Bonus Credit', cost: 20, x: 2200, y: 2000, pre: 'core' },
-    { id: 'wt2', name: 'TAX EVASION', d: 'Double Payout', cost: 60, x: 2450, y: 2000, pre: 'wt1' }
+const skillTree = [
+    { id: 'core', name: 'CORE DRIVE', d: 'Engine Ignition', cost: 0, x: 2000, y: 2000, pre: null },
+    { id: 'ag1', name: 'AERO-FRAME', d: 'Slim Physics', cost: 20, x: 2000, y: 1800, pre: 'core' },
+    { id: 'wt1', name: 'MINER CHIP', d: '+2 Credits/Pipe', cost: 30, x: 2200, y: 2000, pre: 'core' },
+    { id: 'wt2', name: 'TAX EVASION', d: '2x Total Reward', cost: 75, x: 2400, y: 2000, pre: 'wt1' }
 ];
 
 const medalList = [
-    { id: 'br1', name: 'BRONZE WINGS', d: 'Reach 10 Score', tier: 'bronze', cond: () => highscore >= 10 },
-    { id: 'sv1', name: 'SILVER FALCON', d: 'Reach 25 Score', tier: 'silver', cond: () => highscore >= 25 },
-    { id: 'gd1', name: 'GOLDEN PHOENIX', d: 'Reach 50 Score', tier: 'gold', cond: () => highscore >= 50 },
-    { id: 'rich', name: 'BILLIONAIRE', d: 'Have 500 Credits', tier: 'gold', cond: () => points >= 500 }
+    { id: 'm1', name: 'FIRST SORTIE', d: 'Fly your first mission.', icon: '🥉', cond: () => highscore >= 1 },
+    { id: 'm2', name: 'SKY STALKER', d: 'Reach 20 Pipes passed.', icon: '🥈', cond: () => highscore >= 20 },
+    { id: 'm3', name: 'AERO-COMMANDER', d: 'Reach 50 Pipes passed.', icon: '🥇', cond: () => highscore >= 50 },
+    { id: 'm4', name: 'CAPITALIST', d: 'Hold 1000 Credits.', icon: '💎', cond: () => points >= 1000 }
 ];
 
-// --- INITIALIZATION ---
+// INITIALIZE
 window.onload = () => {
-    document.getElementById('loading-tip').innerText = tips[Math.floor(Math.random()*tips.length)];
-    setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-    }, 2500);
-    updateStatsDisplay();
+    updateUI();
+    setTimeout(() => { document.getElementById('loading-screen').style.opacity = '0'; 
+    setTimeout(() => document.getElementById('loading-screen').remove(), 500); }, 2000);
 };
 
-function updateStatsDisplay() {
+function updateUI() {
     document.getElementById('points-val').innerText = points;
     document.getElementById('high-val').innerText = highscore;
     document.getElementById('hangar-pts').innerText = points;
@@ -62,11 +50,14 @@ function switchUI(m) {
     
     if (m === 'menu') {
         document.getElementById('menu-ui').style.display = 'flex';
-        updateStatsDisplay();
+        updateUI();
+    } else if (m === 'lobby') {
+        document.getElementById('lobby-ui').style.display = 'flex';
     } else if (m === 'mission-select') {
         document.getElementById('mission-ui').style.display = 'flex';
     } else if (m === 'hangar') {
         document.getElementById('hangar-ui').style.display = 'flex';
+        panX = -1750; panY = -1625; // Center on Core node
         initSkillTree();
     } else if (m === 'medals') {
         document.getElementById('medals-ui').style.display = 'flex';
@@ -74,9 +65,17 @@ function switchUI(m) {
     }
 }
 
+function selectMode(m) {
+    lobbyMode = m;
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('server-list').style.display = (m === 'multi' ? 'block' : 'none');
+    document.getElementById('lobby-continue').style.display = (m === 'multi' ? 'none' : 'block');
+}
+
 function startGame(type) {
     if (!owned.includes('core')) {
-        showToast("LOCKED", "Unlock Core Systems in Hangar!");
+        showToast("LOCKED", "Unlock Core Drive in Hangar first!");
         return switchUI('hangar');
     }
     currentGameMode = type;
@@ -84,31 +83,22 @@ function startGame(type) {
     document.querySelectorAll('.gui').forEach(g => g.style.display = 'none');
     birdY = 350; vel = 0; pipesPassed = 0; pipes = []; frame = 0;
     world.innerHTML = '';
-    document.getElementById('top-score').innerText = '0';
     requestAnimationFrame(engineLoop);
 }
 
-// --- CORE ENGINE ---
+// ENGINE
 function engineLoop() {
     if (mode !== 'play') return;
     frame++;
-    
-    // Physics
-    const gravity = owned.includes('ag2') ? 0.35 : 0.45;
-    vel += gravity;
-    birdY += vel;
+    vel += 0.45; birdY += vel;
     bird.style.top = birdY + 'px';
     bird.style.transform = `rotate(${Math.min(vel * 3, 90)}deg)`;
 
-    // Spawn
-    const spawnRate = currentGameMode === 'advanced' ? 90 : 130;
-    if (frame % spawnRate === 0) spawnPipe();
+    if (frame % (currentGameMode === 'advanced' ? 90 : 130) === 0) spawnPipe();
 
-    // Move & Collide
     pipes.forEach((p, i) => {
         p.x -= 4;
         p.dt.style.left = p.x + 'px'; p.db.style.left = p.x + 'px';
-
         const b = bird.getBoundingClientRect();
         const pt = p.dt.getBoundingClientRect();
         const pb = p.db.getBoundingClientRect();
@@ -119,8 +109,7 @@ function engineLoop() {
         }
 
         if (p.x < 50 && !p.passed) {
-            p.passed = true;
-            pipesPassed++;
+            p.passed = true; pipesPassed++;
             document.getElementById('top-score').innerText = pipesPassed;
             checkMedals();
         }
@@ -131,25 +120,20 @@ function engineLoop() {
 }
 
 function spawnPipe() {
-    const gap = currentGameMode === 'advanced' ? 170 : 210;
+    const gap = currentGameMode === 'advanced' ? 180 : 220;
     const topH = Math.random() * (750 - gap - 200) + 100;
     const p = { x: 550, passed: false, dt: document.createElement('div'), db: document.createElement('div') };
-    
-    [p.dt, p.db].forEach(el => {
-        el.className = 'pipe' + (currentGameMode === 'advanced' && Math.random() > 0.5 ? ' moving' : '');
-    });
-    
+    p.dt.className = 'pipe'; p.db.className = 'pipe';
     p.dt.style.height = topH + 'px'; p.dt.style.top = '0';
     p.db.style.height = (750 - topH - gap) + 'px'; p.db.style.bottom = '0';
-    
     world.appendChild(p.dt); world.appendChild(p.db);
     pipes.push(p);
 }
 
 function gameOver() {
     mode = 'dead';
-    let reward = pipesPassed * (currentGameMode === 'advanced' ? 2 : 1);
-    if(owned.includes('wt1')) reward += 5;
+    let reward = pipesPassed * (currentGameMode === 'advanced' ? 5 : 2);
+    if(owned.includes('wt1')) reward += (pipesPassed * 2);
     if(owned.includes('wt2')) reward *= 2;
     
     points += reward;
@@ -162,34 +146,31 @@ function gameOver() {
     document.getElementById('res-high').innerText = highscore;
 }
 
-// --- HANGAR & SKILLS ---
+// HANGAR
 function initSkillTree() {
     const svg = document.getElementById('lines');
     svg.innerHTML = '';
     document.querySelectorAll('.node').forEach(n => n.remove());
     hangar.style.transform = `translate(${panX}px, ${panY}px)`;
 
-    skills.forEach(s => {
+    skillTree.forEach(s => {
         const div = document.createElement('div');
         const isOwned = owned.includes(s.id);
         const isReady = s.pre === null || owned.includes(s.pre);
-        
         div.className = `node ${isOwned ? 'node-owned' : (isReady ? 'node-ready' : '')}`;
         div.style.left = s.x + 'px'; div.style.top = s.y + 'px';
-        div.innerHTML = `<b>${s.name}</b><small>${s.d}</small><br><b>${isOwned?'[UNLOCKED]':s.cost+' CR'}</b>`;
+        div.innerHTML = `<b>${s.name}</b><br><small>${s.d}</small><br><b>${isOwned ? 'ACTIVE' : s.cost+' CR'}</b>`;
         
         div.onclick = () => {
             if (isReady && !isOwned && points >= s.cost) {
                 points -= s.cost; owned.push(s.id); save();
-                initSkillTree();
-                updateStatsDisplay();
-                showToast("RESEARCH COMPLETE", s.name);
+                initSkillTree(); updateUI();
+                showToast("RESEARCHED", s.name);
             }
         };
         hangar.appendChild(div);
-
         if (s.pre) {
-            const pre = skills.find(x => x.id === s.pre);
+            const pre = skillTree.find(x => x.id === s.pre);
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", pre.x); line.setAttribute("y1", pre.y);
             line.setAttribute("x2", s.x); line.setAttribute("y2", s.y);
@@ -199,60 +180,38 @@ function initSkillTree() {
     });
 }
 
-// --- MEDALS ---
 function renderMedals() {
-    const box = document.getElementById('ach-list');
-    box.innerHTML = '';
+    const box = document.getElementById('ach-list'); box.innerHTML = '';
     medalList.forEach(m => {
-        const isGot = achievements.includes(m.id);
-        box.innerHTML += `
-            <div class="medal-card ${!isGot ? 'locked-medal' : ''}">
-                <div class="medal-icon ${m.tier}">🏆</div>
-                <div>
-                    <h3 style="margin:0; color:${isGot?'white':'#444'}">${m.name}</h3>
-                    <small style="color:#888">${m.d}</small>
-                </div>
-            </div>`;
+        const got = achievements.includes(m.id);
+        box.innerHTML += `<div class="medal-item ${got?'earned':''}">
+            <div class="medal-img">${m.icon}</div>
+            <div><h3>${m.name}</h3><small>${m.d}</small></div>
+        </div>`;
     });
 }
 
 function checkMedals() {
-    medalList.forEach(m => {
-        if (!achievements.includes(m.id) && m.cond()) {
-            achievements.push(m.id);
-            save();
-            showToast("MEDAL EARNED", m.name);
-        }
-    });
+    medalList.forEach(m => { if (!achievements.includes(m.id) && m.cond()) { achievements.push(m.id); save(); showToast("MEDAL EARNED", m.name); } });
 }
 
-// --- HELPERS ---
-function save() {
-    localStorage.setItem('ob_pts', points);
-    localStorage.setItem('ob_hi', highscore);
-    localStorage.setItem('ob_own', JSON.stringify(owned));
-    localStorage.setItem('ob_ach', JSON.stringify(achievements));
+function save() { localStorage.setItem('ob_pts', points); localStorage.setItem('ob_hi', highscore); localStorage.setItem('ob_own', JSON.stringify(owned)); localStorage.setItem('ob_ach', JSON.stringify(achievements)); }
+
+function showToast(n, d) {
+    document.getElementById('t-name').innerText = n; document.getElementById('t-desc').innerText = d;
+    const t = document.getElementById('toast'); t.classList.add('pop');
+    setTimeout(() => t.classList.remove('pop'), 3000);
 }
 
-function showToast(name, desc) {
-    document.getElementById('t-name').innerText = name;
-    document.getElementById('t-desc').innerText = desc;
-    const t = document.getElementById('toast');
-    t.classList.add('pop');
-    setTimeout(() => t.classList.remove('pop'), 4000);
-}
-
-// --- INPUTS ---
+// MOUSE
 document.addEventListener('mousemove', e => {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
     if (isPanning && mode === 'hangar') {
         panX += e.clientX - lastX; panY += e.clientY - lastY;
         hangar.style.transform = `translate(${panX}px, ${panY}px)`;
         lastX = e.clientX; lastY = e.clientY;
     }
 });
-
 document.addEventListener('mousedown', e => {
     if(mode === 'hangar') { isPanning = true; lastX = e.clientX; lastY = e.clientY; }
     if(mode === 'play') vel = -8.5;
