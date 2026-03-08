@@ -1,169 +1,176 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ORANGEBIRD</title>
+    <title>ORANGEBIRD PRO</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body oncontextmenu="return false;">
 
     <div id="cursor"></div>
 
-    <div id="game-box">
-        <div id="score-gui" style="position:absolute; width:100%; text-align:center; top:50px; font-size:70px; font-weight:900; color:white; text-shadow:4px 4px 0 #000; z-index:10;">0</div>
+    <div id="game-container">
+        <div id="top-score" style="position:absolute; width:100%; text-align:center; top:50px; font-size:75px; font-weight:900; color:white; text-shadow:4px 4px 0 #000; z-index:10; pointer-events:none;">0</div>
 
-        <div id="scr-menu" class="ui-screen">
-            <h1 style="color:white; font-size:60px; margin:0; text-shadow:0 5px 15px rgba(0,0,0,0.5);">ORANGEBIRD</h1>
-            <p style="color:white; font-weight:bold;">RESOURCES: <span id="pts-display">0</span> POINTS</p>
-            <button class="btn" onclick="setMode('play')">START ENGINE</button>
-            <button class="btn" onclick="setMode('hangar')">OPEN HANGAR</button>
-            <button class="btn" onclick="setMode('ach')">VIEW MEDALS</button>
-        </div>
-
-        <div id="scr-hangar" class="ui-screen" style="display:none; background:transparent;">
-            <div id="hangar-view">
-                <svg id="hangar-links" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
+        <div id="menu-ui" class="gui">
+            <h1 style="color:white; font-size:70px; margin:0; text-shadow:0 10px 20px rgba(0,0,0,0.5);">ORANGEBIRD</h1>
+            <div style="background:rgba(0,0,0,0.6); padding:10px 30px; border-radius:30px; margin:20px; color:white;">
+                <p style="margin:5px;">HIGHSCORE: <span id="high-val">0</span> PIPES</p>
+                <p style="margin:5px;">RESOURCES: <span id="points-val">0</span> POINTS</p>
             </div>
-            <button class="btn" style="position:absolute; bottom:40px;" onclick="setMode('menu')">EXIT HANGAR</button>
-            <div style="position:absolute; top:20px; color:white; background:rgba(0,0,0,0.5); padding:5px 15px; border-radius:20px;">Hold Mouse Button to Pan</div>
+            <button class="btn" onclick="switchUI('play')">FLY MISSION</button>
+            <button class="btn" onclick="switchUI('hangar')">OPEN HANGAR</button>
+            <button class="btn" onclick="switchUI('medals')">MEDALS</button>
         </div>
 
-        <div id="scr-ach" class="ui-screen" style="display:none;">
-            <h2 style="color:white;">PILOT ACHIEVEMENTS</h2>
-            <div id="ach-container" style="width:80%; height:400px; overflow-y:auto; background:rgba(255,255,255,0.1); border-radius:10px; padding:10px;"></div>
-            <button class="btn" onclick="setMode('menu')">CLOSE</button>
+        <div id="hangar-ui" class="gui" style="display:none; background:transparent;">
+            <div id="hangar-viewport">
+                <svg id="lines" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
+            </div>
+            <div style="position:absolute; top:20px; color:white; background:rgba(0,0,0,0.8); padding:8px 20px; border-radius:20px;">DRAG TO PAN HANGAR</div>
+            <button class="btn" style="position:absolute; bottom:40px;" onclick="switchUI('menu')">CLOSE HANGAR</button>
+        </div>
+
+        <div id="medals-ui" class="gui" style="display:none;">
+            <h2 style="color:white; font-size:40px;">PILOT MEDALS</h2>
+            <div id="ach-list" style="width:85%; height:450px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:15px; border-radius:15px; color:white;"></div>
+            <button class="btn" onclick="switchUI('menu')">BACK</button>
         </div>
 
         <div id="toast">
-            <div class="toast-icon"></div>
-            <div class="toast-text"><b id="t-title">New Medal!</b><span id="t-desc">Description here.</span></div>
+            <div class="toast-img"></div>
+            <div class="toast-body"><b id="t-name"></b><span id="t-desc"></span></div>
         </div>
 
         <div id="bird"></div>
-        <div id="pipe-world"></div>
+        <div id="world"></div>
     </div>
 
     <script>
         const bird = document.getElementById('bird');
-        const world = document.getElementById('pipe-world');
-        const hangar = document.getElementById('hangar-view');
+        const world = document.getElementById('world');
+        const hangar = document.getElementById('hangar-viewport');
         const cursor = document.getElementById('cursor');
 
-        // ENGINE DATA
+        // ENGINE STATE
         let mode = 'menu';
-        let birdY = 300, velocity = 0, grav = 0.5, jump = -9;
-        let pipesPassed = 0, points = parseInt(localStorage.getItem('ob_pts')) || 0;
-        let pipes = [], frame = 0;
-        let bought = JSON.parse(localStorage.getItem('ob_skills')) || [];
+        let birdY = 300, vel = 0, gravity = 0.5, jump = -9.5;
+        let pipesPassed = 0, pipes = [], frame = 0;
         
-        // HANGAR PANNING
-        let isDragging = false, lastX, lastY, panX = -1250, panY = -1125;
+        // SAVE DATA
+        let points = parseInt(localStorage.getItem('ob_points')) || 0;
+        let highscore = parseInt(localStorage.getItem('ob_high')) || 0;
+        let owned = JSON.parse(localStorage.getItem('ob_owned')) || [];
 
-        // UPDATE CURSOR
+        // HANGAR PANNING
+        let isPanning = false, lastX, lastY, panX = -1250, panY = -1125;
+
+        // MOUSE/CURSOR HANDLERS
         document.addEventListener('mousemove', e => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
-            if (isDragging && mode === 'hangar') {
-                panX += e.clientX - lastX;
-                panY += e.clientY - lastY;
+            if (isPanning && mode === 'hangar') {
+                panX += e.clientX - lastX; panY += e.clientY - lastY;
                 hangar.style.transform = `translate(${panX}px, ${panY}px)`;
                 lastX = e.clientX; lastY = e.clientY;
             }
         });
+        document.addEventListener('mousedown', e => { 
+            if(mode === 'hangar') { isPanning = true; lastX = e.clientX; lastY = e.clientY; }
+            if(mode === 'play') { vel = jump; }
+        });
+        document.addEventListener('mouseup', () => isPanning = false);
+        window.addEventListener('keydown', e => { if(e.code === 'Space' && mode === 'play') vel = jump; });
 
-        document.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-        document.addEventListener('mouseup', () => isDragging = false);
-
-        // UI SWITCHER
-        function setMode(m) {
+        // UI SYSTEM
+        function switchUI(m) {
             mode = m;
-            document.querySelectorAll('.ui-screen').forEach(s => s.style.display = 'none');
-            const box = document.getElementById('game-box');
-            
+            document.querySelectorAll('.gui').forEach(g => g.style.display = 'none');
+            const container = document.getElementById('game-container');
+
             if (m === 'menu') {
-                document.getElementById('scr-menu').style.display = 'flex';
-                box.style.background = 'var(--day)';
-                document.getElementById('pts-display').innerText = points;
+                document.getElementById('menu-ui').style.display = 'flex';
+                document.getElementById('points-val').innerText = points;
+                document.getElementById('high-val').innerText = highscore;
+                container.style.background = 'var(--day)';
             } else if (m === 'play') {
-                resetPlay();
+                initGame();
             } else if (m === 'hangar') {
-                document.getElementById('scr-hangar').style.display = 'flex';
-                box.style.background = 'var(--midnight)';
-                initHangar();
-            } else if (m === 'ach') {
-                document.getElementById('scr-ach').style.display = 'flex';
-                box.style.background = 'var(--sunset)';
-                renderAchievements();
+                document.getElementById('hangar-ui').style.display = 'flex';
+                container.style.background = 'var(--midnight)';
+                initSkillTree();
+            } else if (m === 'medals') {
+                document.getElementById('medals-ui').style.display = 'flex';
+                container.style.background = 'var(--sunset)';
+                renderMedals();
             }
         }
 
-        function resetPlay() {
-            birdY = 300; velocity = 0; pipesPassed = 0; pipes = []; frame = 0;
+        function initGame() {
+            birdY = 300; vel = 0; pipesPassed = 0; pipes = []; frame = 0;
             world.innerHTML = '';
-            document.getElementById('score-gui').innerText = '0';
-            requestAnimationFrame(gameLoop);
+            document.getElementById('top-score').innerText = '0';
+            requestAnimationFrame(engineLoop);
         }
 
-        // STEAM NOTIFICATION
-        function sendToast(title, desc) {
-            const t = document.getElementById('toast');
-            document.getElementById('t-title').innerText = title;
+        // STEAM NOTIF
+        function showToast(name, desc) {
+            document.getElementById('t-name').innerText = name;
             document.getElementById('t-desc').innerText = desc;
+            const t = document.getElementById('toast');
             t.classList.add('pop');
             setTimeout(() => t.classList.remove('pop'), 5000);
         }
 
-        // HANGAR DATA & SKILLS
-        const skillTree = [
-            { id: 'S1', name: 'Slim Wings', desc: 'Smaller Hitbox', cost: 1, x: 1450, y: 1450, pre: null },
-            { id: 'S2', name: 'Anti-Grav', desc: 'Floaty Physics', cost: 3, x: 1600, y: 1300, pre: 'S1' },
-            { id: 'S3', name: 'Turbo Fan', desc: 'Faster Points', cost: 10, x: 1750, y: 1450, pre: 'S2' }
+        // SKILL TREE DATA
+        const skills = [
+            { id: 'S1', name: 'Slim Frame', d: 'Tight Hitbox', cost: 1, x: 1450, y: 1450, pre: null },
+            { id: 'S2', name: 'Cloud Glide', d: 'Lower Gravity', cost: 5, x: 1650, y: 1300, pre: 'S1' },
+            { id: 'S3', name: 'Nitro Flap', d: 'Quick Score', cost: 10, x: 1850, y: 1450, pre: 'S2' }
         ];
 
-        function initHangar() {
-            const svg = document.getElementById('hangar-links');
+        function initSkillTree() {
+            const svg = document.getElementById('lines');
             svg.innerHTML = '';
-            document.querySelectorAll('.skill-node').forEach(n => n.remove());
+            document.querySelectorAll('.node').forEach(n => n.remove());
 
-            skillTree.forEach(s => {
-                const node = document.createElement('div');
-                const isOwned = bought.includes(s.id);
-                const isReady = s.pre === null || bought.includes(s.pre);
+            skills.forEach(s => {
+                const div = document.createElement('div');
+                const isOwned = owned.includes(s.id);
+                const isReady = s.pre === null || owned.includes(s.pre);
                 
-                node.className = `skill-node ${isOwned ? 'node-owned' : (isReady ? 'node-ready' : '')}`;
-                node.style.left = s.x + 'px'; node.style.top = s.y + 'px';
-                node.innerHTML = `<b>${s.name}</b><br>${s.desc}<br>[${s.cost} PTS]`;
+                div.className = `node ${isOwned ? 'node-owned' : (isReady ? 'node-ready' : '')}`;
+                div.style.left = s.x + 'px'; div.style.top = s.y + 'px';
+                div.innerHTML = `<b>${s.name}</b><br>${s.d}<br>PRICE: ${s.cost}`;
                 
-                node.onclick = () => {
+                div.onclick = () => {
                     if (isReady && !isOwned && points >= s.cost) {
-                        points -= s.cost;
-                        bought.push(s.id);
-                        save();
-                        initHangar();
-                        sendToast("Research Complete", s.name + " is now active.");
+                        points -= s.cost; owned.push(s.id); save();
+                        initSkillTree();
+                        showToast("UPGRADE UNLOCKED", s.name);
                     }
                 };
-                hangar.appendChild(node);
+                hangar.appendChild(div);
 
                 if (s.pre) {
-                    const pre = skillTree.find(x => x.id === s.pre);
+                    const pre = skills.find(x => x.id === s.pre);
                     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", pre.x + 45); line.setAttribute("y1", pre.y + 45);
-                    line.setAttribute("x2", s.x + 45); line.setAttribute("y2", s.y + 45);
-                    line.setAttribute("class", `connector ${isOwned ? 'connector-on' : ''}`);
+                    line.setAttribute("x1", pre.x+50); line.setAttribute("y1", pre.y+50);
+                    line.setAttribute("x2", s.x+50); line.setAttribute("y2", s.y+50);
+                    line.setAttribute("class", `connector ${isOwned ? 'connector-active' : ''}`);
                     svg.appendChild(line);
                 }
             });
         }
 
-        function gameLoop() {
+        function engineLoop() {
             if (mode !== 'play') return;
             frame++;
-            velocity += grav; birdY += velocity;
+            vel += gravity; birdY += vel;
             bird.style.top = birdY + 'px';
-            bird.style.transform = `rotate(${Math.min(velocity * 4, 90)}deg)`;
+            bird.style.transform = `rotate(${Math.min(vel * 3, 90)}deg)`;
 
-            // Pipe Frequency
-            if (frame % 160 === 0) spawnPipe();
+            // Pipe Distance Fixed
+            if (frame % 170 === 0) spawnPipe();
 
             pipes.forEach((p, i) => {
                 p.x -= 4;
@@ -173,43 +180,45 @@
                 const pt = p.dt.getBoundingClientRect();
                 const pb = p.db.getBoundingClientRect();
 
-                // Hitbox detection
-                const padding = bought.includes('S1') ? 12 : 6;
-                if (b.right - padding > pt.left && b.left + padding < pt.right) {
-                    if (b.top + padding < pt.bottom || b.bottom - padding > pb.top) setMode('menu');
+                // Collision - Pixel Precise
+                const pad = owned.includes('S1') ? 14 : 7;
+                if (b.right-pad > pt.left && b.left+pad < pt.right) {
+                    if (b.top+pad < pt.bottom || b.bottom-pad > pb.top) switchUI('menu');
                 }
 
-                if (p.x < 50 && !p.passed) {
+                if (p.x < 40 && !p.passed) {
                     p.passed = true;
                     pipesPassed++;
                     if (pipesPassed % 5 === 0) { points++; save(); }
-                    document.getElementById('score-gui').innerText = Math.floor(pipesPassed / 5);
+                    document.getElementById('top-score').innerText = Math.floor(pipesPassed / 5);
+                    if(pipesPassed > highscore) highscore = pipesPassed;
                 }
             });
 
-            if (birdY > 730 || birdY < -20) setMode('menu');
-            requestAnimationFrame(gameLoop);
+            if (birdY > 730 || birdY < -20) switchUI('menu');
+            requestAnimationFrame(engineLoop);
         }
 
         function spawnPipe() {
             const gap = 180;
-            const topH = Math.random() * 300 + 100;
-            const p = { x: 550, dt: document.createElement('div'), db: document.createElement('div'), passed: false };
+            const topH = Math.random() * 320 + 80;
+            const p = { x: 550, passed: false, dt: document.createElement('div'), db: document.createElement('div') };
             p.dt.className = 'pipe'; p.dt.style.height = topH + 'px'; p.dt.style.top = '0';
+            p.dt.innerHTML = '<div class="pipe-cap" style="bottom:-5px"></div>';
             p.db.className = 'pipe'; p.db.style.height = (750 - topH - gap) + 'px'; p.db.style.bottom = '0';
+            p.db.innerHTML = '<div class="pipe-cap" style="top:-5px"></div>';
             world.appendChild(p.dt); world.appendChild(p.db);
             pipes.push(p);
         }
 
         function save() {
-            localStorage.setItem('ob_pts', points);
-            localStorage.setItem('ob_skills', JSON.stringify(bought));
+            localStorage.setItem('ob_points', points);
+            localStorage.setItem('ob_high', highscore);
+            localStorage.setItem('ob_owned', JSON.stringify(owned));
         }
 
-        // INPUTS
-        const flap = () => { if(mode === 'play') velocity = jump; };
-        window.addEventListener('keydown', e => { if(e.code === 'Space') flap(); });
-        window.addEventListener('mousedown', e => { if(e.button === 0) flap(); });
+        // Initial Highscore Load
+        document.getElementById('high-val').innerText = highscore;
 
     </script>
 </body>
