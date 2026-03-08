@@ -8,8 +8,12 @@
 <body oncontextmenu="return false;">
 
     <div id="loading-screen">
-        <div class="loader"></div>
-        <h2 style="color:white; margin-top:20px; letter-spacing:5px;">INITIALIZING SYSTEMS</h2>
+        <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-inner"></div>
+        </div>
+        <h2 id="loading-text">INITIALIZING SYSTEMS...</h2>
+        <p id="loading-tip">TIP: Unlock "Core Systems" in the hangar to begin flight.</p>
     </div>
 
     <div id="cursor"></div>
@@ -22,26 +26,45 @@
 
         <div id="menu-ui" class="gui">
             <div class="logo-area">
-                <span class="version">V2.0 PRO</span>
+                <span class="version">V3.0 ELITE</span>
                 <h1>ORANGEBIRD</h1>
             </div>
             <div class="stats-bar">
-                <div class="stat"><span>HIGHSCORE</span><b id="high-val">0</b></div>
+                <div class="stat"><span>PILOT RECORD</span><b id="high-val">0</b></div>
                 <div class="stat"><span>CREDITS</span><b id="points-val">0</b></div>
             </div>
-            <button id="btn-play" class="btn lock" onclick="checkStart()">FLY MISSION</button>
+            <button id="btn-play" class="btn" onclick="switchUI('mission-select')">FLY MISSION</button>
             <button class="btn btn-sec" onclick="switchUI('hangar')">ENGINEERING HANGAR</button>
             <button class="btn btn-sec" onclick="switchUI('medals')">PILOT RECORDS</button>
         </div>
 
-        <div id="gameover-ui" class="gui" style="display:none;">
-            <h2 style="color:#ff4757; font-size:40px; margin-bottom:10px;">MISSION FAILED</h2>
-            <div class="results-card">
-                <p>PIPES PASSED: <span id="res-score">0</span></p>
-                <p>CREDITS EARNED: <span id="res-points">0</span></p>
-                <p>BEST RECORD: <span id="res-high">0</span></p>
+        <div id="mission-ui" class="gui" style="display:none;">
+            <h2 class="gui-title">SELECT MISSION</h2>
+            <div class="mission-grid">
+                <div class="mission-card" onclick="startGame('original')">
+                    <h3>ORIGINAL</h3>
+                    <p>Standard obstacle course. Classic physics.</p>
+                </div>
+                <div class="mission-card advanced" onclick="startGame('advanced')">
+                    <h3>ADVANCED</h3>
+                    <p>Moving pipes & narrow gaps. High risk.</p>
+                </div>
+                <div class="mission-card locked">
+                    <h3>MULTIPLAYER</h3>
+                    <p>Coming to v3.1: Duel for Credits.</p>
+                </div>
             </div>
-            <button class="btn" onclick="switchUI('play')">RE-DEPLOY</button>
+            <button class="btn btn-sec" onclick="switchUI('menu')">BACK</button>
+        </div>
+
+        <div id="gameover-ui" class="gui" style="display:none;">
+            <h2 id="death-msg">MISSION FAILED</h2>
+            <div class="results-card">
+                <div class="res-row"><span>PIPES PASSED</span><b id="res-score">0</b></div>
+                <div class="res-row"><span>CREDITS EARNED</span><b id="res-points">0</b></div>
+                <div class="res-row"><span>BEST RECORD</span><b id="res-high">0</b></div>
+            </div>
+            <button class="btn" onclick="startGame(currentGameMode)">RE-DEPLOY</button>
             <button class="btn btn-sec" onclick="switchUI('menu')">RETURN TO BASE</button>
         </div>
 
@@ -49,18 +72,21 @@
             <div id="hangar-viewport">
                 <svg id="lines" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
             </div>
-            <div class="hangar-controls">DRAG TO NAVIGATE TECHNOLOGY TREE</div>
-            <button class="btn back-btn" onclick="switchUI('menu')">EXIT HANGAR</button>
+            <div class="hangar-overlay">
+                <div class="hangar-hud">CREDITS: <span id="hangar-pts">0</span></div>
+                <div class="hangar-controls">DRAG TO NAVIGATE RESEARCH TREE</div>
+                <button class="btn back-btn" onclick="switchUI('menu')">EXIT HANGAR</button>
+            </div>
         </div>
 
         <div id="medals-ui" class="gui" style="display:none;">
-            <h2 style="color:white;">PILOT ACHIEVEMENTS</h2>
+            <h2 class="gui-title">PILOT MEDALS</h2>
             <div id="ach-list" class="scroll-box"></div>
             <button class="btn" onclick="switchUI('menu')">BACK</button>
         </div>
 
         <div id="toast">
-            <div class="toast-img">🏆</div>
+            <div class="toast-img" id="toast-icon">🏆</div>
             <div class="toast-body"><b id="t-name"></b><span id="t-desc"></span></div>
         </div>
 
