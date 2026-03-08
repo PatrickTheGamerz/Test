@@ -1,87 +1,92 @@
-/* --- ORANGEBIRD CORE --- */
+/* --- ORANGEBIRD CORE STYLES --- */
+:root {
+    --bg-day: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+    --bg-midnight: radial-gradient(circle at center, #2c3e50 0%, #000000 100%);
+    --bg-sunset: linear-gradient(180deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+}
+
 * { cursor: none !important; user-select: none; box-sizing: border-box; }
 
-#cursor {
-    width: 24px; height: 24px; border: 2px solid #fff;
-    background: rgba(255, 165, 0, 0.4); border-radius: 50%;
+#cursor-custom {
+    width: 24px; height: 24px; border: 2px solid orange;
+    background: rgba(255, 165, 0, 0.2); border-radius: 50%;
     position: fixed; pointer-events: none; z-index: 10000;
 }
 
 body {
-    background-color: #000; margin: 0; 
-    height: 100vh; display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', sans-serif; overflow: hidden;
+    background: #111; margin: 0; height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 #game-container {
-    width: 500px; height: 750px; position: relative;
-    border: 12px solid #222; border-radius: 35px;
-    overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    width: 500px; height: 750px; background: var(--bg-day);
+    position: relative; overflow: hidden; border: 12px solid #222;
+    border-radius: 40px; transition: background 1s ease;
 }
 
-/* --- DYNAMIC BACKGROUNDS --- */
-.bg-day { background: linear-gradient(180deg, #4ec0ca 0%, #d2f4f7 100%); }
-.bg-midnight { background: radial-gradient(circle, #1e272e 0%, #050505 100%); }
-.bg-industrial { background: #111 url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAAAAAABAQECAgIDAwMEBAQFBQUGBgcHCAgIAAAAC0lEQVQ4y2NgGAUDAAABAAEAAQAAAABJRU5ErkJggg=='); }
-
-/* --- THE BIRD (ORANGEBIRD VERSION) --- */
+/* --- THE ORANGE BIRD --- */
 #bird {
-    width: 42px; height: 32px; position: absolute; left: 80px; z-index: 50;
-    border-radius: 50% 50% 40% 40%; border: 3px solid #000;
-    background: #ff9f43; transition: transform 0.1s;
+    width: 42px; height: 32px; background: #ff7f50; /* Coral/Orange */
+    position: absolute; left: 80px; z-index: 100;
+    border: 3px solid #000; border-radius: 50% 50% 42% 42%;
+    transition: width 0.3s, height 0.3s;
 }
-#bird::before { /* Orange Beak */
-    content: ''; position: absolute; right: -12px; top: 10px;
-    width: 14px; height: 10px; background: #ee5253; border: 2px solid #000; border-radius: 0 8px 8px 0;
+#bird::before { /* Eye */
+    content: ''; position: absolute; top: 6px; right: 8px;
+    width: 6px; height: 6px; background: #000; border-radius: 50%;
 }
+#bird::after { /* Wing */
+    content: ''; position: absolute; left: 4px; top: 12px;
+    width: 18px; height: 12px; background: #fff; border: 2px solid #000;
+    border-radius: 50%; animation: flap 0.1s infinite alternate;
+}
+@keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(-30deg); } }
 
-/* --- THE HANGAR PANNING SYSTEM --- */
-#hangar-viewport {
-    width: 100%; height: 100%; position: absolute;
-    overflow: hidden; cursor: grab;
-}
-#hangar-map {
-    width: 2000px; height: 2000px; position: absolute;
-    transform: translate(var(--pan-x, -750px), var(--pan-y, -600px));
-    transition: transform 0.1s ease-out;
+/* --- THE INFINITE HANGAR PANNING --- */
+#hangar-canvas {
+    position: absolute; width: 2000px; height: 2000px;
+    top: -625px; left: -750px; cursor: grab;
+    background-image: radial-gradient(#ffffff11 1px, transparent 1px);
+    background-size: 40px 40px; transition: transform 0.1s ease-out;
 }
 
 .skill-node {
-    width: 80px; height: 80px; position: absolute;
-    background: #222; border: 4px solid #444; border-radius: 50%;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 10px; text-align: center; color: #aaa; z-index: 2;
+    width: 70px; height: 70px; background: #222; border: 4px solid #444;
+    border-radius: 18px; position: absolute; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    transition: 0.3s; z-index: 2; color: #fff; font-size: 10px; text-align: center;
 }
-.skill-node.unlocked { border-color: #ff9f43; color: white; box-shadow: 0 0 20px rgba(255,159,67,0.5); }
-.skill-node b { display: block; font-size: 12px; color: #ff9f43; }
+.skill-node.available { border-color: #ff7f50; cursor: pointer; }
+.skill-node.bought { background: #ff7f50; border-color: #fff; color: #000; box-shadow: 0 0 20px #ff7f50; }
 
-.skill-line {
-    position: absolute; height: 4px; background: #444; 
-    transform-origin: left center; z-index: 1;
-}
-.skill-line.active { background: #ff9f43; box-shadow: 0 0 10px #ff9f43; }
+.skill-line { stroke: #444; stroke-width: 4; fill: none; transition: 0.5s; }
+.line-active { stroke: #ff7f50; filter: drop-shadow(0 0 5px #ff7f50); }
 
 /* --- STEAM-STYLE NOTIFICATION --- */
-#achievement-popup {
+#achievement-toast {
     position: absolute; bottom: -100px; right: 20px;
-    width: 280px; height: 70px; background: rgba(30, 39, 46, 0.95);
-    border-left: 5px solid #ff9f43; display: flex; align-items: center;
-    padding: 10px; transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 280px; height: 70px; background: #1b2838;
+    border-radius: 4px; border-left: 4px solid #66c0f4;
+    display: flex; align-items: center; padding: 10px;
+    transition: bottom 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
     z-index: 1000;
 }
-#achievement-popup.show { bottom: 20px; }
-#achievement-popup .icon { width: 45px; height: 45px; background: #ff9f43; border-radius: 5px; margin-right: 15px; }
+#achievement-toast.show { bottom: 20px; }
+.toast-img { width: 45px; height: 45px; background: #ff7f50; border-radius: 3px; margin-right: 12px; }
+.toast-info b { color: #66c0f4; font-size: 14px; display: block; }
+.toast-info span { color: #acb2b8; font-size: 12px; }
 
-/* --- PIPES --- */
-.pipe {
-    width: 85px; position: absolute; border: 4px solid #111;
-    background: linear-gradient(90deg, #576574, #222f3e);
+/* --- UI COMPONENTS --- */
+.gui-layer {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 500;
+    backdrop-filter: blur(5px); transition: opacity 0.5s;
 }
 
-/* --- GUI BUTTONS --- */
-.btn {
-    padding: 15px 40px; background: #ff9f43; border: none;
-    color: #fff; font-weight: 900; border-radius: 5px;
-    box-shadow: 0 6px 0 #ee5253; margin: 10px; width: 220px;
+.btn-orange {
+    background: #ff7f50; border: none; padding: 15px 40px;
+    color: white; font-weight: 900; border-radius: 4px;
+    margin: 10px; width: 250px; box-shadow: 0 4px 0 #d35400;
 }
-.btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #ee5253; }
+.btn-orange:hover { background: #ff8e66; transform: translateY(-2px); }
