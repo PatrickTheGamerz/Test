@@ -1,80 +1,38 @@
 #include <iostream>
-#include <vector>
+#include <fstream>
 
-// Note: In a real project, you would include these graphics libraries:
-// #include <glad/glad.h>   // OpenGL loader
-// #include <GLFW/glfw3.h>  // Window and Input manager
-
-// --- 1. DEFINE A BLOCK ---
-struct Block {
-    uint8_t type; // 0 = Air, 1 = Dirt, 2 = Stone, 3 = Grass
-    bool isSolid() { return type != 0; }
-};
-
-// --- 2. DEFINE A CHUNK (16x16x16 for simplicity) ---
-const int CHUNK_SIZE = 16;
-
-class Chunk {
-public:
-    Block blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
-
-    Chunk() {
-        // Generate a flat world floor
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int y = 0; y < CHUNK_SIZE; y++) {
-                for (int z = 0; z < CHUNK_SIZE; z++) {
-                    if (y < 8) blocks[x][y][z].type = 2; // Stone underground
-                    else if (y == 8) blocks[x][y][z].type = 3; // Grass on top
-                    else blocks[x][y][z].type = 0; // Air above
-                }
-            }
-        }
-    }
-
-    void render() {
-        // In a real OpenGL game, you would generate a "Mesh" here.
-        // You only draw the faces of blocks that are touching "Air" (type 0).
-        // Drawing every single block crashes the GPU!
-    }
-};
-
-// --- 3. THE GAME LOOP ---
 int main() {
-    std::cout << "Starting Voxel Engine..." << std::endl;
+    // We tell C++ to create a new file called "my_game.html"
+    std::ofstream gameFile("my_game.html");
 
-    /* // REAL GRAPHICS SETUP WOULD LOOK LIKE THIS:
-    glfwInit();
-    GLFWwindow* window = glfwCreateWindow(800, 600, "C++ Minecraft", NULL, NULL);
-    glfwMakeContextCurrent(window);
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    */
+    if (gameFile.is_open()) {
+        std::cout << "Building your web game..." << std::endl;
 
-    // Generate our world
-    Chunk myFirstChunk;
-    bool isRunning = true;
-
-    // The infinite loop that keeps the game open
-    while (isRunning) {
+        // Writing the HTML structure
+        gameFile << "<!DOCTYPE html>\n<html>\n<head>\n<title>C++ Web Game</title>\n";
         
-        // 1. Process Input (Keyboard/Mouse)
-        // if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) isRunning = false;
-        
-        // 2. Update Game Logic (Physics, Gravity, Breaking blocks)
-        
-        // 3. Render Graphics
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear last frame
-        myFirstChunk.render(); // Draw the chunks
-        
-        // 4. Swap Buffers (Show the new frame to the monitor)
-        // glfwSwapBuffers(window);
-        // glfwPollEvents();
+        // Writing the CSS (The "style.css" part you asked for!)
+        gameFile << "<style>\n";
+        gameFile << "  body { background-color: #2b2b2b; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-top: 50px; }\n";
+        gameFile << "  #game-board { width: 500px; height: 500px; background-color: #1e1e1e; border: 4px solid #444; border-radius: 10px; margin: 0 auto; position: relative; overflow: hidden; }\n";
+        gameFile << "  #target { width: 40px; height: 40px; background-color: #ff4757; border-radius: 50%; position: absolute; top: 50%; left: 50%; cursor: pointer; transition: transform 0.1s; }\n";
+        gameFile << "  #target:active { transform: scale(0.8); }\n";
+        gameFile << "</style>\n</head>\n<body>\n";
 
-        // For this console demonstration, we will just break the loop
-        std::cout << "Game loop ran successfully. Rendering chunk..." << std::endl;
-        isRunning = false; 
-    }
+        // Writing the visual elements
+        gameFile << "  <h1>Catch the Dot!</h1>\n";
+        gameFile << "  <h2>Score: <span id='score'>0</span></h2>\n";
+        gameFile << "  <div id='game-board'>\n";
+        gameFile << "    <div id='target'></div>\n";
+        gameFile << "  </div>\n";
 
-    std::cout << "Shutting down engine." << std::endl;
-    // glfwTerminate();
-    return 0;
-}
+        // Writing the JavaScript to make the game actually work
+        gameFile << "<script>\n";
+        gameFile << "  let score = 0;\n";
+        gameFile << "  const target = document.getElementById('target');\n";
+        gameFile << "  const scoreDisplay = document.getElementById('score');\n";
+        
+        gameFile << "  target.addEventListener('click', function() {\n";
+        gameFile << "    score++;\n";
+        gameFile << "    scoreDisplay.innerText = score;\n";
+        // Move the dot to a random position inside
