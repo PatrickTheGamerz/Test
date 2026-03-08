@@ -1,44 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flappy Hangar Pro</title>
+    <title>ORANGEBIRD</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body oncontextmenu="return false;">
 
     <div id="cursor"></div>
 
-    <div id="game-container">
-        <div id="score-text" style="position:absolute; width:100%; text-align:center; top:50px; font-size:70px; font-weight:900; z-index:10; pointer-events:none;">0</div>
-
-        <div id="menu-gui" class="gui">
-            <h1>FLAPPY PRO</h1>
-            <p>HIGHSCORE: <span id="high-val">0</span></p>
-            <button class="btn" onclick="gameState='playing'; hideAll(); startGame();">PLAY MISSION</button>
-            <button class="btn" onclick="showGUI('hangar-gui')">HANGAR</button>
-            <button class="btn" onclick="showGUI('ach-gui')">ACHIEVEMENTS</button>
-        </div>
-
-        <div id="hangar-gui" class="gui hidden">
-            <h2>FLIGHT HANGAR</h2>
-            <div class="hangar-grid">
-                <div class="skill-node" id="node-center" style="border-color:#fff">Core</div>
-                <div class="skill-node" id="node-red" onclick="applySkill('#ff4757', 10)"><i>10 PTS</i></div>
-                <div class="skill-node" id="node-blue" onclick="applySkill('#00d2ff', 20)"><i>20 PTS</i></div>
-                <div class="skill-node" id="node-yellow" onclick="applySkill('#eccc68', 30)"><i>30 PTS</i></div>
-                <div class="skill-node" id="node-green" onclick="applySkill('#7bed9f', 40)"><i>40 PTS</i></div>
-                <div class="skill-node" id="node-purple" onclick="applySkill('#a29bfe', 50)"><i>50 PTS</i></div>
+    <div id="game-container" class="bg-day">
+        <div id="achievement-popup">
+            <div class="icon"></div>
+            <div>
+                <div style="font-size:10px; color:#ff9f43; font-weight:bold;">ACHIEVEMENT UNLOCKED</div>
+                <div id="ach-name" style="color:white; font-size:14px; font-weight:bold;">Veteran Pilot</div>
             </div>
-            <button class="btn" onclick="showGUI('menu-gui')">EXIT HANGAR</button>
         </div>
 
-        <div id="ach-gui" class="gui hidden">
-            <h2>PILOT LOG</h2>
-            <div id="ach-container"></div>
-            <button class="btn" onclick="showGUI('menu-gui')">BACK</button>
+        <div id="ui-layer" style="position:absolute; inset:0; z-index:200;">
+            <div id="screen-title" class="gui" style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.4)">
+                <h1 style="font-size:60px; color:#ff9f43; -webkit-text-stroke:2px black;">ORANGEBIRD</h1>
+                <p>POINTS: <span id="pts-val">0</span> | BEST: <span id="best-val">0</span></p>
+                <button class="btn" onclick="startGame()">MISSION START</button>
+                <button class="btn" onclick="openHangar()">HANGAR</button>
+                <button class="btn" onclick="openAchievements()">MEDALS</button>
+            </div>
+
+            <div id="screen-hangar" class="gui hidden" style="height:100%; width:100%;">
+                <div id="hangar-viewport">
+                    <div id="hangar-map">
+                        </div>
+                </div>
+                <div style="position:absolute; top:20px; left:20px; pointer-events:none;">
+                    <h2>SKILL TREE</h2>
+                    <p>Right-Click & Drag to move</p>
+                </div>
+                <button class="btn" onclick="closeHangar()" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%)">RETURN</button>
+            </div>
         </div>
 
-        <div id="save-pop">PROGRESS SAVED</div>
+        <div id="score-text" style="position:absolute; width:100%; text-align:center; top:10%; font-size:80px; font-weight:900; z-index:10; pointer-events:none; color:#fff; text-shadow:0 5px 15px rgba(0,0,0,0.5)">0</div>
         <div id="bird"></div>
         <div id="world"></div>
     </div>
@@ -46,136 +47,173 @@
     <script>
         const bird = document.getElementById('bird');
         const world = document.getElementById('world');
+        const hMap = document.getElementById('hangar-map');
+        const container = document.getElementById('game-container');
         const cursor = document.getElementById('cursor');
 
-        // GAME ENGINE
-        let gameState = 'menu';
+        // GAME STATE
+        let state = 'title';
         let birdY = 300, velocity = 0, gravity = 0.5;
-        let score = 0, pipes = [], frame = 0;
-        let highscore = localStorage.getItem('fs_high') || 0;
-        document.getElementById('high-val').innerText = highscore;
+        let pipeCount = 0, score = 0, pipes = [], frame = 0;
+        let points = parseInt(localStorage.getItem('ob_pts')) || 0;
+        let highscore = parseInt(localStorage.getItem('ob_high')) || 0;
+        
+        // HANGAR PANNING
+        let isDragging = false, lastX, lastY, panX = -750, panY = -600;
 
-        // CURSOR
-        document.addEventListener('mousemove', e => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        function showGUI(id) {
-            hideAll();
-            document.getElementById(id).classList.remove('hidden');
-            if(id === 'hangar-gui') refreshHangar();
-        }
-
-        function hideAll() {
-            document.querySelectorAll('.gui').forEach(g => g.classList.add('hidden'));
-        }
-
-        function applySkill(color, req) {
-            if(highscore >= req) {
-                bird.style.setProperty('--bird-color', color);
-                saveGame();
-            }
-        }
-
-        function refreshHangar() {
-            const nodes = [
-                {id:'node-red', r:10}, {id:'node-blue', r:20}, 
-                {id:'node-yellow', r:30}, {id:'node-green', r:40}, {id:'node-purple', r:50}
-            ];
-            nodes.forEach(n => {
-                const el = document.getElementById(n.id);
-                if(highscore >= n.r) el.classList.add('unlocked');
-            });
-        }
+        // SKILL DATA
+        const skills = [
+            { id: 0, name: "Core", x: 1000, y: 1000, price: 0, unlocked: true, effect: null },
+            { id: 1, name: "Agility", x: 1200, y: 850, price: 5, parent: 0, effect: () => gravity = 0.4 },
+            { id: 2, name: "Glider", x: 1200, y: 1150, price: 5, parent: 0, effect: () => velocity *= 0.9 },
+            { id: 3, name: "Wide Gap", x: 1450, y: 850, price: 15, parent: 1, effect: () => pipeGap = 200 },
+            { id: 4, name: "Slow Pipes", x: 1450, y: 1150, price: 20, parent: 2, effect: () => pipeSpeed = 2.5 }
+        ];
 
         function startGame() {
-            birdY = 300; velocity = 0; score = 0; pipes = []; frame = 0;
+            state = 'playing';
+            document.getElementById('screen-title').classList.add('hidden');
+            container.className = 'bg-day';
+            birdY = 300; velocity = 0; pipeCount = 0; score = 0; pipes = []; frame = 0;
             world.innerHTML = '';
-            document.getElementById('score-text').innerText = '0';
-            requestAnimationFrame(gameLoop);
-        }
-
-        function spawnPipe() {
-            const gap = 170;
-            const topH = Math.random() * 300 + 50;
-            const p = {
-                x: 500, th: topH, bh: 700 - topH - gap, passed: false,
-                divT: document.createElement('div'),
-                divB: document.createElement('div')
-            };
-            p.divT.className = 'pipe pipe-top';
-            p.divT.style.height = p.th + 'px';
-            p.divB.className = 'pipe pipe-bottom';
-            p.divB.style.height = p.bh + 'px';
-            p.divB.style.bottom = '0';
-            world.appendChild(p.divT);
-            world.appendChild(p.divB);
-            pipes.push(p);
+            gameLoop();
         }
 
         function gameLoop() {
-            if (gameState !== 'playing') return;
-
+            if (state !== 'playing') return;
             frame++;
-            velocity += gravity;
-            birdY += velocity;
+            velocity += gravity; birdY += velocity;
             bird.style.top = birdY + 'px';
             bird.style.transform = `rotate(${Math.min(velocity * 4, 90)}deg)`;
 
-            // Pipe Frequency: 180 frames = LOTS of space
             if (frame % 180 === 0) spawnPipe();
 
             pipes.forEach((p, i) => {
                 p.x -= 3.5;
-                p.divT.style.left = p.x + 'px';
-                p.divB.style.left = p.x + 'px';
-
-                // Hitbox logic
+                p.divT.style.left = p.x + 'px'; p.divB.style.left = p.x + 'px';
+                
                 const b = bird.getBoundingClientRect();
                 const pt = p.divT.getBoundingClientRect();
                 const pb = p.divB.getBoundingClientRect();
 
-                if (b.right-8 > pt.left && b.left+8 < pt.right) {
-                    if (b.top+8 < pt.bottom || b.bottom-8 > pb.top) gameOver();
-                }
-
+                if (b.right-8 > pt.left && b.left+8 < pt.right && (b.top+8 < pt.bottom || b.bottom-8 > pb.top)) endGame();
+                
                 if (p.x < 50 && !p.passed) {
                     p.passed = true;
-                    score++;
-                    document.getElementById('score-text').innerText = score;
+                    pipeCount++;
+                    // 1 Point every 5 Pipes
+                    if (pipeCount % 5 === 0) {
+                        score++;
+                        document.getElementById('score-text').innerText = score;
+                    }
                 }
             });
 
-            if (pipes.length > 0 && pipes[0].x < -100) {
-                pipes[0].divT.remove(); pipes[0].divB.remove();
-                pipes.shift();
-            }
-
-            if (birdY > 670 || birdY < -20) gameOver();
+            if (birdY > 720 || birdY < -20) endGame();
             requestAnimationFrame(gameLoop);
         }
 
-        function gameOver() {
-            gameState = 'menu';
-            if(score > highscore) {
-                highscore = score;
-                localStorage.setItem('fs_high', highscore);
-                document.getElementById('high-val').innerText = highscore;
+        function endGame() {
+            state = 'title';
+            points += score;
+            if (pipeCount > highscore) highscore = pipeCount;
+            localStorage.setItem('ob_pts', points);
+            localStorage.setItem('ob_high', highscore);
+            updateUI();
+            document.getElementById('screen-title').classList.remove('hidden');
+            if(score > 0) notify("Mission Complete", `Earned ${score} Points`);
+        }
+
+        function spawnPipe() {
+            const gap = 160;
+            const topH = Math.random() * 350 + 50;
+            const p = { x: 550, divT: document.createElement('div'), divB: document.createElement('div'), passed: false };
+            p.divT.className = 'pipe pipe-top'; p.divT.style.height = topH + 'px';
+            p.divB.className = 'pipe pipe-bottom'; p.divB.style.height = (750 - topH - gap) + 'px'; p.divB.style.bottom = '0';
+            world.appendChild(p.divT); world.appendChild(p.divB);
+            pipes.push(p);
+        }
+
+        // HANGAR LOGIC
+        function openHangar() {
+            container.className = 'bg-midnight';
+            document.getElementById('screen-title').classList.add('hidden');
+            document.getElementById('screen-hangar').classList.remove('hidden');
+            renderHangar();
+        }
+
+        function closeHangar() {
+            document.getElementById('screen-hangar').classList.add('hidden');
+            document.getElementById('screen-title').classList.remove('hidden');
+            container.className = 'bg-day';
+        }
+
+        function renderHangar() {
+            hMap.innerHTML = '';
+            skills.forEach(s => {
+                const node = document.createElement('div');
+                node.className = `skill-node ${s.unlocked ? 'unlocked' : ''}`;
+                node.style.left = s.x + 'px'; node.style.top = s.y + 'px';
+                node.innerHTML = `<b>${s.name}</b>${s.unlocked ? 'OWNED' : s.price + ' PTS'}`;
+                node.onclick = () => buySkill(s);
+                hMap.appendChild(node);
+
+                if (s.parent !== undefined) {
+                    const p = skills[s.parent];
+                    const line = document.createElement('div');
+                    line.className = `skill-line ${s.unlocked ? 'active' : ''}`;
+                    const dist = Math.hypot(s.x - p.x, s.y - p.y);
+                    const angle = Math.atan2(s.y - p.y, s.x - p.x) * 180 / Math.PI;
+                    line.style.width = dist + 'px';
+                    line.style.left = (p.x + 40) + 'px'; line.style.top = (p.y + 40) + 'px';
+                    line.style.transform = `rotate(${angle}deg)`;
+                    hMap.appendChild(line);
+                }
+            });
+        }
+
+        function buySkill(s) {
+            if (s.unlocked) return;
+            const parent = skills[s.parent];
+            if (!parent.unlocked) return notify("Locked", "Buy parent skill first");
+            if (points >= s.price) {
+                points -= s.price;
+                s.unlocked = true;
+                localStorage.setItem('ob_pts', points);
+                if (s.effect) s.effect();
+                renderHangar();
+                notify("Skill Unlocked", s.name);
             }
-            saveGame();
-            showGUI('menu-gui');
         }
 
-        function saveGame() {
-            const pop = document.getElementById('save-pop');
-            pop.style.display = 'block';
-            setTimeout(() => pop.style.display = 'none', 2000);
+        // STEAM NOTIFICATION
+        function notify(title, desc) {
+            const pop = document.getElementById('achievement-popup');
+            document.getElementById('ach-name').innerText = title;
+            pop.classList.add('show');
+            setTimeout(() => pop.classList.remove('show'), 3000);
         }
 
-        const flap = () => { if(gameState === 'playing') velocity = -9; };
-        window.addEventListener('keydown', e => { if(e.code === 'Space') flap(); });
-        window.addEventListener('mousedown', (e) => { if(e.button === 0) flap(); });
+        // PANNING ENGINE
+        container.onmousedown = (e) => { if(e.button === 2) isDragging = true; lastX = e.clientX; lastY = e.clientY; };
+        window.onmouseup = () => isDragging = false;
+        window.onmousemove = (e) => {
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+            if (!isDragging) return;
+            panX += e.clientX - lastX; panY += e.clientY - lastY;
+            hMap.style.setProperty('--pan-x', panX + 'px');
+            hMap.style.setProperty('--pan-y', panY + 'px');
+            lastX = e.clientX; lastY = e.clientY;
+        };
+
+        function updateUI() {
+            document.getElementById('pts-val').innerText = points;
+            document.getElementById('best-val').innerText = highscore;
+        }
+
+        window.onclick = () => { if(state === 'playing') velocity = -9; };
+        window.onkeydown = (e) => { if(e.code === 'Space' && state === 'playing') velocity = -9; };
+        updateUI();
 
     </script>
 </body>
