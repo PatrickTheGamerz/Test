@@ -2,23 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ORANGEBIRD | AEROSPACE COMMAND</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORANGEBIRD PRO | AEROSPACE V3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body oncontextmenu="return false;">
 
     <div id="loading-screen">
-        <div class="loading-bg-sim">
-            <div class="sim-pipe" style="left:20%; height:300px;"></div>
-            <div class="sim-pipe" style="left:50%; height:200px; bottom:0;"></div>
-            <div class="sim-pipe" style="left:80%; height:400px;"></div>
-        </div>
-        <div class="loader-container">
+        <div class="loading-bg-sim"></div> <div class="loader-container">
             <div class="loader"></div>
             <div class="loader-inner"></div>
         </div>
-        <h2 id="loading-text" class="glitch-text">SYNCHRONIZING NEURAL LINK...</h2>
-        <p id="loading-tip">SYSTEM STATUS: OPTIMAL</p>
+        <h2 id="loading-text">SYSTEMS INITIALIZING...</h2>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="loading-tip">TIP: Unlock "Core Systems" in the hangar to begin flight.</p>
     </div>
 
     <div id="cursor"></div>
@@ -30,44 +27,58 @@
         <div id="top-score" class="ingame-ui">0</div>
 
         <div id="menu-ui" class="gui">
+            <div class="scanline"></div>
             <div class="logo-area">
-                <span class="version-tag">STABLE BUILD V3.0</span>
-                <h1 class="main-title">ORANGEBIRD<br><small>AEROSPACE</small></h1>
+                <span class="version">V3.0 ELITE</span>
+                <h1>ORANGEBIRD</h1>
+                <p class="subtitle">ADVANCED FLIGHT OPERATIONS</p>
             </div>
             <div class="stats-bar">
-                <div class="stat"><span>RECORD</span><b id="high-val">0</b></div>
+                <div class="stat"><span>PILOT RECORD</span><b id="high-val">0</b></div>
                 <div class="stat"><span>CREDITS</span><b id="points-val">0</b></div>
             </div>
-            <button class="btn btn-primary" onclick="switchUI('mission-select')">INITIALIZE MISSION</button>
+            <button id="btn-play" class="btn btn-main" onclick="switchUI('mission-select')">FLY MISSION</button>
             <button class="btn btn-sec" onclick="switchUI('hangar')">ENGINEERING HANGAR</button>
-            <button class="btn btn-sec" onclick="switchUI('medals')">PILOT LOGS</button>
+            <button class="btn btn-sec" onclick="switchUI('medals')">PILOT RECORDS</button>
         </div>
 
         <div id="mission-ui" class="gui" style="display:none;">
             <h2 class="gui-title">MISSION CONTROL</h2>
-            <div id="mode-select-screen">
-                <div class="mode-row">
-                    <button class="mode-btn active" onclick="showMissions('sp')">
-                        <b>SINGLE PLAYER</b>
-                        <span>Local Simulation</span>
-                    </button>
-                    <button class="mode-btn locked">
-                        <b>MULTIPLAYER</b>
-                        <span>Server Link [ENCRYPTED]</span>
-                    </button>
-                </div>
-                <div id="mission-list" class="mission-grid">
-                    <div class="mission-card" onclick="startGame('original')">
-                        <h3>SECTOR 1: ORIGIN</h3>
-                        <p>Standard obstacle course. Low turbulence.</p>
-                    </div>
-                    <div class="mission-card advanced" onclick="startGame('advanced')">
-                        <h3>SECTOR 2: KINETIC</h3>
-                        <p>Moving debris detected. High-speed evasion required.</p>
+            
+            <div class="server-setup">
+                <div class="setup-group">
+                    <label>OPERATION PROTOCOL</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="mode-solo" onclick="setProtocol('single')">SINGLEPLAYER</button>
+                        <button class="mode-btn" id="mode-multi" onclick="setProtocol('multi')">MULTIPLAYER (LOBBY)</button>
                     </div>
                 </div>
             </div>
-            <button class="btn btn-sec" onclick="switchUI('menu')">ABORT</button>
+
+            <div class="mission-grid">
+                <div class="mission-card" onclick="startGame('original')">
+                    <div class="card-tag">STABLE</div>
+                    <h3>ORIGINAL SCAN</h3>
+                    <p>Standard obstacle course. Classic physics.</p>
+                </div>
+                <div class="mission-card advanced" onclick="startGame('advanced')">
+                    <div class="card-tag">HAZARD</div>
+                    <h3>NEBULA RUN</h3>
+                    <p>Moving pipes & narrow gaps. 2x Credits.</p>
+                </div>
+            </div>
+            <button class="btn btn-sec" onclick="switchUI('menu')">ABORT MISSION</button>
+        </div>
+
+        <div id="gameover-ui" class="gui" style="display:none;">
+            <h2 id="death-msg">MISSION FAILED</h2>
+            <div class="results-card">
+                <div class="res-row"><span>PIPES PASSED</span><b id="res-score">0</b></div>
+                <div class="res-row"><span>CREDITS EARNED</span><b id="res-points">0</b></div>
+                <div class="res-row"><span>BEST RECORD</span><b id="res-high">0</b></div>
+            </div>
+            <button class="btn btn-main" onclick="startGame(currentGameMode)">RE-DEPLOY</button>
+            <button class="btn btn-sec" onclick="switchUI('menu')">RETURN TO BASE</button>
         </div>
 
         <div id="hangar-ui" class="gui" style="display:none; background:transparent;">
@@ -75,15 +86,17 @@
                 <svg id="lines" style="position:absolute; width:100%; height:100%; pointer-events:none;"></svg>
             </div>
             <div class="hangar-overlay">
-                <div class="hangar-hud">RESOURCE BALANCE: <span id="hangar-pts">0</span> CR</div>
-                <button class="exit-hangar-btn" onclick="switchUI('menu')">EXIT HANGAR</button>
+                <div class="hangar-hud">
+                    <div class="hud-item">RESOURCES: <span id="hangar-pts">0</span> CR</div>
+                </div>
+                <button class="btn back-btn" onclick="exitHangar()">EXIT HANGAR</button>
             </div>
         </div>
 
         <div id="medals-ui" class="gui" style="display:none;">
-            <h2 class="gui-title">SERVICE MEDALS</h2>
+            <h2 class="gui-title">PILOT RANKINGS</h2>
             <div id="ach-list" class="scroll-box"></div>
-            <button class="btn" onclick="switchUI('menu')">RETURN</button>
+            <button class="btn btn-sec" onclick="switchUI('menu')">BACK</button>
         </div>
 
         <div id="toast">
