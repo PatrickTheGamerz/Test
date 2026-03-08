@@ -1,148 +1,149 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flappy Ultra</title>
+    <title>Flappy Hangar Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body oncontextmenu="return false;"> <div id="custom-cursor"></div>
+<body oncontextmenu="return false;">
+
+    <div id="cursor"></div>
 
     <div id="game-container">
-        <div id="score-display" style="position:absolute; width:100%; text-align:center; top:40px; font-size:60px; font-weight:900; color:white; text-shadow:4px 4px 0 #000; z-index:50;">0</div>
+        <div id="score-text" style="position:absolute; width:100%; text-align:center; top:50px; font-size:70px; font-weight:900; z-index:10; pointer-events:none;">0</div>
 
-        <div id="menu-gui" class="gui-panel">
-            <h1 style="margin-top:0;">FLAPPY ULTRA</h1>
-            <button onclick="changeState('playing')">START ENGINE</button>
-            <button onclick="toggleGUI('skins-gui')">HANGAR (SKINS)</button>
-            <button onclick="toggleGUI('ach-gui')">MEDALS</button>
+        <div id="menu-gui" class="gui">
+            <h1>FLAPPY PRO</h1>
+            <p>HIGHSCORE: <span id="high-val">0</span></p>
+            <button class="btn" onclick="gameState='playing'; hideAll(); startGame();">PLAY MISSION</button>
+            <button class="btn" onclick="showGUI('hangar-gui')">HANGAR</button>
+            <button class="btn" onclick="showGUI('ach-gui')">ACHIEVEMENTS</button>
         </div>
 
-        <div id="skins-gui" class="gui-panel" style="display:none;">
-            <h3>SELECT SKIN</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button onclick="selectSkin('skin-default')">Yellow</button>
-                <button id="btn-phantom" style="opacity:0.3" onclick="selectSkin('skin-phantom')">Phantom (Score 20)</button>
-                <button id="btn-neon" style="opacity:0.3" onclick="selectSkin('skin-neon')">Neon (Score 50)</button>
+        <div id="hangar-gui" class="gui hidden">
+            <h2>FLIGHT HANGAR</h2>
+            <div class="hangar-grid">
+                <div class="skill-node" id="node-center" style="border-color:#fff">Core</div>
+                <div class="skill-node" id="node-red" onclick="applySkill('#ff4757', 10)"><i>10 PTS</i></div>
+                <div class="skill-node" id="node-blue" onclick="applySkill('#00d2ff', 20)"><i>20 PTS</i></div>
+                <div class="skill-node" id="node-yellow" onclick="applySkill('#eccc68', 30)"><i>30 PTS</i></div>
+                <div class="skill-node" id="node-green" onclick="applySkill('#7bed9f', 40)"><i>40 PTS</i></div>
+                <div class="skill-node" id="node-purple" onclick="applySkill('#a29bfe', 50)"><i>50 PTS</i></div>
             </div>
-            <button style="background:#95a5a6; box-shadow: 0 5px 0 #7f8c8d;" onclick="toggleGUI('menu-gui')">BACK</button>
+            <button class="btn" onclick="showGUI('menu-gui')">EXIT HANGAR</button>
         </div>
 
-        <div id="ach-gui" class="gui-panel" style="display:none;">
-            <h3>ACHIEVEMENTS</h3>
-            <div id="ach-list">
-                <div id="ach0" class="achievement-card"><b>Pilot:</b> Score 10 pts</div>
-                <div id="ach1" class="achievement-card"><b>Ghost:</b> Score 20 pts (Unlocks Phantom)</div>
-                <div id="ach2" class="achievement-card"><b>God:</b> Score 50 pts (Unlocks Neon)</div>
-            </div>
-            <button onclick="toggleGUI('menu-gui')">BACK</button>
+        <div id="ach-gui" class="gui hidden">
+            <h2>PILOT LOG</h2>
+            <div id="ach-container"></div>
+            <button class="btn" onclick="showGUI('menu-gui')">BACK</button>
         </div>
 
-        <div id="bird" class="skin-default"></div>
+        <div id="save-pop">PROGRESS SAVED</div>
+        <div id="bird"></div>
         <div id="world"></div>
     </div>
 
     <script>
         const bird = document.getElementById('bird');
         const world = document.getElementById('world');
-        const cursor = document.getElementById('custom-cursor');
-        
-        // ENGINE VARS
-        let state = 'menu';
-        let birdY = 300, velocity = 0, gravity = 0.45;
-        let score = 0, pipes = [], frame = 0;
-        let pipeFrequency = 110; // High number = More distance between pipes
-        let unlocked = { phantom: false, neon: false };
+        const cursor = document.getElementById('cursor');
 
-        // CURSOR FOLLOW
+        // GAME ENGINE
+        let gameState = 'menu';
+        let birdY = 300, velocity = 0, gravity = 0.5;
+        let score = 0, pipes = [], frame = 0;
+        let highscore = localStorage.getItem('fs_high') || 0;
+        document.getElementById('high-val').innerText = highscore;
+
+        // CURSOR
         document.addEventListener('mousemove', e => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
         });
 
-        function changeState(s) {
-            state = s;
-            document.querySelectorAll('.gui-panel').forEach(g => g.style.display = 'none');
-            if (s === 'menu') toggleGUI('menu-gui');
-            if (s === 'playing') {
-                resetEngine();
-                requestAnimationFrame(loop);
+        function showGUI(id) {
+            hideAll();
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'hangar-gui') refreshHangar();
+        }
+
+        function hideAll() {
+            document.querySelectorAll('.gui').forEach(g => g.classList.add('hidden'));
+        }
+
+        function applySkill(color, req) {
+            if(highscore >= req) {
+                bird.style.setProperty('--bird-color', color);
+                saveGame();
             }
         }
 
-        function toggleGUI(id) {
-            document.querySelectorAll('.gui-panel').forEach(g => g.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
+        function refreshHangar() {
+            const nodes = [
+                {id:'node-red', r:10}, {id:'node-blue', r:20}, 
+                {id:'node-yellow', r:30}, {id:'node-green', r:40}, {id:'node-purple', r:50}
+            ];
+            nodes.forEach(n => {
+                const el = document.getElementById(n.id);
+                if(highscore >= n.r) el.classList.add('unlocked');
+            });
         }
 
-        function resetEngine() {
+        function startGame() {
             birdY = 300; velocity = 0; score = 0; pipes = []; frame = 0;
             world.innerHTML = '';
-            document.getElementById('score-display').innerText = '0';
-        }
-
-        function selectSkin(s) {
-            if (s === 'skin-phantom' && !unlocked.phantom) return;
-            if (s === 'skin-neon' && !unlocked.neon) return;
-            bird.className = s;
-            changeState('menu');
+            document.getElementById('score-text').innerText = '0';
+            requestAnimationFrame(gameLoop);
         }
 
         function spawnPipe() {
-            const gap = 160;
-            const topH = Math.random() * 250 + 80;
-            const type = Math.random() > 0.85 ? 'pipe-lava' : 'pipe-standard';
-            
-            const p = { 
-                x: 500, th: topH, bh: 650 - topH - gap, 
-                type: type, passed: false,
+            const gap = 170;
+            const topH = Math.random() * 300 + 50;
+            const p = {
+                x: 500, th: topH, bh: 700 - topH - gap, passed: false,
                 divT: document.createElement('div'),
                 divB: document.createElement('div')
             };
-
-            p.divT.className = `pipe ${type}`;
+            p.divT.className = 'pipe pipe-top';
             p.divT.style.height = p.th + 'px';
-            p.divT.innerHTML = '<div class="pipe-cap" style="bottom:-5px"></div>';
-
-            p.divB.className = `pipe ${type}`;
+            p.divB.className = 'pipe pipe-bottom';
             p.divB.style.height = p.bh + 'px';
             p.divB.style.bottom = '0';
-            p.divB.innerHTML = '<div class="pipe-cap" style="top:-5px"></div>';
-
             world.appendChild(p.divT);
             world.appendChild(p.divB);
             pipes.push(p);
         }
 
-        function loop() {
-            if (state !== 'playing') return;
+        function gameLoop() {
+            if (gameState !== 'playing') return;
 
             frame++;
             velocity += gravity;
             birdY += velocity;
             bird.style.top = birdY + 'px';
-            bird.style.transform = `rotate(${Math.min(velocity * 3, 45)}deg)`;
+            bird.style.transform = `rotate(${Math.min(velocity * 4, 90)}deg)`;
 
-            if (frame % pipeFrequency === 0) spawnPipe();
+            // Pipe Frequency: 180 frames = LOTS of space
+            if (frame % 180 === 0) spawnPipe();
 
             pipes.forEach((p, i) => {
-                p.x -= (p.type === 'pipe-lava' ? 5 : 3.5);
+                p.x -= 3.5;
                 p.divT.style.left = p.x + 'px';
                 p.divB.style.left = p.x + 'px';
 
-                // PIXEL-PERFECT COLLISION
+                // Hitbox logic
                 const b = bird.getBoundingClientRect();
                 const pt = p.divT.getBoundingClientRect();
                 const pb = p.divB.getBoundingClientRect();
 
-                // Narrow hitboxes by 5px for fairness
-                if (b.right-5 > pt.left && b.left+5 < pt.right) {
-                    if (b.top+5 < pt.bottom || b.bottom-5 > pb.top) changeState('menu');
+                if (b.right-8 > pt.left && b.left+8 < pt.right) {
+                    if (b.top+8 < pt.bottom || b.bottom-8 > pb.top) gameOver();
                 }
 
-                if (p.x < 30 && !p.passed) {
+                if (p.x < 50 && !p.passed) {
                     p.passed = true;
                     score++;
-                    document.getElementById('score-display').innerText = score;
-                    handleAchievements();
+                    document.getElementById('score-text').innerText = score;
                 }
             });
 
@@ -151,27 +152,30 @@
                 pipes.shift();
             }
 
-            if (birdY > 630 || birdY < -20) changeState('menu');
-            requestAnimationFrame(loop);
+            if (birdY > 670 || birdY < -20) gameOver();
+            requestAnimationFrame(gameLoop);
         }
 
-        function handleAchievements() {
-            if (score >= 10) document.getElementById('ach0').classList.add('ach-unlocked');
-            if (score >= 20) {
-                document.getElementById('ach1').classList.add('ach-unlocked');
-                unlocked.phantom = true;
-                document.getElementById('btn-phantom').style.opacity = '1';
+        function gameOver() {
+            gameState = 'menu';
+            if(score > highscore) {
+                highscore = score;
+                localStorage.setItem('fs_high', highscore);
+                document.getElementById('high-val').innerText = highscore;
             }
-            if (score >= 50) {
-                document.getElementById('ach2').classList.add('ach-unlocked');
-                unlocked.neon = true;
-                document.getElementById('btn-neon').style.opacity = '1';
-            }
+            saveGame();
+            showGUI('menu-gui');
         }
 
-        const flap = () => { if(state === 'playing') velocity = -8; };
+        function saveGame() {
+            const pop = document.getElementById('save-pop');
+            pop.style.display = 'block';
+            setTimeout(() => pop.style.display = 'none', 2000);
+        }
+
+        const flap = () => { if(gameState === 'playing') velocity = -9; };
         window.addEventListener('keydown', e => { if(e.code === 'Space') flap(); });
-        window.addEventListener('mousedown', flap);
+        window.addEventListener('mousedown', (e) => { if(e.button === 0) flap(); });
 
     </script>
 </body>
