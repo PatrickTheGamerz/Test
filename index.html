@@ -2,126 +2,129 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Anatomy Engine</title>
+    <title>Undertale: Hyper-Realistic Ecosystem</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; box-shadow: 0 0 60px rgba(255,50,50,0.3); background: #000; border-radius: 5px; }
+        body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
+        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.9); border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; }
-        .speaker { color: #ffea00; font-size: 30px; margin-bottom: 5px; text-transform: uppercase; }
-        .text { font-size: 24px; line-height: 1.2; }
+        #ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.95); border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
+        .speaker { color: #ffea00; font-size: 30px; margin-bottom: 5px; text-transform: uppercase; text-shadow: 2px 2px 0 #000; }
+        .text { font-size: 24px; line-height: 1.2; text-shadow: 1px 1px 0 #000; }
         #choices { position: absolute; right: 15px; top: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 11; }
         button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 20px; padding: 5px 15px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #fff; color: #000; padding-left: 20px; }
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; background: rgba(0,0,0,0.7); padding: 5px; border-radius: 5px; }
+        button:hover { background: #fff; color: #000; padding-left: 20px; box-shadow: 0 0 10px #fff; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
+        #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 440px; background: rgba(0,0,0,0.9); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+        .map-title { font-size: 40px; color: #ffea00; margin-bottom: 20px; text-shadow: 3px 3px 0 #f00; }
+        .map-btn { font-size: 28px; width: 400px; text-align: center; background: #222; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="game">
     <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
+    
+    <div id="map-menu">
+        <div class="map-title">SELECT A REGION</div>
+        <button class="map-btn" onclick="explore('RUINS')">THE RUINS (Toriel, Froggit)</button>
+        <button class="map-btn" onclick="explore('SNOWDIN')">SNOWDIN (Papyrus, Snowdrake)</button>
+        <button class="map-btn" onclick="explore('WATERFALL')">WATERFALL (Undyne, Woshua)</button>
+        <button class="map-btn" onclick="explore('HOTLAND')">HOTLAND (Muffet, Vulkin)</button>
+    </div>
+
     <canvas id="c" width="800" height="440"></canvas>
-    <div id="ui"><div id="speaker" class="speaker">System</div><div id="text" class="text"></div><div id="choices"></div></div>
+    
+    <div id="ui">
+        <div id="speaker" class="speaker">System</div>
+        <div id="text" class="text"></div>
+        <div id="choices"></div>
+    </div>
 </div>
 
 <script>
-    // --- LERP PHYSICS & ENGINE SETUP ---
     const ctx = document.getElementById('c').getContext('2d');
     const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
-    
-    // Smooth interpolation function
-    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
 
     let state = 'MENU', frame = 0, lastHurt = 0;
-    const player = { x: 400, y: 220, hp: 20, maxHp: 20, speed: 4.5 };
-    let currentRoom = null, activeInteractable = null;
-    let gullet = { depth: 0, targetSpeed: 0, currentSpeed: 0, mob: null };
-    let activeMicro = null; 
-    let camSway = { x: 0, y: 0, tx: 0, ty: 0 }; // Target vs Current for smooth swaying!
+    const player = { x: 400, y: 220, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 1.5, friction: 0.85, gravity: 0.4 };
+    
+    let currentRoom = null, activeInteractable = null, gulletDepth = 0, currentMob = null;
+    let activeMicro = null; // The creature we are currently inside!
 
-    // --- PROCEDURAL ANATOMY ---
-    function makeAnatomy(id, name, bg, wall, acid, segments, isMicro = false) {
-        let rooms = {}; let wM = isMicro ? 0.6 : 1.0; 
-        rooms.Throat = { id: `${id}_Throat`, n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250*wM, h: 440, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${id}_Stomach` }, micros: [], npcs: [] };
-        rooms.Stomach = { id: `${id}_Stomach`, n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500*wM, h: 350*wM, aY: isMicro?280:300, dmg: isMicro?0.5:1, exits: { up: `${id}_Throat`, down: `${id}_Intestines_1` }, micros: [], npcs: [] };
+    // --- PROCEDURAL HYPER-ANATOMY ---
+    function generateAnatomy(id, name, bg, wall, acid, segments, isMicro = false) {
+        let rooms = {}; let wMult = isMicro ? 0.6 : 1.0; 
+        
+        rooms.Throat = { id: `${id}_Throat`, n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250*wMult, h: 440, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${id}_Stomach` }, entities: [] };
+        rooms.Stomach = { id: `${id}_Stomach`, n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500*wMult, h: 350*wMult, aY: isMicro?250:280, dmg: isMicro?0.5:1, exits: { up: `${id}_Throat`, down: `${id}_Intestines_1` }, entities: [] };
         
         for(let i=1; i<=segments; i++) {
             let next = (i === segments) ? (isMicro ? "POOP_OUT" : "DIGESTED") : `${id}_Intestines_${i+1}`;
             let prev = (i === 1) ? `${id}_Stomach` : `${id}_Intestines_${i-1}`;
-            rooms[`Intestines_${i}`] = { id: `${id}_Intestines_${i}`, n: `${name}'s Gut (${i})`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: (700 - i*50)*wM, h: 150*wM, aY: 250*wM, dmg: isMicro?1:1.5, exits: { up: prev, down: next }, micros: [], npcs: [] };
+            rooms[`Intestines_${i}`] = { id: `${id}_Intestines_${i}`, n: `${name}'s Abdomen (${i})`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: (700 - i*50)*wMult, h: 150*wMult, aY: 230*wMult, dmg: isMicro?0.5:1.5, exits: { up: prev, down: next }, entities: [] };
+        }
+
+        // Add "Host Nerve Core" so you can talk to the creature you are inside!
+        if (isMicro) {
+            rooms.Stomach.entities.push({ type: 'core', x: 400, y: 120, r: 15, c: '#0ff', n: 'Host Nerve Core', 
+                txt: `* The vibrating nerve center of the ${name.split(' ')[1] || name}.`,
+                opts: [{ l: "Talk to Host", a: () => setUI(`Host ${name}`, "* (Stop moving around in my stomach! It tickles!)", []) }]
+            });
         }
         return rooms;
     }
 
-    let worldDB = {
-        "Toriel": makeAnatomy("Toriel", '#2a0015', '#4a0025', 'rgba(255, 68, 0, 0.7)', 3),
-        "Muffet": makeAnatomy("Muffet", '#1a002a', '#2a003a', 'rgba(150, 0, 255, 0.8)', 3),
-        "Chara": makeAnatomy("Chara", "Neko Chara", '#110022', '#220033', 'rgba(0,0,0,0)', 1, true) // Spacious, no acid!
+    // --- REGIONS & DATABASE ---
+    const worldDB = {};
+    const regionPools = {
+        "RUINS": [{id: "Toriel", n: "Toriel", bg: '#2a0015', w: '#4a0025', a: 'rgba(255,68,0,0.7)', s: 3}, {id: "Froggit", n: "Froggit", bg: '#1a2a1a', w: '#2a3a2a', a: 'rgba(0,255,0,0.6)', s: 2}],
+        "SNOWDIN": [{id: "Papyrus", n: "Papyrus", bg: '#331100', w: '#552200', a: 'rgba(255,255,0,0.4)', s: 2}, {id: "Snowdrake", n: "Snowdrake", bg: '#002233', w: '#004455', a: 'rgba(0,255,255,0.6)', s: 2}],
+        "WATERFALL": [{id: "Undyne", n: "Undyne", bg: '#000022', w: '#001144', a: 'rgba(0,255,255,0.8)', s: 4}, {id: "Woshua", n: "Woshua", bg: '#002222', w: '#004444', a: 'rgba(0,255,100,0.7)', s: 2}],
+        "HOTLAND": [{id: "Muffet", n: "Muffet", bg: '#1a002a', w: '#2a003a', a: 'rgba(150,0,255,0.8)', s: 3}, {id: "Vulkin", n: "Vulkin", bg: '#440000', w: '#660000', a: 'rgba(255,0,0,0.9)', s: 1}]
     };
 
-    // Custom Chara properties
-    worldDB.Chara.Stomach.w = 600; worldDB.Chara.Stomach.h = 400; worldDB.Chara.Stomach.dmg = 0;
+    for (let r in regionPools) regionPools[r].forEach(m => { worldDB[m.id] = generateAnatomy(m.id, m.n, m.bg, m.w, m.a, m.s, false); });
 
-    // --- SMART AI & MICRO CREATURES ---
-    class SmartNPC {
-        constructor(id, name, x, y, color) {
-            this.id = id; this.n = name; this.x = x; this.y = y; this.c = color; this.r = 15;
-            this.gulpTries = 0; this.active = false;
-        }
-        update() {
-            if (!this.active && player.hp < player.maxHp * 0.6) {
-                this.active = true; // Spawn condition met!
-                setUI("System", `* ${this.n} materialized in the stomach!`, []);
-            }
-            if (this.active) {
-                // Smooth follow AI using Lerp
-                this.x = lerp(this.x, player.x, 0.02);
-                this.y = lerp(this.y, player.y - 40, 0.02); // Hovers above player
-            }
-        }
-    }
-    
-    let nekoChara = new SmartNPC('Chara', 'Neko Chara', 400, -100, '#ff00aa');
-    worldDB.Toriel.Stomach.npcs.push(nekoChara);
-
+    // --- MICRO-CREATURE SYSTEM (Flies, Spiders) ---
     class MicroCreature {
         constructor(type, x, y) {
-            this.type = type; this.x = x; this.y = y; this.vx = (Math.random()-0.5)*4; this.vy = (Math.random()-0.5)*4;
-            this.dead = Math.random() < 0.2; // 20% chance to be dead!
+            this.type = type; this.x = x; this.y = y; this.vx = (Math.random()-0.5)*6; this.vy = (Math.random()-0.5)*6;
+            this.dead = Math.random() < 0.2; // 20% to spawn dead
             this.uid = type + "_" + Math.floor(Math.random()*10000);
             
-            if (type === 'Spider') { this.c = this.dead?'#333':'#000'; this.r = 12; this.bg = '#111'; this.w = '#000'; this.a = 'rgba(150,0,200,0.8)'; }
-            if (type === 'Fly') { this.c = this.dead?'#aaa':'#fff'; this.r = 8; this.bg = '#222'; this.w = '#111'; this.a = 'rgba(200,200,0,0.6)'; }
+            if (type === 'Spider') { this.c = this.dead?'#333':'#000'; this.r = 12; this.bg = '#111'; this.w = '#000'; this.a = 'rgba(150,0,200,0.8)'; this.s = 3; }
+            if (type === 'Fly') { this.c = this.dead?'#aaa':'#fff'; this.r = 8; this.bg = '#222'; this.w = '#111'; this.a = 'rgba(200,200,0,0.6)'; this.s = 6; } // Long abdomen!
             
-            worldDB[this.uid] = makeAnatomy(this.uid, `${this.dead?'Dead':''} ${type}`, this.bg, this.w, this.a, type==='Fly'?4:2, true);
-            
-            // Nested ecosystems: Spiders have flies in them!
-            if (type === 'Spider' && !this.dead) worldDB[this.uid].Stomach.micros.push(new MicroCreature('Fly', 400, 200));
+            worldDB[this.uid] = generateAnatomy(this.uid, `${this.dead?'Dead':''} ${type}`, this.bg, this.w, this.a, this.s, true);
         }
-        update(acidY) {
-            if (this.dead) {
-                // Dead physics: Float smoothly in acid
-                this.vx = lerp(this.vx, 0, 0.05); 
-                this.y = lerp(this.y, acidY + 10, 0.05); 
-            } else {
-                // Live physics: erratic flying
+        update(aY) {
+            if (this.dead) { this.vx *= 0.9; this.vy *= 0.9; this.y += (aY+10 - this.y)*0.05; } // Float in acid
+            else {
                 this.x += this.vx; this.y += this.vy;
-                if(Math.random() < 0.1) { this.vx += (Math.random()-0.5)*3; this.vy += (Math.random()-0.5)*3; }
-                this.vx = Math.max(-5, Math.min(5, this.vx)); this.vy = Math.max(-5, Math.min(5, this.vy));
+                if(Math.random() < 0.1) { this.vx += (Math.random()-0.5)*4; this.vy += (Math.random()-0.5)*4; }
+                this.vx = Math.max(-6, Math.min(6, this.vx)); this.vy = Math.max(-6, Math.min(6, this.vy));
             }
-            // Wall bounce
             if(this.x < 250 || this.x > 550) this.vx *= -1;
             if(this.y < 100 || this.y > 350) this.vy *= -1;
         }
     }
 
-    worldDB.Muffet.Stomach.micros.push(new MicroCreature('Spider', 300, 200), new MicroCreature('Spider', 500, 250));
+    // Populate ecosystems
+    worldDB.Muffet.Stomach.entities.push(new MicroCreature('Spider', 300, 200), new MicroCreature('Spider', 450, 250));
+    worldDB.Froggit.Stomach.entities.push(new MicroCreature('Fly', 350, 250), new MicroCreature('Fly', 400, 200));
 
-    // --- UI & LOGIC ---
+    // --- UI LOGIC ---
+    function explore(region) {
+        document.getElementById('map-menu').classList.add('hidden');
+        let pool = regionPools[region]; let mob = pool[Math.floor(Math.random() * pool.length)];
+        state = 'ENCOUNTER'; currentMob = mob;
+        setUI(mob.n, `* ${mob.n} approaches!`, [ { l: "Jump in mouth", a: () => triggerGulp(mob.id, mob.n, mob.bg) }, { l: "Run", a: () => document.getElementById('map-menu').classList.remove('hidden') } ]);
+    }
+
     function setUI(spk, txt, btns) {
-        document.getElementById('speaker').innerText = spk; 
-        document.getElementById('text').innerHTML = txt.replace(/\n/g, '<br>');
+        document.getElementById('speaker').innerText = spk; document.getElementById('text').innerHTML = txt.replace(/\n/g, '<br>');
         let c = document.getElementById('choices'); c.innerHTML = '';
         if(btns) btns.forEach(b => { let btn = document.createElement('button'); btn.innerText = b.l; btn.onclick = b.a; c.appendChild(btn); });
     }
@@ -129,19 +132,19 @@
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
-        if (player.hp <= 0) { state = 'GAMEOVER'; setUI("System", "* Digested.", [{l: "Restart", a: initMenu}]); }
+        if (player.hp <= 0) { state = 'GAMEOVER'; setUI("System", "* Digested.", [{l: "Restart", a: () => location.reload()}]); }
     }
 
-    function triggerGulp(id, name, bg, isMicroObj = null) {
-        state = 'GULLET'; gullet.depth = 0; gullet.mob = { id: id, n: name, bg: bg }; gullet.currentSpeed = 0;
-        player.x = 400; player.y = 50; activeMicro = isMicroObj;
+    function triggerGulp(id, name, bg, microObj = null) {
+        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg }; activeMicro = microObj;
+        player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
         setUI("System", `* Swallowed by ${name}!`, []);
     }
 
     function loadRoom(rId) {
-        if (rId === "ESCAPE") { state = 'ESCAPED'; activeMicro = null; setUI("System", "* You escaped!", [{l: "Map", a: initMenu}]); return; }
+        if (rId === "ESCAPE") { state = 'ESCAPED'; activeMicro = null; setUI("System", "* You escaped!", [{l: "Map", a: () => document.getElementById('map-menu').classList.remove('hidden')}]); return; }
         if (rId === "DIGESTED") { damage(999); return; }
-        if (rId === "POOP_OUT") { damage(1.0); activeMicro = null; state = 'ESCAPED'; setUI("System", "* Escaped the abdomen! (-1 HP)", [{l: "Map", a: initMenu}]); return; }
+        if (rId === "POOP_OUT") { damage(1.0); activeMicro = null; state = 'ESCAPED'; setUI("System", "* Exited the abdomen! (-1 HP)", [{l: "Map", a: () => document.getElementById('map-menu').classList.remove('hidden')}]); return; }
 
         let pts = rId.split('_'); let mobId = pts[0]; 
         if(pts.length > 2 && !['Throat','Stomach','Intestines'].includes(pts[1])) { mobId = pts[0]+"_"+pts[1]; } 
@@ -150,79 +153,68 @@
         currentRoom = worldDB[mobId][rType];
         document.getElementById('loc-val').innerText = currentRoom.n;
         state = 'INTERNAL'; activeInteractable = null;
-        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 220;
+        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 220; player.vx = 0; player.vy = 0;
+        setUI("Anatomy", `* Inside ${currentRoom.n}.`, []);
     }
 
-    function initMenu() {
-        state = 'MENU'; player.hp = player.maxHp; document.getElementById('hp-val').innerText = player.hp.toFixed(1); activeMicro = null;
-        setUI("World Map", "* Approach a monster:", [
-            { l: "Toriel (Has Neko Chara AI)", a: () => triggerGulp("Toriel", "Toriel", '#5a002a') },
-            { l: "Muffet (Nested Dead/Alive Spiders)", a: () => triggerGulp("Muffet", "Muffet", '#2a003a') }
-        ]);
-    }
-
-    // --- PHYSICS & INTERACTION ---
+    // --- HYPER-REALISTIC PHYSICS ---
     function updatePhysics() {
-        // SMOOTH SWAY LERPING
-        if (activeMicro && !activeMicro.dead) {
-            camSway.tx = activeMicro.vx * 6; camSway.ty = activeMicro.vy * 6;
-        } else { camSway.tx = 0; camSway.ty = 0; }
-        camSway.x = lerp(camSway.x, camSway.tx, 0.1);
-        camSway.y = lerp(camSway.y, camSway.ty, 0.1);
-
+        // True Gravity & Momentum
         let spd = keys['ShiftLeft'] ? player.speed*0.5 : player.speed;
-        let dx = 0, dy = 0;
         
-        if (keys['KeyA'] || keys['ArrowLeft']) dx -= spd; if (keys['KeyD'] || keys['ArrowRight']) dx += spd;
-        if (currentRoom.type === 'throat') { dy += 3; if (keys['KeyW']) dy -= 1.5; if (keys['KeyS']) dy += 2; } 
-        else { if (keys['KeyW'] || keys['ArrowUp']) dy -= spd; if (keys['KeyS'] || keys['ArrowDown']) dy += spd; }
+        if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
+        if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
+        
+        if (currentRoom.type === 'throat') { 
+            player.vy += player.gravity * 2; // Strong downward pull
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; // Struggle up
+        } else {
+            player.vy += player.gravity; // Normal gravity in stomach
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim/Jump up
+        }
 
-        player.x += dx; player.y += dy;
+        player.vx *= player.friction; player.vy *= player.friction;
+        player.x += player.vx; player.y += player.vy;
 
-        let bL = 400 - currentRoom.w/2 + camSway.x, bR = 400 + currentRoom.w/2 + camSway.x;
-        let bT = 220 - currentRoom.h/2 + camSway.y, bB = 220 + currentRoom.h/2 + camSway.y;
+        // Room Boundaries
+        let bL = 400 - currentRoom.w/2, bR = 400 + currentRoom.w/2;
+        let bT = 220 - currentRoom.h/2, bB = 220 + currentRoom.h/2;
 
         if (player.y < bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
         if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); player.y = Math.max(bT, Math.min(bB, player.y)); 
+        player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); 
+        
+        // Floor collision
+        if (player.y > bB) { player.y = bB; player.vy = 0; }
+        if (player.y < bT) { player.y = bT; player.vy = 0; }
 
-        if (player.y > currentRoom.aY + camSway.y && frame % 15 === 0) damage(currentRoom.dmg);
+        // Acid Damage
+        if (player.y > currentRoom.aY && frame % 15 === 0) damage(currentRoom.dmg);
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
 
-        // Interactions
+        // Entity Interaction
         let touch = null;
-        
-        // Update Micros
-        if (currentRoom.micros) {
-            currentRoom.micros.forEach(m => { m.update(currentRoom.aY); if (Math.hypot(player.x - (m.x+camSway.x), player.y - (m.y+camSway.y)) < m.r + 15) touch = m; });
-        }
-        
-        // Update NPCs (Chara)
-        if (currentRoom.npcs) {
-            currentRoom.npcs.forEach(n => {
-                n.update();
-                if (n.active && Math.hypot(player.x - (n.x+camSway.x), player.y - (n.y+camSway.y)) < n.r + 15) touch = n;
-            });
-        }
+        currentRoom.entities.forEach(e => {
+            if (e instanceof MicroCreature) {
+                e.update(currentRoom.aY);
+                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 15) touch = e;
+            } else {
+                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 15) touch = e;
+            }
+        });
 
         if (touch !== activeInteractable) {
             activeInteractable = touch;
             if (activeInteractable) {
                 if (activeInteractable instanceof MicroCreature) {
                     if (activeInteractable.dead) {
-                        setUI("Dead " + activeInteractable.type, "* It's dead and floating in acid.", [ { l: "Crawl Inside", a: () => loadRoom(activeInteractable.uid + "_Throat") } ]);
+                        setUI("Dead " + activeInteractable.type, "* It's dead and floating in acid.", [ { l: "Crawl Inside", a: () => triggerGulp(activeInteractable.uid, activeInteractable.type, activeInteractable.bg, activeInteractable) } ]);
                     } else {
                         setUI(activeInteractable.type, `* A live ${activeInteractable.type} buzzes around.`, [ { l: `Let ${activeInteractable.type} Eat You`, a: () => triggerGulp(activeInteractable.uid, activeInteractable.type, activeInteractable.bg, activeInteractable) } ]);
                     }
-                } else if (activeInteractable.id === 'Chara') {
-                    setUI("Neko Chara", "* Chara tilts her head.", [
-                        { l: "Eat me, please?", a: () => {
-                            activeInteractable.gulpTries++;
-                            if (activeInteractable.gulpTries < 3) setUI("Neko Chara", "* Nya? No way. You look gross.", []);
-                            else { setUI("Neko Chara", "* Ugh, fine. Get in.", []); setTimeout(() => triggerGulp("Chara", "Neko Chara", '#110022'), 1000); }
-                        }}
-                    ]);
+                } else if (activeInteractable.type === 'core') {
+                    setUI(activeInteractable.n, activeInteractable.txt, activeInteractable.opts);
                 }
             } else if (state === 'INTERNAL') setUI("Anatomy", `* Exploring ${currentRoom.n}.`, []);
         }
@@ -232,56 +224,56 @@
     function loop() {
         frame++; ctx.clearRect(0, 0, 800, 440);
 
-        if (state === 'MENU') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("APEX ANATOMY ENGINE", 400, 200); ctx.textAlign = 'left';
-        }
-        else if (state === 'GULLET') {
-            // Smooth falling physics
-            gullet.targetSpeed = 6 + Math.sin(frame*0.1)*3; // Speed fluctuates
-            gullet.currentSpeed = lerp(gullet.currentSpeed, gullet.targetSpeed, 0.05);
-            gullet.depth += gullet.currentSpeed; 
-            
-            ctx.fillStyle = gullet.mob.bg; ctx.fillRect(0,0,800,440);
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gullet.depth % 100;
+        if (state === 'GULLET') {
+            gulletDepth += 4; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,440);
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gulletDepth % 100;
             for(let i=-100; i<600; i+=100) { let w = Math.sin((i+frame)*0.05)*30; ctx.fillRect(0, i+scr, 300+w, 100); ctx.fillRect(500-w, i+scr, 300+w, 100); }
             ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 220, 14, 14); 
-            if (gullet.depth >= 300) loadRoom(gullet.mob.id + "_Throat");
+            if (gulletDepth >= 300) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,440);
             
-            let cx = 400 + camSway.x, cy = 220 + camSway.y, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
+            // HYPER-REALISTIC SWAY (Translates the entire canvas!)
+            ctx.save();
+            let swayX = 0, swayY = 0;
+            if (activeMicro && !activeMicro.dead) { swayX = activeMicro.vx * 6; swayY = activeMicro.vy * 6; }
+            ctx.translate(swayX, swayY);
             
-            // Fleshy Room with Parallax Depth
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3; ctx.fillRect(cx - rw/2 - wob - 10, cy - rh/2 + wob - 10, rw + wob*2 + 20, rh - wob*2 + 20); ctx.globalAlpha = 1.0;
+            let cx = 400, cy = 220, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
+            
+            // Fleshy Background
             ctx.fillStyle = currentRoom.bg; ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
 
-            ctx.fillStyle = currentRoom.acid; ctx.fillRect(cx - rw/2, currentRoom.aY + camSway.y, rw, (cy+rh/2) - currentRoom.aY);
+            // WAVY ACID PHYSICS
+            ctx.fillStyle = currentRoom.acid; 
+            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } // Wavy surface!
+            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
             
+            // Exits
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6;
             if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
             if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
             ctx.globalAlpha = 1.0;
 
-            if (currentRoom.micros) {
-                currentRoom.micros.forEach(m => {
-                    ctx.fillStyle = m.c; ctx.beginPath(); ctx.arc(m.x + camSway.x, m.y + camSway.y, m.r, 0, Math.PI*2); ctx.fill();
-                    if(m.dead) { ctx.fillStyle='#f00'; ctx.fillRect(m.x-3+camSway.x, m.y-3+camSway.y, 6, 2); } // Dead eyes
-                });
-            }
-            if (currentRoom.npcs) {
-                currentRoom.npcs.forEach(n => {
-                    if(n.active) { ctx.fillStyle = n.c; ctx.beginPath(); ctx.arc(n.x + camSway.x, n.y + camSway.y, n.r, 0, Math.PI*2); ctx.fill(); }
-                });
-            }
+            // Entities
+            currentRoom.entities.forEach(e => {
+                ctx.fillStyle = e.c; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+                if (e instanceof MicroCreature && e.dead) { ctx.fillStyle='#f00'; ctx.fillRect(e.x-3, e.y-3, 6, 2); }
+                if (e.type === 'core') { ctx.fillStyle='#fff'; ctx.globalAlpha=Math.abs(Math.sin(frame*0.1)); ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+            });
 
+            // Player
             ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
+            
+            ctx.restore(); // Undo the sway translation so UI isn't affected!
         }
 
         requestAnimationFrame(loop);
     }
-    initMenu(); loop();
+    loop();
 </script>
 </body>
 </html>
