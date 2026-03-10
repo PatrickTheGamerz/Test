@@ -3,371 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale-Style: Into the Belly</title>
+    <title>Undertale Battle: The Guardian</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body {
-            background-color: #111; color: #fff; margin: 0;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden; font-family: 'VT323', monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'VT323', monospace;
         }
-        #game-wrapper {
-            position: relative; width: 800px; height: 600px;
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
-        }
-        canvas { display: block; background-color: #050505; border: 2px solid #444; }
-        
-        /* Retro TV CRT Effect */
-        #crt-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 3px 100%; pointer-events: none;
-        }
-        #ui-layer {
-            position: absolute; top: 10px; left: 15px; font-size: 28px;
-            text-shadow: 2px 2px 0 #000; pointer-events: none;
-        }
-        #dialogue-box {
-            position: absolute; bottom: 15px; left: 15px; right: 15px; height: 140px;
-            border: 4px solid #fff; background-color: rgba(0, 0, 0, 0.9);
-            display: none; padding: 20px; box-sizing: border-box; font-size: 30px;
-            text-shadow: 2px 2px 0px #000; z-index: 10;
+        canvas {
+            display: block;
+            background-color: #000;
         }
     </style>
 </head>
 <body>
 
-<div id="game-wrapper">
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="crt-overlay"></div>
-    <div id="ui-layer">HP: <span id="hp-text">3</span> | Soups: <span id="score-text">0</span>/5</div>
-    <div id="dialogue-box"></div>
-</div>
+<canvas id="gameCanvas" width="640" height="480"></canvas>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const dialogueBox = document.getElementById('dialogue-box');
-    const hpText = document.getElementById('hp-text');
-    const scoreText = document.getElementById('score-text');
 
-    // --- Core Systems ---
-    let state = 'START'; 
-    let frame = 0;
-    let shakeTimer = 0;
+    // --- Input Handling ---
     const keys = {};
+    window.addEventListener('keydown', (e) => { 
+        keys[e.code] = true; 
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","Enter"].includes(e.code)) e.preventDefault();
+    });
+    window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-    // --- Entities ---
-    let player, monsters, items, particles, acidDrops;
-    let score = 0, stomachTimer = 0;
+    // --- Game Variables ---
+    let state = 'TITLE'; // TITLE, DIALOGUE, BATTLE, STOMACH, GAMEOVER, VICTORY
+    let frame = 0;
+    
+    // Player
+    const player = { x: 320, y: 320, speed: 4, hp: 20, maxHp: 20, iFrames: 0 };
+    
+    // Battle Box
+    const box = { x: 200, y: 220, w: 240, h: 140, targetX: 200, targetY: 220, targetW: 240, targetH: 140 };
 
-    class Player {
-        constructor() {
-            this.x = 400; this.y = 300; this.size = 6; 
-            this.speed = 4; this.hp = 3; this.isInvincible = 0;
-            this.dashCooldown = 0; this.isDashing = 0;
-        }
-        update() {
-            if (this.isInvincible > 0) this.isInvincible--;
-            if (this.dashCooldown > 0) this.dashCooldown--;
-            if (this.isDashing > 0) {
-                this.isDashing--;
-                createParticles(this.x, this.y, '#ff0000', 2, 0); // Dash trail
-                return; // Lock movement while dashing
-            }
+    // Encounter Flow
+    let currentWave = 0;
+    let waveTimer = 0;
+    let stomachTimer = 0;
+    let bullets = [];
+    
+    // Dialogue System
+    let dialogueQueue = [];
+    let currentText = "";
+    let typeIndex = 0;
 
-            let dx = 0, dy = 0;
-            if (keys['ArrowUp'] || keys['KeyW']) dy -= 1;
-            if (keys['ArrowDown'] || keys['KeyS']) dy += 1;
-            if (keys['ArrowLeft'] || keys['KeyA']) dx -= 1;
-            if (keys['ArrowRight'] || keys['KeyD']) dx += 1;
-
-            if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; } // Normalize diagonal
-            
-            this.x += dx * this.speed;
-            this.y += dy * this.speed;
-
-            // Dash Mechanic
-            if (keys['Space'] && this.dashCooldown === 0 && (dx !== 0 || dy !== 0)) {
-                this.isDashing = 10;
-                this.dashCooldown = 60;
-                this.x += dx * 80; // Dash distance
-                this.y += dy * 80;
-                shakeTimer = 5;
-            }
-
-            // Boundaries
-            this.x = Math.max(20, Math.min(canvas.width - 20, this.x));
-            this.y = Math.max(20, Math.min(canvas.height - 20, this.y));
-        }
-        draw() {
-            if (this.isInvincible > 0 && frame % 10 < 5) return; // Blinking effect
-            ctx.shadowBlur = 15; ctx.shadowColor = '#ff0000'; ctx.fillStyle = '#ff0000';
-            
-            // Draw Pixel Heart
-            const p = this.size;
-            const pxs = [ [0,1,1,0,1,1,0], [1,1,1,1,1,1,1], [1,1,1,1,1,1,1], [0,1,1,1,1,1,0], [0,0,1,1,1,0,0], [0,0,0,1,0,0,0] ];
-            let ox = this.x - (7 * p) / 2, oy = this.y - (6 * p) / 2;
-            for (let r=0; r<pxs.length; r++) {
-                for (let c=0; c<pxs[r].length; c++) {
-                    if (pxs[r][c]) ctx.fillRect(ox + c * p, oy + r * p, p, p);
-                }
-            }
-            ctx.shadowBlur = 0; // Reset
-        }
-    }
-
-    class Monster {
-        constructor(x, y, type) {
-            this.x = x; this.y = y; this.type = type;
-            this.radius = type === 'pulser' ? 50 : 30;
-            this.stateTimer = 0; this.vx = 0; this.vy = 0;
-            this.color = type === 'chaser' ? '#00e5ff' : type === 'dasher' ? '#ff6600' : '#b200ff';
-        }
-        update() {
-            let dx = player.x - this.x; let dy = player.y - this.y;
-            let dist = Math.hypot(dx, dy);
-
-            if (this.type === 'chaser') {
-                this.x += (dx / dist) * 1.5; this.y += (dy / dist) * 1.5;
-            } 
-            else if (this.type === 'dasher') {
-                this.stateTimer++;
-                if (this.stateTimer < 100) { // Aiming
-                    this.x += (dx / dist) * 0.5; this.y += (dy / dist) * 0.5;
-                } else if (this.stateTimer === 100) { // Lock on
-                    this.vx = (dx / dist) * 10; this.vy = (dy / dist) * 10;
-                } else if (this.stateTimer < 130) { // Dash
-                    this.x += this.vx; this.y += this.vy;
-                    createParticles(this.x, this.y, this.color, 1, 0);
-                } else { this.stateTimer = 0; }
-            }
-            else if (this.type === 'pulser') {
-                this.y += Math.sin(frame * 0.05) * 1; // Float
-                if (dist < 150) { // Gravity pull
-                    player.x -= (dx / dist) * 1.2; player.y -= (dy / dist) * 1.2;
-                }
-            }
-
-            // Check collision
-            if (dist < this.radius - 5 && player.isInvincible === 0 && player.isDashing === 0) {
-                triggerGulp(this);
-            }
-        }
-        draw() {
-            let wobble = Math.sin(frame * 0.1) * (this.type === 'pulser' ? 8 : 4);
-            ctx.shadowBlur = 20; ctx.shadowColor = this.color;
-            ctx.fillStyle = '#fff';
-            
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius + wobble, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eyes
-            ctx.fillStyle = '#000'; ctx.shadowBlur = 0;
-            let eyeX = dx = player.x - this.x > 0 ? 5 : -5; // Look at player
-            ctx.beginPath(); ctx.arc(this.x - 10 + eyeX, this.y - 5, 4, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(this.x + 10 + eyeX, this.y - 5, 4, 0, Math.PI * 2); ctx.fill();
-
-            // Mouth
-            ctx.beginPath();
-            if (state === 'GULPING') {
-                ctx.ellipse(this.x, this.y + 15, 20, 25, 0, 0, Math.PI * 2);
-            } else {
-                ctx.ellipse(this.x, this.y + 10, 10, this.type === 'pulser' ? 10 : 3, 0, 0, Math.PI * 2);
-            }
-            ctx.fill();
-        }
-    }
-
-    class Particle {
-        constructor(x, y, color, speed, life) {
-            this.x = x; this.y = y; this.color = color;
-            this.vx = (Math.random() - 0.5) * speed; this.vy = (Math.random() - 0.5) * speed;
-            this.life = life || Math.random() * 30 + 10; this.maxLife = this.life;
-        }
-        update() { this.x += this.vx; this.y += this.vy; this.life--; }
-        draw() {
-            ctx.globalAlpha = this.life / this.maxLife;
-            ctx.fillStyle = this.color;
-            ctx.fillRect(this.x, this.y, 4, 4);
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // --- Helpers ---
-    function createParticles(x, y, color, speed, count = 10) {
-        if(count === 0) particles.push(new Particle(x, y, color, speed, 15)); // Trail mode
-        for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color, speed));
-    }
-
-    function initGame() {
-        player = new Player();
-        monsters = [
-            new Monster(100, 100, 'chaser'), new Monster(700, 100, 'dasher'),
-            new Monster(400, 500, 'pulser'), new Monster(700, 500, 'chaser')
+    // --- Drawing Utilities ---
+    function drawHeart(x, y, color = '#ff0000') {
+        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return; // Blinking
+        ctx.fillStyle = color;
+        const p = 2; // Pixel scale
+        const pxs = [
+            [0,1,1,0,1,1,0], [1,1,1,1,1,1,1], [1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,0], [0,0,1,1,1,0,0], [0,0,0,1,0,0,0]
         ];
-        items = [ {x: 200, y: 150}, {x: 600, y: 150}, {x: 400, y: 300}, {x: 200, y: 450}, {x: 600, y: 450} ];
-        particles = []; acidDrops = [];
-        score = 0; updateUI(); state = 'PLAY'; dialogueBox.style.display = 'none';
+        let ox = x - (7 * p) / 2; let oy = y - (6 * p) / 2;
+        for (let r = 0; r < pxs.length; r++) {
+            for (let c = 0; c < pxs[r].length; c++) {
+                if (pxs[r][c]) ctx.fillRect(ox + c * p, oy + r * p, p, p);
+            }
+        }
+        // Center hitbox dot if holding shift
+        if (keys['ShiftLeft'] || keys['ShiftRight']) {
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(x - 1, y - 1, 2, 2);
+        }
     }
 
-    function updateUI() {
-        hpText.innerText = player.hp; scoreText.innerText = score;
+    function drawBox() {
+        // Smooth transition for box size
+        box.x += (box.targetX - box.x) * 0.1;
+        box.y += (box.targetY - box.y) * 0.1;
+        box.w += (box.targetW - box.w) * 0.1;
+        box.h += (box.targetH - box.h) * 0.1;
+
+        ctx.strokeStyle = state === 'STOMACH' ? '#cc0000' : '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(box.x, box.y, box.w, box.h);
+        
+        if (state === 'STOMACH') {
+            ctx.fillStyle = 'rgba(50, 0, 10, 0.5)';
+            ctx.fillRect(box.x, box.y, box.w, box.h);
+        }
     }
 
-    function triggerDialogue(text) {
+    function drawUI() {
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px VT323';
+        ctx.textAlign = 'left';
+        ctx.fillText("CHARA   LV 1", 30, 430);
+        ctx.fillText("HP", 220, 430);
+        
+        // Health Bar
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(260, 412, player.maxHp * 2, 20);
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(260, 412, Math.max(0, player.hp) * 2, 20);
+        
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`${Math.max(0, player.hp)} / ${player.maxHp}`, 270 + player.maxHp * 2, 430);
+    }
+
+    function drawEnemyGraphics() {
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        
+        if (currentWave === 0) { // Moldy
+            let w = Math.sin(frame * 0.1) * 10;
+            ctx.fillRect(300 - w/2, 60, 40 + w, 60 - w/2);
+            ctx.font = '20px VT323'; ctx.fillText("* Wiggle wiggle.", 450, 90);
+        } else if (currentWave === 1) { // Froggy
+            ctx.beginPath(); ctx.arc(320, 90, 30, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(300, 50, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(340, 50, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.font = '20px VT323'; ctx.fillText("* Ribbit.", 450, 90);
+        } else if (currentWave === 2) { // Boss (Guardian)
+            ctx.beginPath(); ctx.arc(320, 80, 40, 0, Math.PI * 2); ctx.fill(); // Head
+            ctx.fillRect(300, 120, 40, 50); // Body
+            ctx.beginPath(); ctx.moveTo(280, 40); ctx.lineTo(300, 80); ctx.lineTo(260, 80); ctx.fill(); // Horn L
+            ctx.beginPath(); ctx.moveTo(360, 40); ctx.lineTo(340, 80); ctx.lineTo(380, 80); ctx.fill(); // Horn R
+            ctx.font = '20px VT323'; ctx.fillText("* Prove yourself.", 450, 90);
+        }
+    }
+
+    function pushDialogue(texts) {
+        dialogueQueue = texts;
+        typeIndex = 0;
+        currentText = "";
         state = 'DIALOGUE';
-        dialogueBox.innerHTML = text.replace(/\n/g, '<br>');
-        dialogueBox.style.display = 'block';
     }
 
-    function triggerGulp(monster) {
-        state = 'GULPING'; shakeTimer = 30;
-        player.targetX = monster.x; player.targetY = monster.y + 15;
+    // --- Core Logic ---
+    function playerMovement() {
+        let speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? player.speed / 2 : player.speed;
+        let dx = 0, dy = 0;
+        
+        if (keys['ArrowUp'] || keys['KeyW']) dy -= speed;
+        if (keys['ArrowDown'] || keys['KeyS']) dy += speed;
+        if (keys['ArrowLeft'] || keys['KeyA']) dx -= speed;
+        if (keys['ArrowRight'] || keys['KeyD']) dx += speed;
+
+        player.x += dx; player.y += dy;
+
+        // Clamp to Box Boundaries (with a 4px padding for the heart size)
+        player.x = Math.max(box.x + 8, Math.min(box.x + box.w - 8, player.x));
+        player.y = Math.max(box.y + 8, Math.min(box.y + box.h - 8, player.y));
     }
 
-    function initStomach() {
-        state = 'STOMACH'; stomachTimer = 600; // 10 seconds at 60fps
-        player.x = 400; player.y = 300; acidDrops = [];
-        triggerDialogue("* You've been eaten!\n* Dodge the stomach acid to force a burp!");
-        setTimeout(() => { if(state === 'STOMACH') dialogueBox.style.display = 'none'; }, 2500);
+    function damagePlayer(amt) {
+        if (player.iFrames <= 0) {
+            player.hp -= amt;
+            player.iFrames = 60; // 1 second of invincibility
+            if (player.hp <= 0) state = 'GAMEOVER';
+        }
     }
 
-    // --- Main Loop Logic ---
-    window.addEventListener('keydown', (e) => { keys[e.code] = true; });
-    window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+    function triggerGulp() {
+        state = 'STOMACH';
+        stomachTimer = 480; // 8 seconds
+        bullets = []; // Clear arena
+        box.targetW = 150; box.targetH = 200; // Constrict box
+        box.targetX = 320 - 75; box.targetY = 200;
+        player.x = 320; player.y = 300; // Center player
+    }
 
-    function update() {
-        frame++;
-        if (shakeTimer > 0) shakeTimer--;
+    // --- Waves & Attacks ---
+    function runWaveLogic() {
+        waveTimer++;
 
-        if (state === 'START') {
-            if (keys['Space']) initGame();
+        if (currentWave === 0) { // Moldy Attack (Bouncing spores)
+            if (waveTimer % 30 === 0) {
+                bullets.push({ 
+                    x: box.x + Math.random() * box.w, y: box.y - 10, 
+                    vx: (Math.random() - 0.5) * 2, vy: 2, r: 4, type: 'spore' 
+                });
+            }
+            if (waveTimer > 600) endWave(); // 10 seconds
         } 
-        else if (state === 'PLAY') {
-            player.update();
-            monsters.forEach(m => m.update());
-            particles.forEach((p, i) => { p.update(); if (p.life <= 0) particles.splice(i, 1); });
+        else if (currentWave === 1) { // Froggy Attack (Leaping frogs)
+            if (waveTimer % 45 === 0) {
+                bullets.push({
+                    x: box.x + (Math.random() > 0.5 ? 10 : box.w - 10), y: box.y + box.h - 10,
+                    vx: (Math.random() > 0.5 ? 2 : -2), vy: -5, r: 6, type: 'frog'
+                });
+            }
+            if (waveTimer > 600) endWave();
+        }
+        else if (currentWave === 2) { // Boss Attack
+            // Shoot fire
+            if (waveTimer % 20 === 0) {
+                let angle = Math.atan2((box.y + box.h/2) - 80, 320 - 320); // Aim vaguely down
+                angle += (Math.random() - 0.5);
+                bullets.push({
+                    x: 320, y: 120, vx: Math.cos(angle)*3, vy: Math.sin(angle)*3, r: 5, type: 'fire'
+                });
+            }
+            // THE GULP ATTACK (Giant Mouth spawns and chases slowly)
+            if (waveTimer === 200 || waveTimer === 500) {
+                bullets.push({
+                    x: 320, y: 120, vx: 0, vy: 1.5, r: 25, type: 'mouth'
+                });
+            }
+            if (waveTimer > 900) endWave(); // 15 seconds
+        }
 
-            // Items
-            for (let i = items.length - 1; i >= 0; i--) {
-                if (Math.hypot(player.x - items[i].x, player.y - items[i].y) < 20) {
-                    items.splice(i, 1); score++; updateUI();
-                    createParticles(player.x, player.y, '#ffff00', 5, 20);
-                    if (score >= 5) triggerDialogue("* ALL SOUPS COLLECTED.\n* YOU WIN!\n* (Refresh to replay)");
+        updateBullets();
+    }
+
+    function runStomachLogic() {
+        stomachTimer--;
+        
+        // Spawn fast acid drops
+        if (stomachTimer % 10 === 0) {
+            bullets.push({
+                x: box.x + Math.random() * box.w, y: box.y - 10,
+                vx: 0, vy: 4 + Math.random() * 2, r: 5, type: 'acid'
+            });
+        }
+
+        updateBullets();
+
+        if (stomachTimer <= 0) {
+            // Burped out, back to the fight
+            state = 'BATTLE';
+            bullets = [];
+            box.targetW = 240; box.targetH = 140; 
+            box.targetX = 200; box.targetY = 220;
+            player.iFrames = 60; // Safe frames upon return
+        }
+    }
+
+    function updateBullets() {
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            
+            if (b.type === 'frog') {
+                b.vy += 0.2; // Gravity
+                if (b.y > box.y + box.h - b.r) { b.y = box.y + box.h - b.r; b.vy = -5; } // Bounce
+                if (b.x < box.x || b.x > box.x + box.w) b.vx *= -1; // Wall bounce
+            } else if (b.type === 'mouth') {
+                // Homing onto player slowly
+                let dx = player.x - b.x; let dy = player.y - b.y;
+                let dist = Math.hypot(dx, dy);
+                b.vx = (dx/dist) * 1.2; b.vy = (dy/dist) * 1.2;
+            }
+
+            b.x += b.vx; b.y += b.vy;
+
+            // Draw bullet
+            ctx.beginPath();
+            if (b.type === 'mouth') {
+                ctx.fillStyle = '#ff0055';
+                ctx.arc(b.x, b.y, b.r, 0.2, Math.PI * 2 - 0.2); // Pacman shape
+                ctx.lineTo(b.x, b.y); ctx.fill();
+            } else {
+                ctx.fillStyle = b.type === 'acid' ? '#00ff00' : '#fff';
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Collision with player
+            let dist = Math.hypot(player.x - b.x, player.y - b.y);
+            if (dist < b.r + 4) {
+                if (b.type === 'mouth') {
+                    triggerGulp();
+                    bullets.splice(i, 1);
+                } else {
+                    damagePlayer(b.type === 'acid' ? 2 : 4);
                 }
             }
-        } 
-        else if (state === 'GULPING') {
-            // Sucked into mouth animation
-            player.x += (player.targetX - player.x) * 0.1;
-            player.y += (player.targetY - player.y) * 0.1;
-            player.size = Math.max(0, player.size - 0.1);
-            createParticles(player.targetX, player.targetY, '#ff0055', 8, 2); // Swirl effect
 
-            if (player.size <= 0.5 && shakeTimer <= 0) initStomach();
-            particles.forEach((p, i) => { p.update(); if (p.life <= 0) particles.splice(i, 1); });
+            // Remove if way out of bounds
+            if (b.y > 600 || b.y < 0 || b.x < 0 || b.x > 640) bullets.splice(i, 1);
+        }
+    }
+
+    function endWave() {
+        bullets = [];
+        currentWave++;
+        waveTimer = 0;
+        
+        if (currentWave === 1) pushDialogue(["* You defeated the Moldy.", "* A wild Froggy approaches!"]);
+        else if (currentWave === 2) pushDialogue(["* Froggy hopped away.", "* The Guardian blocks your path!"]);
+        else state = 'VICTORY';
+    }
+
+    // --- Main Loop ---
+    let keyHandled = false;
+
+    function loop() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (player.iFrames > 0) player.iFrames--;
+
+        if (state === 'TITLE') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+            ctx.font = '40px VT323'; ctx.fillText("TALE OF THE GULP", 320, 200);
+            ctx.font = '24px VT323'; 
+            ctx.fillText("Arrow Keys to Move. Hold SHIFT to slow down.", 320, 260);
+            ctx.fillText("Press [Z] or [ENTER] to start.", 320, 320);
+            
+            if ((keys['Enter'] || keys['KeyZ']) && !keyHandled) {
+                keyHandled = true;
+                pushDialogue([
+                    "* You encounter a strange wiggling creature.",
+                    "* Survive its attacks."
+                ]);
+            }
+        } 
+        else if (state === 'DIALOGUE') {
+            drawUI();
+            if (currentWave < 3) drawEnemyGraphics();
+            
+            // Draw dialogue box
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+            ctx.strokeRect(30, 280, 580, 120);
+            ctx.fillStyle = '#000'; ctx.fillRect(32, 282, 576, 116);
+            
+            // Typewriter effect
+            let targetText = dialogueQueue[0];
+            if (typeIndex < targetText.length) {
+                if (frame % 2 === 0) {
+                    currentText += targetText[typeIndex];
+                    typeIndex++;
+                }
+            }
+            
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = '28px VT323';
+            ctx.fillText(currentText, 50, 330);
+
+            // Advance dialogue
+            if ((keys['Enter'] || keys['KeyZ']) && !keyHandled) {
+                keyHandled = true;
+                if (typeIndex < targetText.length) {
+                    currentText = targetText; typeIndex = targetText.length; // Skip to end
+                } else {
+                    dialogueQueue.shift();
+                    if (dialogueQueue.length > 0) {
+                        currentText = ""; typeIndex = 0;
+                    } else {
+                        state = 'BATTLE'; waveTimer = 0;
+                        box.w = 240; box.h = 140; box.x = 200; box.y = 220; // Reset box
+                        player.x = 320; player.y = 320;
+                    }
+                }
+            }
+        }
+        else if (state === 'BATTLE') {
+            drawUI();
+            drawEnemyGraphics();
+            drawBox();
+            playerMovement();
+            runWaveLogic();
+            drawHeart(player.x, player.y);
         }
         else if (state === 'STOMACH') {
-            player.update();
-            stomachTimer--;
-
-            // Stomach boundaries (smaller circular arena)
-            let dx = player.x - 400, dy = player.y - 300;
-            if (Math.hypot(dx, dy) > 200) {
-                let angle = Math.atan2(dy, dx);
-                player.x = 400 + Math.cos(angle) * 200; player.y = 300 + Math.sin(angle) * 200;
-            }
-
-            // Spawn Acid
-            if (frame % 15 === 0) {
-                acidDrops.push({
-                    x: 200 + Math.random() * 400, y: 100, 
-                    vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3 + 2, r: 8 + Math.random() * 10
-                });
-            }
-
-            // Acid logic
-            acidDrops.forEach((a, i) => {
-                a.x += a.vx; a.y += a.vy;
-                if (a.y > 500) acidDrops.splice(i, 1); // Hit bottom
-                
-                // Player hit by acid
-                if (Math.hypot(player.x - a.x, player.y - a.y) < a.r + 10 && player.isInvincible === 0 && player.isDashing === 0) {
-                    player.hp--; player.isInvincible = 60; shakeTimer = 15; updateUI();
-                    createParticles(player.x, player.y, '#00ff00', 5, 20);
-                    if (player.hp <= 0) triggerDialogue("* You were digested...\n* STAY DETERMINED.\n* (Press Space to restart)");
-                }
-            });
-
-            if (stomachTimer <= 0 && player.hp > 0) {
-                // Burped out!
-                state = 'PLAY'; player.size = 6; player.isInvincible = 90;
-                shakeTimer = 20; dialogueBox.style.display = 'none';
-                createParticles(player.x, player.y, '#ffff00', 10, 50);
-            }
+            drawUI();
+            // Draw a slightly darker enemy to show you are inside them
+            ctx.globalAlpha = 0.3; drawEnemyGraphics(); ctx.globalAlpha = 1.0;
+            
+            drawBox();
+            playerMovement();
+            runStomachLogic();
+            drawHeart(player.x, player.y);
+            
+            ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '24px VT323';
+            ctx.fillText(`SURVIVE ACID: ${Math.ceil(stomachTimer/60)}s`, 320, 180);
         }
-        else if (state === 'DIALOGUE') {
-            if (keys['Space'] && player.hp <= 0) initGame();
+        else if (state === 'GAMEOVER') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("GAME OVER", 320, 240);
+            ctx.font = '24px VT323'; ctx.fillText("Stay determined. Refresh to try again.", 320, 280);
         }
+        else if (state === 'VICTORY') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("YOU WON!", 320, 240);
+            ctx.font = '24px VT323'; ctx.fillText("You survived the gauntlet.", 320, 280);
+        }
+
+        // Prevent rapid key firing
+        if (!keys['Enter'] && !keys['KeyZ']) keyHandled = false;
+
+        requestAnimationFrame(loop);
     }
 
-    function draw() {
-        ctx.save();
-        // Screen Shake
-        if (shakeTimer > 0) {
-            ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
-        }
-
-        if (state === 'STOMACH') {
-            // Draw fleshy stomach background
-            ctx.fillStyle = '#3a0011'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-            let pulse = Math.sin(frame * 0.05) * 10;
-            ctx.arc(400, 300, 210 + pulse, 0, Math.PI * 2);
-            ctx.fillStyle = '#6a0022'; ctx.fill();
-            ctx.strokeStyle = '#990033'; ctx.lineWidth = 5; ctx.stroke();
-
-            // Timer
-            ctx.fillStyle = '#fff'; ctx.font = '24px VT323'; ctx.textAlign = 'center';
-            ctx.fillText(`Burp in: ${Math.ceil(stomachTimer/60)}s`, 400, 80);
-
-            // Draw Acid
-            ctx.fillStyle = '#00ff00'; ctx.shadowBlur = 10; ctx.shadowColor = '#00ff00';
-            acidDrops.forEach(a => {
-                ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2); ctx.fill();
-            });
-            ctx.shadowBlur = 0;
-            player.draw();
-        } 
-        else {
-            // Normal Room
-            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (state === 'START') {
-                ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-                ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
-                ctx.font = '50px VT323'; ctx.fillText("INTO THE BELLY", 400, 200);
-                ctx.font = '24px VT323'; ctx.shadowBlur = 0;
-                ctx.fillText("WASD/Arrows to Move | SPACE to DASH", 400, 280);
-                ctx.fillText("Collect 5 Soups. Don't get digested.", 400, 320);
-                ctx.fillStyle = (frame % 40 < 20) ? '#ff0000' : '#fff';
-                ctx.fillText("PRESS SPACE TO BEGIN", 400, 420);
-            } else {
-                items.forEach(i => {
-                    ctx.fillStyle = '#ffea00'; ctx.shadowBlur = 15; ctx.shadowColor = '#ffea00';
-                    ctx.fillRect(i.x - 6, i.y - 6, 12, 12);
-                });
-                monsters.forEach(m => m.draw());
-                particles.forEach(p => p.draw());
-                if (state !== 'DIALOGUE' || player.hp > 0) player.draw();
-            }
-        }
-        ctx.restore();
-    }
-
-    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    // Start
     loop();
 </script>
 </body>
