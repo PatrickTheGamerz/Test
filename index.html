@@ -3,118 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORANGEBIRD | NEBULA STRIKE</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Undertale-Style Gulp Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'VT323', monospace; /* Classic retro RPG font */
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+
+        canvas {
+            border: 4px solid #fff;
+            display: block;
+            background-color: #000;
+        }
+
+        #dialogue-box {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 130px;
+            border: 4px solid #fff;
+            background-color: #000;
+            display: none;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 28px;
+            line-height: 1.2;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .hidden { display: none !important; }
+    </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <div id="loading-screen">
-        <div id="sim-layer"></div> <div class="loader-content">
-            <div class="glitch-title" data-text="ORANGEBIRD">ORANGEBIRD</div>
-            <div class="progress-container">
-                <div class="progress-bar"></div>
-            </div>
-            <p id="loading-status">SYNCING NEURAL LINK...</p>
-        </div>
-    </div>
+<div id="game-wrapper">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <div id="dialogue-box"></div>
+</div>
 
-    <div id="cursor"></div>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const dialogueBox = document.getElementById('dialogue-box');
 
-    <div id="game-container">
-        <div id="bg-stars"></div>
-        <div id="bg-dust"></div>
-        <div id="scanlines"></div>
+    // --- Game Variables ---
+    let state = 'START'; // States: START, PLAY, GULPING, DIALOGUE
+    let frameCount = 0;
+    
+    // Player (The Heart)
+    let player = { x: 320, y: 380, speed: 4, size: 4, isEaten: false };
+    
+    // Monsters (The Moosters)
+    let monsters = [];
+    let gulpingMonster = null;
+    let gulpProgress = 0;
+
+    // Items
+    let items = [];
+    let score = 0;
+    const maxScore = 3;
+
+    // Input
+    const keys = {};
+
+    // Dialogue System
+    let fullText = "";
+    let currentText = "";
+    let textIndex = 0;
+    let textSpeed = 2; // Lower is faster
+
+    // --- Initialization ---
+    function initGame() {
+        player = { x: 320, y: 380, speed: 4, size: 4, isEaten: false };
+        score = 0;
         
-        <div id="top-score" class="ingame-ui">0</div>
+        monsters = [
+            { x: 150, y: 150, radius: 35, speed: 1.5, type: 'chaser' },
+            { x: 490, y: 150, radius: 45, speed: 1.0, type: 'wanderer', angle: 0 }
+        ];
 
-        <div id="menu-ui" class="gui">
-            <div class="logo-wrap">
-                <span class="tag">V3.0 AEROSPACE</span>
-                <h1>ORANGEBIRD</h1>
-            </div>
+        items = [
+            { x: 150, y: 80, active: true },
+            { x: 490, y: 80, active: true },
+            { x: 320, y: 150, active: true }
+        ];
+
+        state = 'PLAY';
+        dialogueBox.style.display = 'none';
+    }
+
+    // --- Input Listeners ---
+    window.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        // Prevent screen scrolling when using arrows
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) {
+            e.preventDefault();
+        }
+
+        if (e.code === 'Space') {
+            if (state === 'START') {
+                initGame();
+            } else if (state === 'DIALOGUE') {
+                if (textIndex >= fullText.length) {
+                    // Dialogue finished, restart game
+                    initGame();
+                } else {
+                    // Skip typing effect
+                    currentText = fullText;
+                    textIndex = fullText.length;
+                    dialogueBox.innerHTML = currentText.replace(/\n/g, '<br>');
+                }
+            }
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
+
+    // --- Drawing Functions ---
+    function drawPixelHeart(x, y, pSize) {
+        ctx.fillStyle = '#ff0000'; // Undertale Red
+        const pixels = [
+            [0,1,1,0,1,1,0],
+            [1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,0],
+            [0,0,1,1,1,0,0],
+            [0,0,0,1,0,0,0]
+        ];
+        
+        let offsetX = x - (7 * pSize) / 2;
+        let offsetY = y - (6 * pSize) / 2;
+
+        for (let r = 0; r < pixels.length; r++) {
+            for (let c = 0; c < pixels[r].length; c++) {
+                if (pixels[r][c]) {
+                    ctx.fillRect(offsetX + c * pSize, offsetY + r * pSize, pSize, pSize);
+                }
+            }
+        }
+    }
+
+    function drawMonster(m) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        
+        // Make the monster blobby and wobbly using sine waves
+        let wobble = Math.sin(frameCount * 0.1) * 5;
+        ctx.arc(m.x, m.y, m.radius + wobble, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw scary/cute eyes
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(m.x - 10, m.y - 5, 5, 0, Math.PI * 2);
+        ctx.arc(m.x + 10, m.y - 5, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw mouth (opens wider if gulping)
+        ctx.beginPath();
+        if (state === 'GULPING' && gulpingMonster === m) {
+            ctx.ellipse(m.x, m.y + 15, 15, 20, 0, 0, Math.PI * 2); // Big open mouth
+        } else {
+            ctx.ellipse(m.x, m.y + 10, 10, 5, 0, 0, Math.PI * 2); // Normal mouth
+        }
+        ctx.fill();
+    }
+
+    function drawItem(item) {
+        if (!item.active) return;
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(item.x - 5, item.y - 5, 10, 10);
+    }
+
+    function triggerDialogue(text) {
+        state = 'DIALOGUE';
+        fullText = text;
+        currentText = "";
+        textIndex = 0;
+        dialogueBox.style.display = 'block';
+        dialogueBox.innerHTML = "";
+    }
+
+    // --- Game Logic ---
+    function update() {
+        frameCount++;
+
+        if (state === 'START') {
+            // Wait for space
+        } 
+        else if (state === 'PLAY') {
+            // Player Movement
+            if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+            if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+            if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+            if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+
+            // Screen boundaries
+            player.x = Math.max(20, Math.min(canvas.width - 20, player.x));
+            player.y = Math.max(20, Math.min(canvas.height - 20, player.y));
+
+            // Item Collection
+            items.forEach(item => {
+                if (item.active) {
+                    let dist = Math.hypot(player.x - item.x, player.y - item.y);
+                    if (dist < 20) {
+                        item.active = false;
+                        score++;
+                        if (score >= maxScore) {
+                            triggerDialogue("* You collected all the pieces!\n* You are filled with DETERMINATION.\n* (Press Space to Play Again)");
+                        }
+                    }
+                }
+            });
+
+            // Monster Logic & Collision
+            monsters.forEach(m => {
+                // Simple AI
+                if (m.type === 'chaser') {
+                    let dx = player.x - m.x;
+                    let dy = player.y - m.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist > 0) {
+                        m.x += (dx / dist) * m.speed;
+                        m.y += (dy / dist) * m.speed;
+                    }
+                } else if (m.type === 'wanderer') {
+                    m.angle += 0.02;
+                    m.x += Math.cos(m.angle) * m.speed;
+                    m.y += Math.sin(m.angle) * m.speed;
+                }
+
+                // Check if eaten
+                let distToPlayer = Math.hypot(player.x - m.x, player.y - m.y);
+                if (distToPlayer < m.radius - 5) {
+                    state = 'GULPING';
+                    gulpingMonster = m;
+                    gulpProgress = 0;
+                }
+            });
+        } 
+        else if (state === 'GULPING') {
+            // Animation: Player gets sucked into the monster
+            gulpProgress++;
             
-            <div class="pilot-info">
-                <div class="info-box"><span>RECORD</span><b id="high-val">0</b></div>
-                <div class="info-box"><span>CREDITS</span><b id="points-val">0</b></div>
-            </div>
-
-            <div class="menu-actions">
-                <button class="btn btn-main" onclick="switchUI('mission-select')">FLY MISSION</button>
-                <button class="btn btn-sec" onclick="switchUI('hangar')">ENGINEERING HANGAR</button>
-                <button class="btn btn-sec" onclick="switchUI('medals')">PILOT RECORDS</button>
-            </div>
-        </div>
-
-        <div id="mission-ui" class="gui" style="display:none;">
-            <h2 class="gui-title">MISSION TERMINAL</h2>
+            // Move player to monster center
+            let dx = gulpingMonster.x - player.x;
+            let dy = gulpingMonster.y - player.y;
+            player.x += dx * 0.1;
+            player.y += dy * 0.1;
             
-            <div class="terminal-section">
-                <label>NETWORK PROTOCOL</label>
-                <div class="selector-row">
-                    <div class="select-btn active" id="p-solo" onclick="setProtocol('single')">SINGLEPLAYER</div>
-                    <div class="select-btn" id="p-multi" onclick="setProtocol('multi')">MULTIPLAYER</div>
-                </div>
-            </div>
+            // Shrink player
+            if (player.size > 0.2) player.size -= 0.1;
 
-            <div class="mission-list">
-                <div class="m-item" onclick="startGame('original')">
-                    <div class="m-info">
-                        <h3>SECTOR ALPHA</h3>
-                        <p>Standard data extraction. Stable gravity.</p>
-                    </div>
-                    <div class="m-reward">1x CR</div>
-                </div>
-                <div class="m-item advanced" onclick="startGame('advanced')">
-                    <div class="m-info">
-                        <h3>VOID NEBULA</h3>
-                        <p>Unstable shifting matter. High speed.</p>
-                    </div>
-                    <div class="m-reward">2x CR</div>
-                </div>
-            </div>
-            <button class="btn-text" onclick="switchUI('menu')">RETURN TO COMMAND</button>
-        </div>
+            if (gulpProgress > 60) {
+                triggerDialogue("* CHOMP!\n* The mooster gulped you down whole.\n* It is warm and dark in here...\n* (Press Space to restart)");
+            }
+        } 
+        else if (state === 'DIALOGUE') {
+            // Typing effect
+            if (frameCount % textSpeed === 0 && textIndex < fullText.length) {
+                currentText += fullText.charAt(textIndex);
+                textIndex++;
+                // Handle newlines correctly in HTML
+                dialogueBox.innerHTML = currentText.replace(/\n/g, '<br>');
+            }
+        }
+    }
 
-        <div id="hangar-ui" class="gui" style="display:none; background:transparent;">
-            <div id="hangar-viewport">
-                <svg id="lines"></svg>
-            </div>
-            <div class="hangar-hud">
-                <div class="hud-left">
-                    <span>RESOURCES</span>
-                    <b id="hangar-pts">0</b>
-                </div>
-                <button class="exit-btn" onclick="switchUI('menu')">EXIT HANGAR</button>
-            </div>
-        </div>
+    function draw() {
+        // Clear screen
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        <div id="medals-ui" class="gui" style="display:none;">
-            <h2 class="gui-title">PILOT MEDALS</h2>
-            <div id="ach-list" class="scroll-area"></div>
-            <button class="btn btn-sec" onclick="switchUI('menu')">BACK</button>
-        </div>
+        if (state === 'START') {
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.font = '40px VT323';
+            ctx.fillText("TALE OF THE MOOSTERS", canvas.width/2, 200);
+            ctx.font = '24px VT323';
+            ctx.fillText("Use Arrow Keys to move.", canvas.width/2, 250);
+            ctx.fillText("Collect yellow items. Don't get eaten.", canvas.width/2, 280);
+            ctx.fillText("Press SPACE to begin", canvas.width/2, 350);
+            return;
+        }
 
-        <div id="gameover-ui" class="gui" style="display:none;">
-            <h2 class="death-title">MISSION FAILED</h2>
-            <div class="stat-grid">
-                <div class="s-card"><span>PIPES</span><b id="res-score">0</b></div>
-                <div class="s-card"><span>EARNED</span><b id="res-points">0</b></div>
-            </div>
-            <button class="btn btn-main" onclick="startGame(currentGameMode)">RE-DEPLOY</button>
-            <button class="btn btn-sec" onclick="switchUI('menu')">BACK TO BASE</button>
-        </div>
+        // Draw items
+        items.forEach(drawItem);
 
-        <div id="toast">
-            <span id="t-icon">🎖️</span>
-            <div class="t-content"><b id="t-name"></b><span id="t-desc"></span></div>
-        </div>
+        // Draw monsters
+        monsters.forEach(drawMonster);
 
-        <div id="bird">
-            <div class="engine-glow"></div>
-        </div>
-        <div id="world"></div>
-    </div>
+        // Draw Player (unless fully eaten)
+        if (state !== 'DIALOGUE' || gulpProgress < 60) {
+            drawPixelHeart(player.x, player.y, player.size);
+        }
 
-    <script src="script.js"></script>
+        // Draw Score
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'left';
+        ctx.font = '24px VT323';
+        ctx.fillText(`Collectibles: ${score}/${maxScore}`, 10, 30);
+    }
+
+    // --- Main Game Loop ---
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Start the game loop
+    loop();
+
+</script>
 </body>
 </html>
