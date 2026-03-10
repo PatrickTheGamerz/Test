@@ -3,264 +3,398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale Ruins: Belly Escape</title>
+    <title>Undertale Ruins: Belly Escape Complete</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body {
             background-color: #000; color: #fff; margin: 0;
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden; font-family: 'VT323', monospace;
+            user-select: none;
         }
-        canvas { display: block; background-color: #000; }
+        #game-container {
+            position: relative;
+            width: 640px; height: 480px;
+        }
+        canvas {
+            display: block;
+            background-color: #000;
+            border: 2px solid #333;
+        }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" width="640" height="480"></canvas>
+<div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+</div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // --- Input ---
+    // --- Core Systems ---
     const keys = {};
-    window.addEventListener('keydown', e => { keys[e.code] = true; });
-    window.addEventListener('keyup', e => { keys[e.code] = false; });
+    window.addEventListener('keydown', e => { 
+        keys[e.code] = true; 
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","ShiftLeft"].includes(e.code)) e.preventDefault();
+    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // --- Game State ---
     let frame = 0;
-    let state = 'BATTLE'; // BATTLE, TRANSITION, STOMACH, ESCAPED
+    let state = 'TITLE'; // TITLE, BATTLE, GULPING, STOMACH, ESCAPED, GAMEOVER, VICTORY
+    let battleTimer = 0;
     
+    // Player
     const player = { x: 320, y: 320, speed: 4, hp: 20, maxHp: 20, iFrames: 0 };
+    
+    // Physics & Arena
     let box = { x: 220, y: 220, w: 200, h: 150 };
+    let bullets = [];
+    let stomachJuices = [];
+    let exitValve = { x: 320, y: 80, r: 25 };
     
     // --- Monster Database ---
+    let currentMonsterIndex = 0;
     const monsters = [
-        {
-            name: "Froggit",
-            text: "* Froggit hops towards you.",
-            color: "#fff",
-            stomachBg: "#0a1a0a", stomachWall: "#1a4a1a",
-            attack: function() {
-                // Flies attack
-                if (frame % 40 === 0) {
-                    bullets.push({x: box.x + box.w, y: box.y + box.h - 20, vx: -3, vy: 0, r: 4, type: 'fly'});
-                }
-            },
-            draw: function() {
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(320, 100, 30, 0, Math.PI*2); ctx.fill(); // Body
-                ctx.beginPath(); ctx.arc(300, 60, 12, 0, Math.PI*2); ctx.fill(); // Eye L
-                ctx.beginPath(); ctx.arc(340, 60, 12, 0, Math.PI*2); ctx.fill(); // Eye R
-            }
-        },
         {
             name: "Moldsmal",
             text: "* Moldsmal waits pensively.",
-            color: "#ff00ff",
+            surviveTime: 600, // 10 seconds at 60fps
             stomachBg: "#1a001a", stomachWall: "#4a004a",
-            attack: function() {
-                // Descending zigzag spores
-                if (frame % 25 === 0) {
-                    bullets.push({x: box.x + 20 + Math.random()*(box.w-40), y: box.y, vx: 0, vy: 2, r: 5, type: 'spore', startX: 0});
-                }
-            },
-            draw: function() {
+            draw: () => {
                 ctx.fillStyle = '#ffb3ff';
                 let w = Math.sin(frame * 0.05) * 10;
                 ctx.fillRect(280 - w, 60, 80 + w*2, 60 - w);
+            },
+            attack: () => {
+                if (frame % 30 === 0) {
+                    bullets.push({x: box.x + 10 + Math.random()*(box.w-20), y: box.y - 10, vx: 0, vy: 2.5, r: 5, type: 'spore'});
+                }
+            }
+        },
+        {
+            name: "Froggit",
+            text: "* Froggit hops towards you.",
+            surviveTime: 700,
+            stomachBg: "#0a1a0a", stomachWall: "#1a4a1a",
+            draw: () => {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(320, 90, 30, 0, Math.PI*2); ctx.fill(); 
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(308, 80, 5, 0, Math.PI*2); ctx.fill(); 
+                ctx.beginPath(); ctx.arc(332, 80, 5, 0, Math.PI*2); ctx.fill(); 
+            },
+            attack: () => {
+                if (frame % 45 === 0) {
+                    let side = Math.random() > 0.5 ? 1 : -1;
+                    bullets.push({
+                        x: side === 1 ? box.x + 10 : box.x + box.w - 10, 
+                        y: box.y + box.h - 15, vx: side * -2.5, vy: -5, r: 6, type: 'frog'
+                    });
+                }
             }
         },
         {
             name: "Loox",
             text: "* Please don't pick on Loox.",
-            color: "#ff3333",
+            surviveTime: 700,
             stomachBg: "#220000", stomachWall: "#660000",
-            attack: function() {
-                // Bouncing eye rings
-                if (frame % 60 === 0) {
-                    bullets.push({x: box.x + box.w/2, y: box.y + 10, vx: (Math.random()-0.5)*4, vy: 3, r: 8, type: 'eye'});
-                }
-            },
-            draw: function() {
+            draw: () => {
                 ctx.fillStyle = '#fff';
                 ctx.beginPath(); ctx.arc(320, 90, 35, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.arc(320, 90, 15, 0, Math.PI*2); ctx.fill(); // Big single eye
+                ctx.beginPath(); ctx.arc(320, 90, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(325, 85, 4, 0, Math.PI*2); ctx.fill(); // Eye glint
+            },
+            attack: () => {
+                if (frame % 50 === 0) {
+                    bullets.push({x: box.x + box.w/2, y: box.y + 10, vx: (Math.random()-0.5)*5, vy: 2, r: 8, type: 'eye'});
+                }
+            }
+        },
+        {
+            name: "Toriel",
+            text: "* Toriel looks through you.",
+            surviveTime: 900, // 15 seconds
+            stomachBg: "#2a0015", stomachWall: "#7a003a", // Boss stomach is deeper red/purple
+            draw: () => {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(320, 80, 35, 0, Math.PI*2); ctx.fill(); // Head
+                ctx.fillRect(300, 110, 40, 50); // Robe
+                ctx.beginPath(); ctx.moveTo(280, 50); ctx.lineTo(300, 80); ctx.lineTo(270, 85); ctx.fill(); // Ear L
+                ctx.beginPath(); ctx.moveTo(360, 50); ctx.lineTo(340, 80); ctx.lineTo(370, 85); ctx.fill(); // Ear R
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(310, 75, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(330, 75, 4, 0, Math.PI*2); ctx.fill();
+            },
+            attack: () => {
+                // Sweeping Fireballs
+                if (frame % 15 === 0) {
+                    let angle = Math.sin(frame * 0.05) * 1.5 + Math.PI/2; 
+                    bullets.push({x: 320, y: 130, vx: Math.cos(angle)*3, vy: Math.sin(angle)*3, r: 7, type: 'fire'});
+                }
+                // Homing Fireballs
+                if (frame % 80 === 0) {
+                    let dx = player.x - 320; let dy = player.y - 130;
+                    let dist = Math.hypot(dx, dy);
+                    bullets.push({x: 320, y: 130, vx: (dx/dist)*2.5, vy: (dy/dist)*2.5, r: 9, type: 'fireball'});
+                }
             }
         }
     ];
 
-    let currentMonster = 0;
-    let bullets = [];
-    let stomachJuices = [];
-    let exitValve = { x: 320, y: 50, r: 20 };
-
-    // --- Drawing Utilities ---
-    function drawPlayer() {
-        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return;
+    // --- Helper Functions ---
+    function drawHeart(x, y) {
+        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return; // Damage blink
+        
         ctx.fillStyle = '#ff0000';
         const p = 2;
         const pxs = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
-        let ox = player.x - 7, oy = player.y - 6;
+        let ox = x - 7, oy = y - 6;
         for (let r = 0; r < pxs.length; r++) {
             for (let c = 0; c < pxs[r].length; c++) {
                 if (pxs[r][c]) ctx.fillRect(ox + c * p, oy + r * p, p, p);
             }
         }
+        // Focus Dot
+        if (keys['ShiftLeft'] || keys['ShiftRight']) {
+            ctx.fillStyle = '#00ff00'; ctx.fillRect(x - 1, y - 1, 2, 2);
+        }
+    }
+
+    function initBattle() {
+        state = 'BATTLE';
+        battleTimer = 0;
+        bullets = [];
+        player.hp = player.maxHp;
+        player.x = 320; player.y = 295;
     }
 
     function takeDamage(amt) {
         if (player.iFrames <= 0) {
             player.hp -= amt;
-            player.iFrames = 30;
+            player.iFrames = 40;
             if (player.hp <= 0 && state === 'BATTLE') {
-                triggerGulp();
+                state = 'GULPING';
+                bullets = [];
+                setTimeout(() => initStomach(), 2000);
+            } else if (player.hp <= 0 && state === 'STOMACH') {
+                state = 'GAMEOVER';
             }
         }
     }
 
-    function triggerGulp() {
-        state = 'TRANSITION';
-        bullets = [];
-        setTimeout(() => {
-            state = 'STOMACH';
-            player.hp = 10; // Give soul some HP to survive the stomach
-            player.x = 320; player.y = 400; // Start at bottom of stomach
-            
-            // Generate random stomach juice pools based on monster
-            stomachJuices = [];
-            for(let i=0; i<8; i++) {
-                stomachJuices.push({
-                    x: 150 + Math.random() * 340,
-                    y: 100 + Math.random() * 250,
-                    r: 20 + Math.random() * 30,
-                    vx: (Math.random() - 0.5) * 2
-                });
-            }
-        }, 1500);
+    function initStomach() {
+        state = 'STOMACH';
+        player.hp = 10; // Soul integrity inside stomach
+        player.x = 320; player.y = 420; // Spawn at the bottom of the belly
+        player.iFrames = 60;
+        
+        stomachJuices = [];
+        // Spawn bouncing digestive acids
+        let numAcid = currentMonsterIndex === 3 ? 12 : 8; // Toriel has more acid
+        for(let i=0; i<numAcid; i++) {
+            stomachJuices.push({
+                x: 180 + Math.random() * 280, y: 150 + Math.random() * 200,
+                vx: (Math.random() > 0.5 ? 2 : -2) * (Math.random() * 1.5 + 1),
+                vy: (Math.random() > 0.5 ? 2 : -2) * (Math.random() * 1.5 + 1),
+                r: 10 + Math.random() * 15
+            });
+        }
     }
 
-    // --- Main Loop ---
+    function movePlayer(bounds) {
+        let speed = (keys['ShiftLeft']) ? player.speed / 2 : player.speed;
+        let dx = 0, dy = 0;
+        
+        if (keys['ArrowUp']) dy -= speed;
+        if (keys['ArrowDown']) dy += speed;
+        if (keys['ArrowLeft']) dx -= speed;
+        if (keys['ArrowRight']) dx += speed;
+
+        player.x += dx; player.y += dy;
+
+        // Keep inside bounds
+        player.x = Math.max(bounds.x + 8, Math.min(bounds.x + bounds.w - 8, player.x));
+        player.y = Math.max(bounds.y + 8, Math.min(bounds.y + bounds.h - 8, player.y));
+    }
+
+    // --- Main Game Loop ---
+    let spaceHandled = false;
+
     function loop() {
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         if (player.iFrames > 0) player.iFrames--;
-        let m = monsters[currentMonster];
 
-        // Movement Logic
-        let dx = 0, dy = 0;
-        if (keys['ArrowUp']) dy -= player.speed;
-        if (keys['ArrowDown']) dy += player.speed;
-        if (keys['ArrowLeft']) dx -= player.speed;
-        if (keys['ArrowRight']) dx += player.speed;
-        player.x += dx; player.y += dy;
+        if (state === 'TITLE') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+            ctx.font = '40px VT323'; ctx.fillText("RUINS: BELLY ESCAPE", 320, 200);
+            ctx.font = '24px VT323'; 
+            ctx.fillText("Arrow Keys to Move. Hold SHIFT to slow down.", 320, 260);
+            ctx.fillText("Survive the timer. If HP hits 0, you get eaten.", 320, 290);
+            ctx.fillStyle = (frame % 40 < 20) ? '#ff0000' : '#fff';
+            ctx.fillText("Press SPACE to Start", 320, 360);
+            
+            if (keys['Space'] && !spaceHandled) {
+                spaceHandled = true; currentMonsterIndex = 0; initBattle();
+            }
+        }
+        else if (state === 'BATTLE') {
+            let m = monsters[currentMonsterIndex];
+            battleTimer++;
 
-        if (state === 'BATTLE') {
-            // Battle UI
+            // Draw Monster & Arena
             m.draw();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
             ctx.strokeRect(box.x, box.y, box.w, box.h);
             
-            ctx.fillStyle = '#fff'; ctx.font = '24px VT323';
+            // Draw UI
+            ctx.fillStyle = '#fff'; ctx.font = '24px VT323'; ctx.textAlign = 'left';
             ctx.fillText(m.text, 50, 420);
-            ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 450, 420);
-
-            // Bounds
-            player.x = Math.max(box.x + 8, Math.min(box.x + box.w - 8, player.x));
-            player.y = Math.max(box.y + 8, Math.min(box.y + box.h - 8, player.y));
-
-            // Attacks
-            m.attack();
             
+            ctx.fillText("HP", 380, 420);
+            ctx.fillStyle = '#ff0000'; ctx.fillRect(410, 405, player.maxHp*4, 20);
+            ctx.fillStyle = '#ffff00'; ctx.fillRect(410, 405, Math.max(0, player.hp)*4, 20);
+            ctx.fillStyle = '#fff'; ctx.fillText(`${player.hp}/${player.maxHp}`, 420 + player.maxHp*4, 420);
+
+            // Timer Bar
+            let progress = battleTimer / m.surviveTime;
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(box.x, box.y + box.h + 10, box.w * progress, 5);
+
+            movePlayer(box);
+            m.attack();
+
+            // Update & Draw Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
+                
                 if (b.type === 'spore') b.x += Math.sin(frame * 0.1) * 2;
+                if (b.type === 'frog') {
+                    b.vy += 0.2; // Gravity
+                    if (b.y > box.y + box.h - b.r) { b.y = box.y + box.h - b.r; b.vy = -4; } // Bounce floor
+                    if (b.x < box.x + b.r || b.x > box.x + box.w - b.r) b.vx *= -1; // Bounce walls
+                }
                 if (b.type === 'eye') {
-                    b.vy += 0.1; // gravity
-                    if (b.y > box.y + box.h - b.r) b.vy = -3; // bounce
+                    b.vy += 0.15;
+                    if (b.y > box.y + box.h - b.r) b.vy = -3.5; 
                     if (b.x < box.x + b.r || b.x > box.x + box.w - b.r) b.vx *= -1;
                 }
-                
-                b.x += b.vx; b.y += b.vy;
-                
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                if (b.type === 'eye') { ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill(); }
 
-                if (Math.hypot(player.x - b.x, player.y - b.y) < b.r + 4) takeDamage(4);
+                b.x += b.vx; b.y += b.vy;
+
+                // Render Bullet
+                if (b.type === 'fire' || b.type === 'fireball') {
+                    ctx.fillStyle = '#ffaa00'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r-3, 0, Math.PI*2); ctx.fill();
+                } else {
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                    if (b.type === 'eye') { ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill(); }
+                }
+
+                // Hit detection
+                if (Math.hypot(player.x - b.x, player.y - b.y) < b.r + 3) takeDamage(b.type==='fireball' ? 5 : 3);
+
+                // Cull off-screen
                 if (b.x < 0 || b.x > 640 || b.y > 480) bullets.splice(i, 1);
             }
-            
-            drawPlayer();
-        } 
-        else if (state === 'TRANSITION') {
-            // Gulp animation
-            ctx.fillStyle = '#ff0000'; ctx.font = '40px VT323'; ctx.textAlign = 'center';
-            ctx.fillText("CHOMP!", 320, 240);
+
+            drawHeart(player.x, player.y);
+
+            // Win condition for this wave
+            if (battleTimer >= m.surviveTime && player.hp > 0) {
+                currentMonsterIndex++;
+                if (currentMonsterIndex >= monsters.length) state = 'VICTORY';
+                else initBattle();
+            }
+        }
+        else if (state === 'GULPING') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("* CHOMP!", 320, 220);
             ctx.font = '24px VT323';
-            ctx.fillText("You were eaten! Sliding down the esophagus...", 320, 280);
-            ctx.textAlign = 'left';
+            ctx.fillText(`You were eaten by ${monsters[currentMonsterIndex].name}.`, 320, 260);
+            ctx.fillText("Sucked down into the stomach...", 320, 290);
         }
         else if (state === 'STOMACH') {
-            // Draw Stomach Anatomy
-            ctx.fillStyle = m.stomachBg; ctx.fillRect(0, 0, 640, 480);
-            
-            // Pulsing stomach walls
-            ctx.strokeStyle = m.stomachWall; ctx.lineWidth = 15 + Math.sin(frame*0.05)*5;
-            ctx.strokeRect(100, 50, 440, 380);
-            
-            // Bounds (Stomach walls)
-            player.x = Math.max(120, Math.min(520, player.x));
-            player.y = Math.max(70, Math.min(410, player.y));
+            let m = monsters[currentMonsterIndex];
 
-            // Exit Valve (Sphincter)
-            ctx.fillStyle = '#ffff00';
-            ctx.beginPath(); ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.1)*3, 0, Math.PI*2); ctx.fill();
+            // Background & Pulsing Stomach Walls
+            ctx.fillStyle = m.stomachBg; ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Stomach Juices (Hazards)
-            ctx.fillStyle = '#00ff00'; ctx.globalAlpha = 0.6;
+            ctx.strokeStyle = m.stomachWall; 
+            ctx.lineWidth = 20 + Math.sin(frame*0.05)*10;
+            let stmBounds = { x: 120, y: 60, w: 400, h: 380 };
+            ctx.strokeRect(stmBounds.x, stmBounds.y, stmBounds.w, stmBounds.h);
+
+            // Exit Valve
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath(); 
+            ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.2)*4, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.fillStyle = '#000'; ctx.font = '16px VT323'; ctx.textAlign = 'center';
+            ctx.fillText("EXIT", exitValve.x, exitValve.y + 5);
+
+            // Move player inside stomach bounds
+            movePlayer(stmBounds);
+
+            // Update & Draw Acid
+            ctx.fillStyle = '#00ff00'; ctx.globalAlpha = 0.7;
             stomachJuices.forEach(j => {
-                j.x += j.vx;
-                if(j.x < 120 || j.x > 520) j.vx *= -1;
+                j.x += j.vx; j.y += j.vy;
+                // Bounce off stomach walls
+                if(j.x < stmBounds.x + j.r || j.x > stmBounds.x + stmBounds.w - j.r) j.vx *= -1;
+                if(j.y < stmBounds.y + j.r || j.y > stmBounds.y + stmBounds.h - j.r) j.vy *= -1;
+                
                 ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI*2); ctx.fill();
                 
-                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) takeDamage(1); // Acid burns!
+                // Acid Damage
+                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) takeDamage(1);
             });
             ctx.globalAlpha = 1.0;
 
-            // UI
-            ctx.fillStyle = '#fff'; ctx.font = '24px VT323';
-            ctx.fillText(`Inside ${m.name}'s Belly`, 120, 40);
-            ctx.fillText(`SOUL INTEGRITY: ${player.hp}`, 120, 460);
+            // UI Inside Stomach
+            ctx.fillStyle = '#fff'; ctx.font = '24px VT323'; ctx.textAlign = 'left';
+            ctx.fillText(`INSIDE ${m.name.toUpperCase()}'S BELLY`, 130, 45);
+            ctx.fillText(`SOUL INTEGRITY: ${player.hp}`, 130, 460);
 
-            // Escape condition
+            drawHeart(player.x, player.y);
+
+            // Escape Check
             if (Math.hypot(player.x - exitValve.x, player.y - exitValve.y) < exitValve.r) {
                 state = 'ESCAPED';
                 setTimeout(() => {
-                    currentMonster = (currentMonster + 1) % monsters.length;
-                    player.hp = player.maxHp;
-                    state = 'BATTLE';
+                    currentMonsterIndex++;
+                    if (currentMonsterIndex >= monsters.length) state = 'VICTORY';
+                    else initBattle();
                 }, 2000);
             }
-
-            if (player.hp <= 0) {
-                ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-                ctx.fillText("DIGESTED.", 320, 240);
-            } else {
-                drawPlayer();
-            }
-            ctx.textAlign = 'left';
         }
         else if (state === 'ESCAPED') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("ESCAPED THE DIGESTIVE TRACT!", 320, 240);
-            ctx.textAlign = 'left';
+            ctx.fillText("* You crawled out of the digestive tract!", 320, 240);
+        }
+        else if (state === 'GAMEOVER') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("DIGESTED.", 320, 220);
+            ctx.font = '24px VT323'; ctx.fillText("Stay determined. Press SPACE to Restart.", 320, 270);
+            if (keys['Space'] && !spaceHandled) { spaceHandled = true; state = 'TITLE'; }
+        }
+        else if (state === 'VICTORY') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("YOU SURVIVED THE RUINS!", 320, 220);
+            ctx.font = '24px VT323'; ctx.fillText("Press SPACE to play again.", 320, 270);
+            if (keys['Space'] && !spaceHandled) { spaceHandled = true; state = 'TITLE'; }
         }
 
+        if (!keys['Space']) spaceHandled = false;
         requestAnimationFrame(loop);
     }
+
     loop();
 </script>
 </body>
