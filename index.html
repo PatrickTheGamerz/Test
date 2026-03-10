@@ -3,443 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale: Date or Digest!</title>
+    <title>Undertale: Open World Gulp</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #000; color: #fff;
-            display: flex; justify-content: center; align-items: center;
-            font-family: 'VT323', monospace; user-select: none;
-        }
-
-        #game-wrapper {
-            position: relative; width: 800px; height: 600px;
-            border: 4px solid #fff; background-color: #000;
-            display: flex; flex-direction: column;
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
-        }
-
-        /* Character Visual Area */
-        #visual-area {
-            position: relative; width: 100%; height: 400px;
-            background-color: #050505; display: flex;
-            justify-content: center; align-items: flex-end;
-            border-bottom: 4px solid #fff; overflow: hidden;
-            transition: background-color 0.5s;
-        }
-
-        canvas { image-rendering: pixelated; }
-
-        /* UI Stats Overlay */
-        #stats-bar {
-            position: absolute; top: 10px; left: 10px;
-            font-size: 24px; color: #aaa; pointer-events: none;
-        }
-
-        /* Dialogue Box */
-        #dialogue-area {
-            width: 100%; height: 200px; padding: 20px;
-            box-sizing: border-box; position: relative;
-        }
-
-        #speaker-name {
-            font-size: 32px; color: #ffea00; margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        #dialogue-text {
-            font-size: 28px; line-height: 1.2;
-        }
-
-        /* Choice Buttons */
-        #choices-area {
-            position: absolute; bottom: 20px; right: 20px;
-            display: flex; flex-direction: column; gap: 10px;
-            align-items: flex-end;
-        }
-
-        .choice-btn {
-            background-color: #000; color: #fff;
-            border: 2px solid #fff; padding: 10px 20px;
-            font-family: 'VT323', monospace; font-size: 24px;
-            cursor: pointer; transition: 0.2s;
-            max-width: 400px; text-align: left;
-        }
-
-        .choice-btn:hover {
-            background-color: #fff; color: #000;
-        }
-
+        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; }
+        #game { width: 800px; height: 600px; border: 4px solid #fff; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        #screen { flex-grow: 1; position: relative; background: #050505; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+        #ui { height: 200px; border-top: 4px solid #fff; padding: 20px; box-sizing: border-box; background: #000; position: relative; z-index: 10; }
+        .text { font-size: 28px; line-height: 1.2; }
+        .speaker { font-size: 32px; color: #ffea00; margin-bottom: 5px; }
+        #choices { position: absolute; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        button { background: #000; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 5px 15px; cursor: pointer; text-align: left; }
+        button:hover { background: #fff; color: #000; }
         .hidden { display: none !important; }
+        #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; padding: 40px; box-sizing: border-box; }
+        .map-btn { font-size: 30px; margin: 10px 0; width: 300px; }
+        #juice-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(0, 255, 0, 0.5); z-index: 5; transition: height 0.5s; pointer-events: none;}
     </style>
 </head>
 <body>
 
-<div id="game-wrapper">
-    <div id="visual-area">
-        <div id="stats-bar">LV 1 <span id="stat-debug"></span></div>
-        <canvas id="charCanvas" width="400" height="400"></canvas>
+<div id="game">
+    <div id="screen">
+        <canvas id="c" width="800" height="400"></canvas>
+        <div id="juice-overlay"></div>
     </div>
     
-    <div id="dialogue-area">
-        <div id="speaker-name">Speaker</div>
-        <div id="dialogue-text"></div>
-        <div id="choices-area" class="hidden"></div>
+    <div id="ui">
+        <div id="speaker" class="speaker">System</div>
+        <div id="text" class="text"></div>
+        <div id="choices"></div>
+    </div>
+
+    <div id="map-menu" class="hidden">
+        <h1 style="color:#ffea00;">WORLD MAP</h1>
+        <p class="text">Select a region to explore:</p>
+        <button class="map-btn" onclick="explore('RUINS')">Explore THE RUINS</button><br>
+        <button class="map-btn" onclick="explore('SNOWDIN')">Explore SNOWDIN</button><br>
+        <button class="map-btn" onclick="explore('WATERFALL')">Explore WATERFALL</button>
     </div>
 </div>
 
 <script>
-    // --- Engine Setup ---
-    const canvas = document.getElementById('charCanvas');
-    const ctx = canvas.getContext('2d');
-    const textEl = document.getElementById('dialogue-text');
-    const speakerEl = document.getElementById('speaker-name');
-    const choicesEl = document.getElementById('choices-area');
-    const visualArea = document.getElementById('visual-area');
-    
-    // Hidden Stats
-    let stats = { affection: 0, appetite: 0 };
-    let currentNode = null;
-    let isTyping = false;
-    let currentText = "";
-    let targetText = "";
-    let typeIndex = 0;
-    let frameCount = 0;
+    const ctx = document.getElementById('c').getContext('2d');
+    let frame = 0, state = 'MENU', currentMob = null;
+    let juiceLevel = 0, escapeProgress = 0;
 
-    // --- Character Drawing Functions ---
-    // (We draw them with canvas to avoid needing external image files!)
-    const drawChar = {
-        "None": () => { ctx.clearRect(0,0,400,400); },
-        "Toriel": () => {
-            let wob = Math.sin(frameCount * 0.05) * 3;
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(200, 150 + wob, 60, 0, Math.PI*2); ctx.fill(); // Head
-            ctx.fillStyle = '#4a0080'; ctx.fillRect(140, 200 + wob, 120, 200); // Robe
-            ctx.fillStyle = '#fff'; 
-            ctx.beginPath(); ctx.moveTo(140, 100+wob); ctx.lineTo(180, 150+wob); ctx.lineTo(120, 160+wob); ctx.fill(); // Ear L
-            ctx.beginPath(); ctx.moveTo(260, 100+wob); ctx.lineTo(220, 150+wob); ctx.lineTo(280, 160+wob); ctx.fill(); // Ear R
-            ctx.fillStyle = '#000'; ctx.fillRect(180, 140+wob, 8, 8); ctx.fillRect(212, 140+wob, 8, 8); // Eyes
+    // --- MONSTER DATABASE ---
+    const database = {
+        "Froggit": {
+            reg: "RUINS", draw: (wob) => {
+                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(400, 250+wob, 50, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(380, 230+wob, 8, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(420, 230+wob, 8, 0, Math.PI*2); ctx.fill();
+            },
+            text: "* Froggit doesn't understand why you are here.",
+            stomachBg: '#1a2a1a', stomachJuice: 'rgba(0, 255, 0, 0.6)',
+            stomachText: "* You are inside Froggit.\n* Digestive flies buzz around.\n* The acid is rising quickly!",
+            escapeClicks: 5, juiceSpeed: 5
         },
-        "Papyrus": () => {
-            let wob = Math.sin(frameCount * 0.1) * 5;
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(180, 100 + wob, 40, 50); // Skull
-            ctx.fillRect(170, 160 + wob, 60, 80); // Body
-            ctx.fillStyle = '#ff0000'; ctx.fillRect(160, 150 + wob, 80, 20); // Scarf
-            ctx.fillStyle = '#000'; ctx.fillRect(185, 120+wob, 10, 10); ctx.fillRect(205, 120+wob, 10, 10); // Eyes
+        "Moldsmal": {
+            reg: "RUINS", draw: (wob) => {
+                ctx.fillStyle='#ff00ff'; ctx.fillRect(320-wob*2, 200, 160+wob*4, 100-wob);
+            },
+            text: "* Moldsmal wiggles alluringly.",
+            stomachBg: '#2a002a', stomachJuice: 'rgba(255, 0, 255, 0.8)',
+            stomachText: "* You are trapped in pure, thick slime.\n* It's incredibly sticky.\n* You have to struggle hard to pull free!",
+            escapeClicks: 12, juiceSpeed: 2 // Hard to escape, slow digestion
         },
-        "Muffet": () => {
-            let wob = Math.sin(frameCount * 0.08) * 4;
-            ctx.fillStyle = '#b366ff';
-            ctx.beginPath(); ctx.arc(200, 180 + wob, 50, 0, Math.PI*2); ctx.fill(); // Head
-            ctx.beginPath(); ctx.arc(200, 280 + wob, 60, 0, Math.PI*2); ctx.fill(); // Body
-            ctx.fillStyle = '#ff0055'; ctx.fillRect(180, 130 + wob, 40, 20); // Bow
-            ctx.fillStyle = '#000'; 
-            ctx.fillRect(175, 170+wob, 10, 10); ctx.fillRect(215, 170+wob, 10, 10); // Main Eyes
-            ctx.fillRect(185, 155+wob, 6, 6); ctx.fillRect(209, 155+wob, 6, 6); // Top Eyes
+        "Lesser Dog": {
+            reg: "SNOWDIN", draw: (wob) => {
+                ctx.fillStyle='#fff'; ctx.fillRect(360, 200+wob, 80, 100); // Body
+                ctx.fillRect(380, 100+Math.abs(wob)*3, 40, 100-Math.abs(wob)*3); // Neck extending
+                ctx.fillRect(370, 60+Math.abs(wob)*3, 60, 40); // Head
+            },
+            text: "* Lesser Dog's neck extends excitedly.",
+            stomachBg: '#331a00', stomachJuice: 'rgba(150, 100, 50, 0.7)',
+            stomachText: "* It smells like dog food and slobber.\n* You are buried in half-chewed bones.\n* Pet the stomach walls to make it cough you up!",
+            escapeClicks: 6, juiceSpeed: 4
         },
-        "Stomach": () => {
-            let wob = Math.sin(frameCount * 0.05) * 10;
-            ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 10;
-            ctx.beginPath(); ctx.arc(200, 200, 150 + wob, 0, Math.PI*2); ctx.stroke();
-            ctx.fillStyle = '#ffea00'; ctx.beginPath(); ctx.arc(200, 80 + wob, 20, 0, Math.PI*2); ctx.fill(); // Exit
-            ctx.fillStyle = '#000'; ctx.font = '16px VT323'; ctx.fillText("EXIT", 185, 85 + wob);
+        "Annoying Dog": {
+            reg: "SNOWDIN", draw: (wob) => {
+                ctx.fillStyle='#fff'; ctx.fillRect(370, 250-wob, 60, 40); // Dog
+                ctx.fillStyle='#000'; ctx.fillRect(380, 260-wob, 5,5); ctx.fillRect(410, 260-wob, 5,5); // Eyes
+            },
+            text: "* The Annoying Dog absorbs the artifact.",
+            stomachBg: '#ffffff', stomachJuice: 'rgba(255, 255, 255, 0.9)',
+            stomachText: "* You are in a blank white void.\n* A dog is sleeping on your face.\n* Reality is dissolving.",
+            escapeClicks: 8, juiceSpeed: 10 // Rapid reality dissolution!
         }
     };
 
-    // --- The Massive Branching Story Database ---
-    const story = {
-        // --- START MENU ---
-        "start": {
-            speaker: "System", char: "None", bg: "#000",
-            text: "* Welcome to the Underground Dating Simulator.\n* Who would you like to spend time with?",
-            choices: [
-                { text: "Toriel (The Ruins)", next: "toriel_intro" },
-                { text: "Papyrus (Snowdin)", next: "pap_intro" },
-                { text: "Muffet (Hotland)", next: "muffet_intro" }
-            ]
-        },
-
-        // ==========================================
-        // ROUTE: TORIEL
-        // ==========================================
-        "toriel_intro": {
-            speaker: "Toriel", char: "Toriel", bg: "#1a0a2a",
-            text: "* Oh! Hello, my child.\n* I was just preparing some snails for dinner.\n* Are you hungry?",
-            onEnter: () => { stats.affection = 0; stats.appetite = 0; },
-            choices: [
-                { text: "I'd love some pie instead!", next: "toriel_pie", aff: 1, app: 0 },
-                { text: "I'm starving. I could eat anything.", next: "toriel_hungry", aff: 0, app: 2 },
-                { text: "Snails? Gross.", next: "toriel_rude", aff: -1, app: 1 }
-            ]
-        },
-        "toriel_pie": {
-            speaker: "Toriel", char: "Toriel", bg: "#1a0a2a",
-            text: "* Butterscotch or Cinnamon?\n* ...Wait, do not tell me. I want it to be a surprise!",
-            choices: [
-                { text: "Thank you, Mom.", next: "toriel_mom", aff: 2, app: 0 },
-                { text: "Hurry up, I'm hungry.", next: "toriel_hungry", aff: -1, app: 2 }
-            ]
-        },
-        "toriel_hungry": {
-            speaker: "Toriel", char: "Toriel", bg: "#1a0a2a",
-            text: "* Oh dear, you do look famished.\n* Your soul looks so... plump and nutritious.\n* ...What am I saying?",
-            choices: [
-                { text: "Are you okay?", next: "toriel_worry", aff: 1, app: -1 },
-                { text: "I smell delicious, don't I?", next: "toriel_tease", aff: 0, app: 3 }
-            ]
-        },
-        "toriel_mom": {
-            speaker: "Toriel", char: "Toriel", bg: "#1a0a2a",
-            text: "* M-Mom? \n* Oh, my child... I am so happy.\n* Let us go read a book by the fire.",
-            choices: [
-                { text: "[ DATE SUCCESS: FAMILY ENDING ]", next: "start" }
-            ]
-        },
-        "toriel_tease": {
-            speaker: "Toriel", char: "Toriel", bg: "#2a0000", // Background darkens
-            text: "* ...\n* Yes. You really, really do.\n* Just one little bite won't hurt, will it?",
-            choices: [
-                { text: "Wait, Toriel, no!", next: "toriel_gulp", app: 5 } // Forces gulp
-            ]
-        },
-        // TORIEL GULP & STOMACH
-        "toriel_gulp": {
-            speaker: "System", char: "None", bg: "#ff0000",
-            text: "* CHOMP!\n* Toriel's maternal instincts were overpowered by hunger!\n* You slide down her warm, fuzzy throat...",
-            choices: [
-                { text: "Fall into the stomach", next: "toriel_stomach1" }
-            ]
-        },
-        "toriel_stomach1": {
-            speaker: "System", char: "Stomach", bg: "#3a0011",
-            text: "* It is incredibly warm and dark in here.\n* The walls of her stomach pulse gently, smelling of butterscotch.\n* Pools of fiery digestive acid bubble below you.",
-            choices: [
-                { text: "Swim through the butterscotch acid", next: "toriel_stomach_die" },
-                { text: "Climb the fleshy stomach wall towards the exit", next: "toriel_stomach_escape" },
-                { text: "Just relax in the warmth", next: "toriel_stomach_stay" }
-            ]
-        },
-        "toriel_stomach_escape": {
-            speaker: "System", char: "Stomach", bg: "#3a0011",
-            text: "* You endure the burning heat and pry open the esophageal sphincter!\n* You tumble out onto the Ruins floor, covered in slime.",
-            choices: [
-                { text: "[ ESCAPE SUCCESS. Return to Menu ]", next: "start" }
-            ]
-        },
-        "toriel_stomach_stay": {
-            speaker: "System", char: "Stomach", bg: "#220000",
-            text: "* It's actually quite cozy in here.\n* You let the warmth consume you as you are slowly digested into magic.",
-            choices: [
-                { text: "[ DIGESTED ENDING. Return to Menu ]", next: "start" }
-            ]
-        },
-        "toriel_stomach_die": {
-            speaker: "System", char: "Stomach", bg: "#000",
-            text: "* The fire magic acid is too strong!\n* Your HP drops to 0.",
-            choices: [ { text: "[ DIGESTED ENDING. Return to Menu ]", next: "start" } ]
-        },
-
-        // ==========================================
-        // ROUTE: PAPYRUS
-        // ==========================================
-        "pap_intro": {
-            speaker: "Papyrus", char: "Papyrus", bg: "#001a33",
-            text: "* HELLO, HUMAN!\n* ARE YOU READY FOR OUR OFFICIAL DATE?\n* I BROUGHT MY FINEST OUTFIT!",
-            onEnter: () => { stats.affection = 0; stats.appetite = 0; },
-            choices: [
-                { text: "You look incredibly cool.", next: "pap_cool", aff: 2, app: 0 },
-                { text: "Can we just eat? I'm hungry.", next: "pap_spaghetti", aff: 0, app: 2 }
-            ]
-        },
-        "pap_cool": {
-            speaker: "Papyrus", char: "Papyrus", bg: "#001a33",
-            text: "* WOWIE! YOU HAVE EXCELLENT TASTE!\n* ALMOST AS EXCELLENT AS MY CULINARY SKILLS!\n* LET US EAT SPAGHETTI!",
-            choices: [
-                { text: "I'd love some.", next: "pap_date_win", aff: 2, app: 0 },
-                { text: "I'd rather eat your bones.", next: "pap_weird", aff: -2, app: 3 }
-            ]
-        },
-        "pap_spaghetti": {
-            speaker: "Papyrus", char: "Papyrus", bg: "#001a33",
-            text: "* AH! YES! SUSTENANCE!\n* I HAVE PREPARED A MASTERPIECE!\n* ...WAIT. WHERE DID I PUT IT?",
-            choices: [
-                { text: "Did the dog eat it?", next: "pap_dog", aff: 0, app: 1 },
-                { text: "I don't care, I'll just eat YOU!", next: "pap_weird", aff: -2, app: 3 }
-            ]
-        },
-        "pap_date_win": {
-            speaker: "Papyrus", char: "Papyrus", bg: "#001a33",
-            text: "* THIS IS THE BEST DATE EVER!\n* I, THE GREAT PAPYRUS, AM A GREAT HOST!",
-            choices: [ { text: "[ DATE SUCCESS: FRIENDZONE ENDING ]", next: "start" } ]
-        },
-        "pap_weird": {
-            speaker: "Papyrus", char: "Papyrus", bg: "#331100",
-            text: "* EAT... ME?\n* I SUPPOSE IF IT HELPS CAPTURE YOU...\n* I CAN JUST PUT YOU INSIDE MY RIB CAGE!",
-            choices: [ { text: "Wait, what?", next: "pap_gulp", app: 5 } ]
-        },
-        "pap_gulp": {
-            speaker: "System", char: "None", bg: "#ffaa00",
-            text: "* Papyrus doesn't actually have a digestive tract!\n* Instead, he shoves you through his teeth and you fall into his rib cage!",
-            choices: [ { text: "Look around", next: "pap_stomach" } ]
-        },
-        "pap_stomach": {
-            speaker: "System", char: "Stomach", bg: "#331100",
-            text: "* You are trapped inside a magical bone-prison.\n* It smells like old pasta.\n* The gaps between his ribs are too small to squeeze through.",
-            choices: [
-                { text: "Yell for help", next: "pap_stomach_yell" },
-                { text: "Eat the old spaghetti stuck to his ribs", next: "pap_stomach_gross" }
-            ]
-        },
-        "pap_stomach_gross": {
-            speaker: "System", char: "Stomach", bg: "#331100",
-            text: "* You eat the ancient spaghetti.\n* You get food poisoning and perish.",
-            choices: [ { text: "[ DIGESTED ENDING. Return to Menu ]", next: "start" } ]
-        },
-        "pap_stomach_yell": {
-            speaker: "Papyrus", char: "Stomach", bg: "#331100",
-            text: "* HUMAN! ARE YOU COMFORTABLE IN THERE?\n* SANS SAID THE WAY TO A MAN's HEART IS THROUGH HIS STOMACH!\n* ...I THINK I DID IT BACKWARDS.",
-            choices: [ { text: "[ TRAPPED FOREVER ENDING. Return to Menu ]", next: "start" } ]
-        },
-
-        // ==========================================
-        // ROUTE: MUFFET
-        // ==========================================
-        "muffet_intro": {
-            speaker: "Muffet", char: "Muffet", bg: "#3a003a",
-            text: "* Ahuhuhu~\n* Welcome to my parlor, dearie.\n* Would you care for a cup of spider cider?",
-            onEnter: () => { stats.affection = 0; stats.appetite = 1; },
-            choices: [
-                { text: "Yes please! (Pay 9999G)", next: "muffet_rich", aff: 3, app: -2 },
-                { text: "I don't have any money...", next: "muffet_poor", aff: -2, app: 3 }
-            ]
-        },
-        "muffet_rich": {
-            speaker: "Muffet", char: "Muffet", bg: "#3a003a",
-            text: "* Oh! A generous donor!\n* You are so sweet, I could just eat you up!\n* Figuratively, of course~",
-            choices: [ { text: "[ DATE SUCCESS: SUGAR DADDY ENDING ]", next: "start" } ]
-        },
-        "muffet_poor": {
-            speaker: "Muffet", char: "Muffet", bg: "#2a0000",
-            text: "* No money...?\n* What a shame.\n* I suppose if you cannot BUY the food... you must BE the food. Ahuhuhu~",
-            choices: [ { text: "Run away!", next: "muffet_gulp", app: 5 } ]
-        },
-        "muffet_gulp": {
-            speaker: "System", char: "None", bg: "#ff0055",
-            text: "* Sticky webs wrap around your limbs!\n* Muffet drags you into her many fangs and swallows you whole!",
-            choices: [ { text: "Slide down the throat", next: "muffet_stomach" } ]
-        },
-        "muffet_stomach": {
-            speaker: "System", char: "Stomach", bg: "#2a003a",
-            text: "* You are stuck in a massive, dark web inside her stomach.\n* Purple digestive fluids are slowly rising from below.\n* Little spiders crawl over you.",
-            choices: [
-                { text: "Struggle violently against the webs", next: "muffet_stomach_die" },
-                { text: "Bribe the spiders with a donut from your inventory", next: "muffet_stomach_escape" }
-            ]
-        },
-        "muffet_stomach_die": {
-            speaker: "System", char: "Stomach", bg: "#000",
-            text: "* Struggling only tangles you further.\n* The purple fluids rise and dissolve you completely. Ahuhuhu~",
-            choices: [ { text: "[ DIGESTED ENDING. Return to Menu ]", next: "start" } ]
-        },
-        "muffet_stomach_escape": {
-            speaker: "System", char: "Stomach", bg: "#2a003a",
-            text: "* The little spiders recognize the Spider Donut!\n* They weave a rope of silk and pull you back up her throat!",
-            choices: [ { text: "[ ESCAPE SUCCESS. Return to Menu ]", next: "start" } ]
-        }
+    // Regional Encounter Tables
+    const regions = {
+        "RUINS": ["Froggit", "Moldsmal", "Moldsmal"],
+        "SNOWDIN": ["Lesser Dog", "Lesser Dog", "Annoying Dog"],
+        "WATERFALL": ["Froggit"] // Placeholder for Waterfall
     };
 
-    // --- Engine Logic ---
-    function loadNode(nodeId) {
-        currentNode = story[nodeId];
-        
-        // Execute any state changes
-        if (currentNode.onEnter) currentNode.onEnter();
-
-        // Update UI visuals
-        speakerEl.innerText = currentNode.speaker;
-        visualArea.style.backgroundColor = currentNode.bg;
-        
-        // Hide choices, prepare text typing
-        choicesEl.innerHTML = "";
-        choicesEl.classList.add('hidden');
-        
-        targetText = currentNode.text;
-        currentText = "";
-        typeIndex = 0;
-        isTyping = true;
-    }
-
-    function createChoices() {
-        // Build buttons
-        currentNode.choices.forEach(choice => {
+    // --- CORE FUNCTIONS ---
+    function setUI(speaker, text, btns) {
+        document.getElementById('speaker').innerText = speaker;
+        document.getElementById('text').innerHTML = text.replace(/\n/g, '<br>');
+        let c = document.getElementById('choices'); c.innerHTML = '';
+        btns.forEach(b => {
             let btn = document.createElement('button');
-            btn.className = 'choice-btn';
-            btn.innerText = choice.text;
-            
-            btn.onclick = () => {
-                // Apply hidden stats
-                if (choice.aff !== undefined) stats.affection += choice.aff;
-                if (choice.app !== undefined) stats.appetite += choice.app;
-                
-                // Gulp Threshold Check! (If appetite hits 4 or more, override the choice)
-                if (stats.appetite >= 4 && !choice.next.includes('gulp') && !choice.next.includes('stomach')) {
-                    // Force a gulp transition based on who we are talking to
-                    if (currentNode.char === 'Toriel') loadNode('toriel_gulp');
-                    else if (currentNode.char === 'Papyrus') loadNode('pap_gulp');
-                    else if (currentNode.char === 'Muffet') loadNode('muffet_gulp');
-                    else loadNode(choice.next);
-                } else {
-                    loadNode(choice.next);
-                }
-            };
-            choicesEl.appendChild(btn);
+            btn.innerText = b.label; btn.onclick = b.action; c.appendChild(btn);
         });
-        choicesEl.classList.remove('hidden');
     }
 
-    // Input to skip typing
-    window.addEventListener('click', () => {
-        if (isTyping) {
-            currentText = targetText;
-            typeIndex = targetText.length;
-            textEl.innerHTML = currentText.replace(/\n/g, '<br>');
-            isTyping = false;
-            createChoices();
-        }
-    });
+    function showMap() {
+        state = 'MAP';
+        document.getElementById('map-menu').classList.remove('hidden');
+    }
 
-    // --- Main Game Loop ---
-    function loop() {
-        frameCount++;
+    function explore(region) {
+        document.getElementById('map-menu').classList.add('hidden');
+        // Pick random mob from region
+        let pool = regions[region];
+        let mobName = pool[Math.floor(Math.random() * pool.length)];
+        currentMob = database[mobName];
+        startEncounter();
+    }
+
+    function startEncounter() {
+        state = 'ENCOUNTER';
+        juiceLevel = 0; escapeProgress = 0;
+        document.getElementById('juice-overlay').style.height = '0%';
         
-        // 1. Draw Character Canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (currentNode && drawChar[currentNode.char]) {
-            drawChar[currentNode.char]();
-        }
+        setUI(currentMob.name, currentMob.text, [
+            { label: "Talk", action: () => setUI(currentMob.name, "* It doesn't seem to understand.", [{label: "Back", action: startEncounter}]) },
+            { label: "Flirt", action: () => {
+                setUI(currentMob.name, "* It blushes...\n* Then its appetite takes over!", [
+                    { label: "Uh oh...", action: gulpPlayer }
+                ]);
+            }},
+            { label: "Flee", action: showMap }
+        ]);
+    }
 
-        // 2. Typewriter Effect
-        if (isTyping) {
-            if (frameCount % 2 === 0 && typeIndex < targetText.length) {
-                currentText += targetText.charAt(typeIndex);
-                typeIndex++;
-                textEl.innerHTML = currentText.replace(/\n/g, '<br>');
+    function gulpPlayer() {
+        state = 'GULP';
+        setUI("System", "* CHOMP!\n* The monster lunges and swallows you whole!\n* You are sliding down the esophagus!", [
+            { label: "Fall into the stomach", action: enterStomach }
+        ]);
+    }
+
+    function enterStomach() {
+        state = 'STOMACH';
+        document.getElementById('juice-overlay').style.backgroundColor = currentMob.stomachJuice;
+        
+        setUI("Stomach", currentMob.stomachText, [
+            { label: "Struggle / Escape!", action: tryEscape }
+        ]);
+    }
+
+    function tryEscape() {
+        escapeProgress++;
+        // Shake screen effect
+        document.getElementById('screen').style.transform = `translate(${(Math.random()-0.5)*10}px, ${(Math.random()-0.5)*10}px)`;
+        setTimeout(() => document.getElementById('screen').style.transform = 'none', 50);
+
+        if (escapeProgress >= currentMob.escapeClicks) {
+            state = 'ESCAPED';
+            document.getElementById('juice-overlay').style.height = '0%';
+            setUI("System", "* You burst out of the monster's mouth covered in digestive fluids!\n* You survived!", [
+                { label: "Return to Map", action: showMap }
+            ]);
+        }
+    }
+
+    function updateStomachPhysics() {
+        if (state === 'STOMACH') {
+            // Rising Juice Mechanic
+            if (frame % 30 === 0) {
+                juiceLevel += currentMob.juiceSpeed;
+                document.getElementById('juice-overlay').style.height = `${juiceLevel}%`;
                 
-                if (typeIndex >= targetText.length) {
-                    isTyping = false;
-                    createChoices();
+                if (juiceLevel >= 100) {
+                    state = 'GAMEOVER';
+                    setUI("System", "* The digestive fluids consumed you completely.\n* You were digested.", [
+                        { label: "Load Save (Map)", action: () => { juiceLevel = 0; document.getElementById('juice-overlay').style.height = '0%'; showMap(); } }
+                    ]);
                 }
             }
+        }
+    }
+
+    // --- RENDER LOOP ---
+    function loop() {
+        frame++;
+        ctx.clearRect(0, 0, 800, 400);
+
+        if (state === 'ENCOUNTER') {
+            // Draw Overworld Monster
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+            let wob = Math.sin(frame * 0.05) * 5;
+            if (currentMob) currentMob.draw(wob);
+        } 
+        else if (state === 'GULP') {
+            // Gullet falling animation
+            ctx.fillStyle = '#4a001a'; ctx.fillRect(0,0,800,400);
+            ctx.fillStyle = '#80002a';
+            let scroll = (frame * 15) % 100;
+            for(let i = -100; i < 500; i += 100) {
+                let w = Math.sin((i+frame)*0.05)*30;
+                ctx.fillRect(0, i+scroll, 200+w, 100);
+                ctx.fillRect(600-w, i+scroll, 200+w, 100);
+            }
+        }
+        else if (state === 'STOMACH') {
+            // Draw Anatomy
+            ctx.fillStyle = currentMob.stomachBg; ctx.fillRect(0,0,800,400);
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 10;
+            let pulse = Math.sin(frame * 0.1) * 10;
+            
+            // Player representation inside stomach
+            ctx.fillStyle = '#ff0000';
+            let py = 300 - (escapeProgress * 15) + pulse; // Move up as you escape
+            ctx.beginPath(); ctx.arc(400, py, 15, 0, Math.PI*2); ctx.fill();
+
+            updateStomachPhysics();
         }
 
         requestAnimationFrame(loop);
     }
 
-    // Start Engine
-    loadNode("start");
+    // Init
+    showMap();
     loop();
 
 </script>
