@@ -2,273 +2,305 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Hyper-Realistic Ecosystem</title>
+    <title>Undertale: AI Chat & Anatomy Engine</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; }
+        #game { width: 800px; height: 650px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; display: flex; flex-direction: column; }
+        
+        /* Screens */
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .title-text { font-size: 40px; color: #ffea00; text-shadow: 3px 3px 0 #f00; margin-bottom: 20px; }
+        input[type="text"] { width: 400px; padding: 10px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #fff; outline: none; }
+        button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 10px 20px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #fff; color: #000; padding-left: 25px; box-shadow: 0 0 10px #fff; }
+        
+        /* Canvas & Rendering */
+        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.95); border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
-        .speaker { color: #ffea00; font-size: 30px; margin-bottom: 5px; text-transform: uppercase; text-shadow: 2px 2px 0 #000; }
-        .text { font-size: 24px; line-height: 1.2; text-shadow: 1px 1px 0 #000; }
-        #choices { position: absolute; right: 15px; top: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 11; }
-        button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 20px; padding: 5px 15px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #fff; color: #000; padding-left: 20px; box-shadow: 0 0 10px #fff; }
         #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
-        #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 440px; background: rgba(0,0,0,0.9); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-        .map-title { font-size: 40px; color: #ffea00; margin-bottom: 20px; text-shadow: 3px 3px 0 #f00; }
-        .map-btn { font-size: 28px; width: 400px; text-align: center; background: #222; }
+        
+        /* Live AI Chat UI */
+        #chat-ui { width: 100%; height: 250px; background: #0a0a0a; border-top: 4px solid #fff; display: flex; flex-direction: column; z-index: 10; }
+        #chat-log { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 24px; line-height: 1.2; }
+        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; }
+        .msg-monster { color: #ffea00; align-self: flex-start; }
+        .msg-sys { color: #888; align-self: center; font-style: italic; }
+        #chat-input-area { display: flex; border-top: 2px solid #333; }
+        #chat-input { flex-grow: 1; border: none; border-right: 2px solid #333; }
+        #chat-send { border: none; width: 100px; padding: 0; text-align: center; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="game">
-    <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
-    
-    <div id="map-menu">
-        <div class="map-title">SELECT A REGION</div>
-        <button class="map-btn" onclick="explore('RUINS')">THE RUINS (Toriel, Froggit)</button>
-        <button class="map-btn" onclick="explore('SNOWDIN')">SNOWDIN (Papyrus, Snowdrake)</button>
-        <button class="map-btn" onclick="explore('WATERFALL')">WATERFALL (Undyne, Woshua)</button>
-        <button class="map-btn" onclick="explore('HOTLAND')">HOTLAND (Muffet, Vulkin)</button>
+    <div id="api-screen">
+        <div class="title-text">AI KARMA ENGINE</div>
+        <div style="font-size: 24px; text-align: center; max-width: 600px;">
+            Enter a valid Google Gemini API Key to enable live chatting.<br>
+            The monster's AI will decide if it wants to eat you based on what you say!
+        </div>
+        <input type="text" id="api-key-input" placeholder="AIzaSy...">
+        <button onclick="saveApiKey()">START GAME</button>
     </div>
 
-    <canvas id="c" width="800" height="440"></canvas>
+    <div id="map-menu" class="hidden">
+        <div class="title-text">SELECT A REGION</div>
+        <button onclick="explore('Toriel', '#2a0015')">THE RUINS (Toriel)</button>
+        <button onclick="explore('Papyrus', '#331100')">SNOWDIN (Papyrus)</button>
+        <button onclick="explore('Undyne', '#000022')">WATERFALL (Undyne)</button>
+        <button onclick="explore('Muffet', '#1a002a')">HOTLAND (Muffet)</button>
+    </div>
+
+    <div id="render-area">
+        <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
+        <canvas id="c" width="800" height="400"></canvas>
+    </div>
     
-    <div id="ui">
-        <div id="speaker" class="speaker">System</div>
-        <div id="text" class="text"></div>
-        <div id="choices"></div>
+    <div id="chat-ui">
+        <div id="chat-log">
+            <div class="msg-sys">* Awaiting connection...</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
+            <button id="chat-send" onclick="sendChat()" disabled>SEND</button>
+        </div>
     </div>
 </div>
 
 <script>
+    // --- LERP PHYSICS & ENGINE SETUP ---
     const ctx = document.getElementById('c').getContext('2d');
     const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
+    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
 
+    let apiKey = "";
     let state = 'MENU', frame = 0, lastHurt = 0;
-    const player = { x: 400, y: 220, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 1.5, friction: 0.85, gravity: 0.4 };
-    
-    let currentRoom = null, activeInteractable = null, gulletDepth = 0, currentMob = null;
-    let activeMicro = null; // The creature we are currently inside!
+    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 1.5, friction: 0.85, gravity: 0.6 };
+    let currentRoom = null, gulletDepth = 0, currentMob = null;
+    let isAiTyping = false;
 
-    // --- PROCEDURAL HYPER-ANATOMY ---
-    function generateAnatomy(id, name, bg, wall, acid, segments, isMicro = false) {
-        let rooms = {}; let wMult = isMicro ? 0.6 : 1.0; 
-        
-        rooms.Throat = { id: `${id}_Throat`, n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250*wMult, h: 440, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${id}_Stomach` }, entities: [] };
-        rooms.Stomach = { id: `${id}_Stomach`, n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500*wMult, h: 350*wMult, aY: isMicro?250:280, dmg: isMicro?0.5:1, exits: { up: `${id}_Throat`, down: `${id}_Intestines_1` }, entities: [] };
-        
-        for(let i=1; i<=segments; i++) {
-            let next = (i === segments) ? (isMicro ? "POOP_OUT" : "DIGESTED") : `${id}_Intestines_${i+1}`;
-            let prev = (i === 1) ? `${id}_Stomach` : `${id}_Intestines_${i-1}`;
-            rooms[`Intestines_${i}`] = { id: `${id}_Intestines_${i}`, n: `${name}'s Abdomen (${i})`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: (700 - i*50)*wMult, h: 150*wMult, aY: 230*wMult, dmg: isMicro?0.5:1.5, exits: { up: prev, down: next }, entities: [] };
-        }
-
-        // Add "Host Nerve Core" so you can talk to the creature you are inside!
-        if (isMicro) {
-            rooms.Stomach.entities.push({ type: 'core', x: 400, y: 120, r: 15, c: '#0ff', n: 'Host Nerve Core', 
-                txt: `* The vibrating nerve center of the ${name.split(' ')[1] || name}.`,
-                opts: [{ l: "Talk to Host", a: () => setUI(`Host ${name}`, "* (Stop moving around in my stomach! It tickles!)", []) }]
-            });
-        }
-        return rooms;
+    // --- PROCEDURAL ANATOMY ---
+    function makeAnatomy(name, bg, wall, acid) {
+        return {
+            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500, h: 300, aY: 200, dmg: 1, exits: { up: `${name}_Throat`, down: `${name}_Intestines_1` } },
+            Intestines_1: { n: `${name}'s Intestines`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: 600, h: 150, aY: 180, dmg: 1.5, exits: { up: `${name}_Stomach`, down: "DIGESTED" } }
+        };
     }
 
-    // --- REGIONS & DATABASE ---
-    const worldDB = {};
-    const regionPools = {
-        "RUINS": [{id: "Toriel", n: "Toriel", bg: '#2a0015', w: '#4a0025', a: 'rgba(255,68,0,0.7)', s: 3}, {id: "Froggit", n: "Froggit", bg: '#1a2a1a', w: '#2a3a2a', a: 'rgba(0,255,0,0.6)', s: 2}],
-        "SNOWDIN": [{id: "Papyrus", n: "Papyrus", bg: '#331100', w: '#552200', a: 'rgba(255,255,0,0.4)', s: 2}, {id: "Snowdrake", n: "Snowdrake", bg: '#002233', w: '#004455', a: 'rgba(0,255,255,0.6)', s: 2}],
-        "WATERFALL": [{id: "Undyne", n: "Undyne", bg: '#000022', w: '#001144', a: 'rgba(0,255,255,0.8)', s: 4}, {id: "Woshua", n: "Woshua", bg: '#002222', w: '#004444', a: 'rgba(0,255,100,0.7)', s: 2}],
-        "HOTLAND": [{id: "Muffet", n: "Muffet", bg: '#1a002a', w: '#2a003a', a: 'rgba(150,0,255,0.8)', s: 3}, {id: "Vulkin", n: "Vulkin", bg: '#440000', w: '#660000', a: 'rgba(255,0,0,0.9)', s: 1}]
+    const worldDB = {
+        "Toriel": makeAnatomy("Toriel", '#2a0015', '#4a0025', 'rgba(255, 68, 0, 0.7)'),
+        "Papyrus": makeAnatomy("Papyrus", '#331100', '#552200', 'rgba(255, 255, 0, 0.4)'),
+        "Undyne": makeAnatomy("Undyne", '#000022', '#001144', 'rgba(0, 255, 255, 0.8)'),
+        "Muffet": makeAnatomy("Muffet", '#1a002a', '#2a003a', 'rgba(150, 0, 255, 0.8)')
     };
 
-    for (let r in regionPools) regionPools[r].forEach(m => { worldDB[m.id] = generateAnatomy(m.id, m.n, m.bg, m.w, m.a, m.s, false); });
+    const mobVisuals = {
+        "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
+        "Papyrus": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(380, 100+w, 40, 40); ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#f00'; ctx.fillRect(350, 140+w, 100, 20); },
+        "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
+        "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
+    };
 
-    // --- MICRO-CREATURE SYSTEM (Flies, Spiders) ---
-    class MicroCreature {
-        constructor(type, x, y) {
-            this.type = type; this.x = x; this.y = y; this.vx = (Math.random()-0.5)*6; this.vy = (Math.random()-0.5)*6;
-            this.dead = Math.random() < 0.2; // 20% to spawn dead
-            this.uid = type + "_" + Math.floor(Math.random()*10000);
+    // --- AI CHAT INTEGRATION ---
+    function saveApiKey() {
+        apiKey = document.getElementById('api-key-input').value.trim();
+        if(!apiKey) { alert("Please enter an API Key!"); return; }
+        document.getElementById('api-screen').classList.add('hidden');
+        document.getElementById('map-menu').classList.remove('hidden');
+    }
+
+    function logMsg(sender, text, type) {
+        const log = document.getElementById('chat-log');
+        const div = document.createElement('div');
+        div.className = type;
+        div.innerText = sender ? `${sender}: ${text}` : text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    // Handle Enter Key
+    document.getElementById('chat-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    async function sendChat() {
+        if (isAiTyping || state === 'MENU') return;
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = "";
+        logMsg("You", text, "msg-player");
+        isAiTyping = true;
+        
+        let locString = state === 'ENCOUNTER' ? 'standing outside them' : `inside their ${currentRoom.n}`;
+
+        // System Prompt forcing JSON output
+        const prompt = `You are ${currentMob.n} from Undertale. The player is ${locString}. The player says: "${text}". 
+        Respond in character. You MUST return ONLY valid JSON in this exact format: {"reply": "your in-character dialogue", "action": "none"}. 
+        If you are outside and want to eat them based on what they said, set action to "gulp". 
+        If they are inside your stomach and you want to throw them up, set action to "spit". DO NOT output markdown blocks.`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const data = await response.json();
+            let aiText = data.candidates[0].content.parts[0].text;
             
-            if (type === 'Spider') { this.c = this.dead?'#333':'#000'; this.r = 12; this.bg = '#111'; this.w = '#000'; this.a = 'rgba(150,0,200,0.8)'; this.s = 3; }
-            if (type === 'Fly') { this.c = this.dead?'#aaa':'#fff'; this.r = 8; this.bg = '#222'; this.w = '#111'; this.a = 'rgba(200,200,0,0.6)'; this.s = 6; } // Long abdomen!
-            
-            worldDB[this.uid] = generateAnatomy(this.uid, `${this.dead?'Dead':''} ${type}`, this.bg, this.w, this.a, this.s, true);
-        }
-        update(aY) {
-            if (this.dead) { this.vx *= 0.9; this.vy *= 0.9; this.y += (aY+10 - this.y)*0.05; } // Float in acid
-            else {
-                this.x += this.vx; this.y += this.vy;
-                if(Math.random() < 0.1) { this.vx += (Math.random()-0.5)*4; this.vy += (Math.random()-0.5)*4; }
-                this.vx = Math.max(-6, Math.min(6, this.vx)); this.vy = Math.max(-6, Math.min(6, this.vy));
+            // Clean markdown if Gemini accidentally included it
+            aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+            const result = JSON.parse(aiText);
+
+            logMsg(currentMob.n, result.reply, "msg-monster");
+
+            // Execute AI Game State Actions!
+            if (result.action === 'gulp' && state === 'ENCOUNTER') {
+                setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
+            } else if (result.action === 'spit' && state === 'INTERNAL') {
+                setTimeout(() => loadRoom("ESCAPE"), 1500);
             }
-            if(this.x < 250 || this.x > 550) this.vx *= -1;
-            if(this.y < 100 || this.y > 350) this.vy *= -1;
+
+        } catch (e) {
+            console.error(e);
+            logMsg("System", "* The AI connection failed or returned invalid JSON.", "msg-sys");
         }
+        isAiTyping = false;
     }
 
-    // Populate ecosystems
-    worldDB.Muffet.Stomach.entities.push(new MicroCreature('Spider', 300, 200), new MicroCreature('Spider', 450, 250));
-    worldDB.Froggit.Stomach.entities.push(new MicroCreature('Fly', 350, 250), new MicroCreature('Fly', 400, 200));
-
-    // --- UI LOGIC ---
-    function explore(region) {
+    // --- GAME LOGIC ---
+    function explore(id, bg) {
         document.getElementById('map-menu').classList.add('hidden');
-        let pool = regionPools[region]; let mob = pool[Math.floor(Math.random() * pool.length)];
-        state = 'ENCOUNTER'; currentMob = mob;
-        setUI(mob.n, `* ${mob.n} approaches!`, [ { l: "Jump in mouth", a: () => triggerGulp(mob.id, mob.n, mob.bg) }, { l: "Run", a: () => document.getElementById('map-menu').classList.remove('hidden') } ]);
-    }
-
-    function setUI(spk, txt, btns) {
-        document.getElementById('speaker').innerText = spk; document.getElementById('text').innerHTML = txt.replace(/\n/g, '<br>');
-        let c = document.getElementById('choices'); c.innerHTML = '';
-        if(btns) btns.forEach(b => { let btn = document.createElement('button'); btn.innerText = b.l; btn.onclick = b.a; c.appendChild(btn); });
+        document.getElementById('chat-input').disabled = false;
+        document.getElementById('chat-send').disabled = false;
+        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg };
+        document.getElementById('loc-val').innerText = id + " Encounter";
+        logMsg("System", `* ${id} approaches. Type to talk to them!`, "msg-sys");
     }
 
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
-        if (player.hp <= 0) { state = 'GAMEOVER'; setUI("System", "* Digested.", [{l: "Restart", a: () => location.reload()}]); }
+        if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were digested.", "msg-sys"); }
     }
 
-    function triggerGulp(id, name, bg, microObj = null) {
-        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg }; activeMicro = microObj;
+    function triggerGulp(id, name, bg) {
+        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg };
         player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        setUI("System", `* Swallowed by ${name}!`, []);
+        logMsg("System", `* CHOMP! ${name} decided to swallow you!`, "msg-sys");
     }
 
     function loadRoom(rId) {
-        if (rId === "ESCAPE") { state = 'ESCAPED'; activeMicro = null; setUI("System", "* You escaped!", [{l: "Map", a: () => document.getElementById('map-menu').classList.remove('hidden')}]); return; }
+        if (rId === "ESCAPE") { 
+            state = 'ESCAPED'; 
+            logMsg("System", "* You were spat out to freedom!", "msg-sys"); 
+            setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
+            return; 
+        }
         if (rId === "DIGESTED") { damage(999); return; }
-        if (rId === "POOP_OUT") { damage(1.0); activeMicro = null; state = 'ESCAPED'; setUI("System", "* Exited the abdomen! (-1 HP)", [{l: "Map", a: () => document.getElementById('map-menu').classList.remove('hidden')}]); return; }
 
-        let pts = rId.split('_'); let mobId = pts[0]; 
-        if(pts.length > 2 && !['Throat','Stomach','Intestines'].includes(pts[1])) { mobId = pts[0]+"_"+pts[1]; } 
-        let rType = rId.replace(mobId+"_", "");
-
-        currentRoom = worldDB[mobId][rType];
+        let rType = rId.replace(currentMob.id + "_", "");
+        currentRoom = worldDB[currentMob.id][rType];
         document.getElementById('loc-val').innerText = currentRoom.n;
-        state = 'INTERNAL'; activeInteractable = null;
-        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 220; player.vx = 0; player.vy = 0;
-        setUI("Anatomy", `* Inside ${currentRoom.n}.`, []);
+        state = 'INTERNAL'; 
+        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
+        player.vx = 0; player.vy = 0;
+        logMsg("System", `* You fell into ${currentRoom.n}. You can still talk from inside!`, "msg-sys");
     }
 
-    // --- HYPER-REALISTIC PHYSICS ---
+    // --- REALISTIC GRAVITY PHYSICS ---
     function updatePhysics() {
-        // True Gravity & Momentum
         let spd = keys['ShiftLeft'] ? player.speed*0.5 : player.speed;
         
+        // Left/Right momentum
         if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
         if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
+        // True Gravity implementation
         if (currentRoom.type === 'throat') { 
-            player.vy += player.gravity * 2; // Strong downward pull
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; // Struggle up
+            player.vy += player.gravity * 2; // Fast fall
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
         } else {
-            player.vy += player.gravity; // Normal gravity in stomach
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim/Jump up
+            player.vy += player.gravity; // Normal gravity pulling to stomach floor
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim upward
         }
 
-        player.vx *= player.friction; player.vy *= player.friction;
-        player.x += player.vx; player.y += player.vy;
+        player.vx *= player.friction; 
+        player.vy *= player.friction;
+        player.x += player.vx; 
+        player.y += player.vy;
 
-        // Room Boundaries
+        // Bounding Box
         let bL = 400 - currentRoom.w/2, bR = 400 + currentRoom.w/2;
-        let bT = 220 - currentRoom.h/2, bB = 220 + currentRoom.h/2;
+        let bT = 200 - currentRoom.h/2, bB = 200 + currentRoom.h/2;
 
+        // Fleshy Exits
         if (player.y < bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
         if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
+        // Wall collisions
         player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); 
         
-        // Floor collision
+        // Floor/Ceiling collisions (Fixes falling through the stomach floor!)
         if (player.y > bB) { player.y = bB; player.vy = 0; }
         if (player.y < bT) { player.y = bT; player.vy = 0; }
 
         // Acid Damage
         if (player.y > currentRoom.aY && frame % 15 === 0) damage(currentRoom.dmg);
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
-
-        // Entity Interaction
-        let touch = null;
-        currentRoom.entities.forEach(e => {
-            if (e instanceof MicroCreature) {
-                e.update(currentRoom.aY);
-                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 15) touch = e;
-            } else {
-                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 15) touch = e;
-            }
-        });
-
-        if (touch !== activeInteractable) {
-            activeInteractable = touch;
-            if (activeInteractable) {
-                if (activeInteractable instanceof MicroCreature) {
-                    if (activeInteractable.dead) {
-                        setUI("Dead " + activeInteractable.type, "* It's dead and floating in acid.", [ { l: "Crawl Inside", a: () => triggerGulp(activeInteractable.uid, activeInteractable.type, activeInteractable.bg, activeInteractable) } ]);
-                    } else {
-                        setUI(activeInteractable.type, `* A live ${activeInteractable.type} buzzes around.`, [ { l: `Let ${activeInteractable.type} Eat You`, a: () => triggerGulp(activeInteractable.uid, activeInteractable.type, activeInteractable.bg, activeInteractable) } ]);
-                    }
-                } else if (activeInteractable.type === 'core') {
-                    setUI(activeInteractable.n, activeInteractable.txt, activeInteractable.opts);
-                }
-            } else if (state === 'INTERNAL') setUI("Anatomy", `* Exploring ${currentRoom.n}.`, []);
-        }
     }
 
-    // --- RENDER ---
+    // --- RENDER LOOP ---
     function loop() {
-        frame++; ctx.clearRect(0, 0, 800, 440);
+        frame++; ctx.clearRect(0, 0, 800, 400);
 
-        if (state === 'GULLET') {
-            gulletDepth += 4; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,440);
+        if (state === 'MENU' || state === 'ESCAPED') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+        }
+        else if (state === 'ENCOUNTER') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+            mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
+        }
+        else if (state === 'GULLET') {
+            gulletDepth += 4; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gulletDepth % 100;
             for(let i=-100; i<600; i+=100) { let w = Math.sin((i+frame)*0.05)*30; ctx.fillRect(0, i+scr, 300+w, 100); ctx.fillRect(500-w, i+scr, 300+w, 100); }
-            ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 220, 14, 14); 
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 200, 14, 14); 
             if (gulletDepth >= 300) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
-            ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,440);
+            ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
             
-            // HYPER-REALISTIC SWAY (Translates the entire canvas!)
-            ctx.save();
-            let swayX = 0, swayY = 0;
-            if (activeMicro && !activeMicro.dead) { swayX = activeMicro.vx * 6; swayY = activeMicro.vy * 6; }
-            ctx.translate(swayX, swayY);
+            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
             
-            let cx = 400, cy = 220, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
-            
-            // Fleshy Background
+            // Fleshy Organ Render
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3; ctx.fillRect(cx - rw/2 - wob - 10, cy - rh/2 + wob - 10, rw + wob*2 + 20, rh - wob*2 + 20); ctx.globalAlpha = 1.0;
             ctx.fillStyle = currentRoom.bg; ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
 
-            // WAVY ACID PHYSICS
+            // Splashing Acid
             ctx.fillStyle = currentRoom.acid; 
             ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
-            for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } // Wavy surface!
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
             
-            // Exits
+            // Doors
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6;
             if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
             if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
             ctx.globalAlpha = 1.0;
 
-            // Entities
-            currentRoom.entities.forEach(e => {
-                ctx.fillStyle = e.c; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
-                if (e instanceof MicroCreature && e.dead) { ctx.fillStyle='#f00'; ctx.fillRect(e.x-3, e.y-3, 6, 2); }
-                if (e.type === 'core') { ctx.fillStyle='#fff'; ctx.globalAlpha=Math.abs(Math.sin(frame*0.1)); ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
-            });
-
-            // Player
+            // Player Render
             ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
-            
-            ctx.restore(); // Undo the sway translation so UI isn't affected!
+        }
+        else if (state === 'GAMEOVER') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,400);
+            ctx.fillStyle = '#f00'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("GAME OVER", 400, 200); ctx.textAlign = 'left';
         }
 
         requestAnimationFrame(loop);
