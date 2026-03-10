@@ -3,329 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale: Advanced Gulp Engine</title>
+    <title>Undertale: Anatomy Explorer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; }
-        #game { width: 800px; height: 600px; border: 4px solid #fff; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
-        #screen { flex-grow: 1; position: relative; background: #050505; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-        #ui { height: 220px; border-top: 4px solid #fff; padding: 20px; box-sizing: border-box; background: #000; position: relative; z-index: 10; display: flex; }
-        #text-box { flex-grow: 1; padding-right: 20px; }
-        .text { font-size: 26px; line-height: 1.2; }
-        .speaker { font-size: 32px; color: #ffea00; margin-bottom: 5px; text-transform: uppercase; }
-        #choices { display: flex; flex-direction: column; gap: 8px; min-width: 250px; }
-        button { background: #000; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 5px 15px; cursor: pointer; text-align: left; transition: 0.2s; }
-        button:hover { background: #fff; color: #000; padding-left: 25px; }
+        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        canvas { display: block; image-rendering: pixelated; }
+        #ui-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; background: #000; border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .speaker { color: #ffea00; font-size: 28px; margin-bottom: 5px; text-transform: uppercase; }
+        .text { font-size: 24px; line-height: 1.2; }
+        #choices { position: absolute; right: 15px; top: 15px; display: flex; flex-direction: column; gap: 5px; }
+        button { background: #000; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 20px; padding: 5px 15px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #fff; color: #000; }
         .hidden { display: none !important; }
-        #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; padding: 40px; box-sizing: border-box; }
-        .map-btn { font-size: 30px; margin: 10px 0; width: 300px; display: block; }
-        #juice-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(0, 255, 0, 0.5); z-index: 5; transition: height 0.5s; pointer-events: none;}
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; color: #aaa; z-index: 10; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; }
     </style>
 </head>
 <body>
 
 <div id="game">
-    <div id="screen">
-        <div id="stats">HP: <span id="hp-val">20</span>/20</div>
-        <canvas id="c" width="800" height="380"></canvas>
-        <div id="juice-overlay"></div>
-    </div>
+    <div id="stats">HP: <span id="hp-val">20</span>/20 | LOC: <span id="loc-val">Menu</span></div>
+    <canvas id="c" width="800" height="450"></canvas>
     
-    <div id="ui">
-        <div id="text-box">
-            <div id="speaker" class="speaker">System</div>
-            <div id="text" class="text"></div>
-        </div>
+    <div id="ui-layer">
+        <div id="speaker" class="speaker">System</div>
+        <div id="text" class="text"></div>
         <div id="choices"></div>
-    </div>
-
-    <div id="map-menu" class="hidden">
-        <h1 style="color:#ffea00; font-size: 40px; margin-top: 0;">SELECT REGION</h1>
-        <button class="map-btn" onclick="explore('RUINS')">THE RUINS</button>
-        <button class="map-btn" onclick="explore('SNOWDIN')">SNOWDIN FOREST</button>
-        <button class="map-btn" onclick="explore('WATERFALL')">WATERFALL</button>
-        <button class="map-btn" onclick="explore('HOTLAND')">HOTLAND</button>
     </div>
 </div>
 
 <script>
     const ctx = document.getElementById('c').getContext('2d');
-    let frame = 0, state = 'MENU', currentMob = null;
-    let juiceLevel = 0, escapeProgress = 0, playerHp = 20;
-    let gulletTimer = 0;
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.code] = true; });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // --- MONSTER DATABASE (Multi-Region) ---
-    const database = {
-        // RUINS
-        "Froggit": {
-            reg: "RUINS", 
-            draw: (w) => { ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(400, 220+w, 40, 0, Math.PI*2); ctx.fill(); },
-            text: "* Froggit hops closer.",
-            gulletTime: 60, gulletColor: '#2a1a2a', // Quick fall
-            stomachBg: '#1a2a1a', stomachJuice: 'rgba(0, 255, 0, 0.6)', juiceSpeed: 4,
-            stomachIntro: "* You are inside Froggit.\n* It's cramped and smells like flies.",
-            options: [
-                { label: "Struggle (Uses Energy)", action: () => tryEscape(15, 2) },
-                { label: "Tickle the walls", action: () => tryEscape(30, 0) }
-            ]
+    let state = 'MENU'; // MENU, ENCOUNTER, GULLET, INTERNAL, GAMEOVER, ESCAPED
+    let frame = 0;
+    
+    const player = { x: 400, y: 225, hp: 20, maxHp: 20, speed: 4 };
+    let currentMob = null;
+    let currentRoom = null;
+    
+    // Gullet physics
+    let fallSpeed = 2;
+    let salivaBonus = 0;
+    let gulletDepth = 0;
+
+    // --- ANATOMY & ROOM DATABASE ---
+    const anatomyDB = {
+        // MUFFET'S INTERNALS
+        "Muffet_Stomach": {
+            name: "Muffet's Stomach", bg: '#2a003a', wall: '#1a002a', acid: 'rgba(150, 0, 255, 0.6)',
+            width: 600, height: 400,
+            props: [
+                { type: 'food', x: 300, y: 200, r: 15, color: '#ff00aa', name: 'Spider Donut' },
+                { type: 'food', x: 450, y: 300, r: 20, color: '#ff00aa', name: 'Croissant' },
+                { type: 'npc', x: 200, y: 350, r: 12, color: '#000', name: 'Mini Spider', 
+                  dialogue: "* Squeak! (I am hungry too.)", 
+                  action: { label: "Let Spider Eat You", trigger: () => gulpInception("Spider_Stomach", '#000') } }
+            ],
+            exits: { up: "Muffet_Throat", down: "Muffet_Intestines" }
         },
+        "Muffet_Throat": {
+            name: "Muffet's Lower Esophagus", bg: '#3a004a', wall: '#2a003a', acid: 'rgba(150, 0, 255, 0.2)',
+            width: 300, height: 400,
+            props: [],
+            exits: { up: "ESCAPE", down: "Muffet_Stomach" }
+        },
+        "Muffet_Intestines": {
+            name: "Muffet's Intestines", bg: '#1a002a', wall: '#0a001a', acid: 'rgba(100, 0, 200, 0.8)',
+            width: 800, height: 200,
+            props: [ { type: 'food', x: 400, y: 100, r: 10, color: '#fff', name: 'Web Ball' } ],
+            exits: { up: "Muffet_Stomach", down: "DIGESTED" }
+        },
+        // THE INCEPTION SPIDER INTERNALS
+        "Spider_Stomach": {
+            name: "Mini Spider's Tummy", bg: '#111', wall: '#000', acid: 'rgba(50, 255, 50, 0.8)',
+            width: 200, height: 200, // Tiny room!
+            props: [
+                { type: 'npc', x: 100, y: 100, r: 5, color: '#fff', name: 'Fly', 
+                  dialogue: "* Bzz. (I am trapped too.)", action: null }
+            ],
+            exits: { up: "Muffet_Stomach" } // Climb back out into Muffet!
+        },
+        // TORIEL'S INTERNALS
+        "Toriel_Stomach": {
+            name: "Toriel's Stomach", bg: '#2a0015', wall: '#4a0025', acid: 'rgba(255, 68, 0, 0.7)',
+            width: 500, height: 450,
+            props: [
+                { type: 'food', x: 250, y: 250, r: 30, color: '#ffaa00', name: 'Snail Pie Chunk' }
+            ],
+            exits: { up: "ESCAPE", down: "Toriel_Intestines" }
+        },
+        "Toriel_Intestines": {
+            name: "Toriel's Lower Tract", bg: '#1a000a', wall: '#2a0015', acid: 'rgba(200, 50, 0, 0.9)',
+            width: 600, height: 300,
+            props: [],
+            exits: { up: "Toriel_Stomach", down: "DIGESTED" }
+        }
+    };
+
+    // --- MONSTER OVERWORLD DATABASE ---
+    const monsters = {
         "Toriel": {
-            reg: "RUINS", 
+            desc: "* Toriel looks at you with loving hunger.",
             draw: (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
-            text: "* Toriel looks at you with a hungry gaze.",
-            gulletTime: 120, gulletColor: '#5a002a', // Medium fall
-            stomachBg: '#2a0015', stomachJuice: 'rgba(255, 68, 0, 0.7)', juiceSpeed: 5,
-            stomachIntro: "* You are in Toriel's stomach.\n* Fire magic burns around you.\n* It smells like butterscotch.",
-            options: [
-                { label: "Swim through fire acid", action: () => tryEscape(20, 5) },
-                { label: "Wait for her to let you out", action: () => takeDamage(99) } // Bad choice!
-            ]
-        },
-        // SNOWDIN
-        "Lesser Dog": {
-            reg: "SNOWDIN", 
-            draw: (w) => { ctx.fillStyle='#fff'; ctx.fillRect(370, 220+w, 60, 60); ctx.fillRect(380, 50+Math.abs(w)*3, 40, 170-Math.abs(w)*3); ctx.beginPath(); ctx.arc(400, 50+Math.abs(w)*3, 30, 0, Math.PI*2); ctx.fill(); },
-            text: "* Lesser Dog is overstimulated.",
-            gulletTime: 400, gulletColor: '#331a00', // MASSIVE FALL TIME due to long neck!
-            stomachBg: '#221100', stomachJuice: 'rgba(150, 100, 50, 0.6)', juiceSpeed: 3,
-            stomachIntro: "* You finally hit the bottom.\n* You are buried in chewed-up bones and slobber.",
-            options: [
-                { label: "Pet the stomach lining", action: () => tryEscape(40, 0) },
-                { label: "Throw a stick", action: () => tryEscape(100, 0) } // Instant escape
-            ]
-        },
-        "Papyrus": {
-            reg: "SNOWDIN", 
-            draw: (w) => { ctx.fillStyle='#fff'; ctx.fillRect(380, 100+w, 40, 40); ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#f00'; ctx.fillRect(350, 140+w, 100, 20); },
-            text: "* Papyrus prepares a culinary capture!",
-            gulletTime: 90, gulletColor: '#aa4400',
-            stomachBg: '#331100', stomachJuice: 'rgba(255, 255, 0, 0.4)', juiceSpeed: 2,
-            stomachIntro: "* You are trapped in his ribcage.\n* Magic spaghetti is rising around you.",
-            options: [
-                { label: "Eat the spaghetti", action: () => { takeDamage(2); tryEscape(20, 0); } },
-                { label: "Squeeze through ribs", action: () => tryEscape(25, 3) }
-            ]
-        },
-        // WATERFALL
-        "Aaron": {
-            reg: "WATERFALL", 
-            draw: (w) => { ctx.fillStyle='#ddd'; ctx.fillRect(350, 150+w, 100, 100); ctx.beginPath(); ctx.arc(400, 120+w, 30, 0, Math.PI*2); ctx.fill(); },
-            text: "* Aaron flexes at you.",
-            gulletTime: 100, gulletColor: '#002200',
-            stomachBg: '#001100', stomachJuice: 'rgba(255, 255, 255, 0.7)', juiceSpeed: 6,
-            stomachIntro: "* You are inside Aaron's muscular stomach.\n* It is incredibly sweaty in here.",
-            options: [
-                { label: "Flex back at the stomach", action: () => tryEscape(35, 1) },
-                { label: "Punch the abs", action: () => { takeDamage(5); tryEscape(10, 0); } }
-            ]
-        },
-        "Undyne": {
-            reg: "WATERFALL", 
-            draw: (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
-            text: "* Undyne suplexes a boulder, just because she can.",
-            gulletTime: 80, gulletColor: '#001144',
-            stomachBg: '#000022', stomachJuice: 'rgba(0, 255, 255, 0.8)', juiceSpeed: 8, // Very fast acid
-            stomachIntro: "* You are in Undyne's gut.\n* The acid is rising intensely fast!\n* You have to fight your way out!",
-            options: [
-                { label: "Spear your way out", action: () => tryEscape(25, 4) },
-                { label: "Plead for mercy", action: () => takeDamage(10) } // She hates mercy
-            ]
-        },
-        // HOTLAND
-        "Vulkin": {
-            reg: "HOTLAND", 
-            draw: (w) => { ctx.fillStyle='#ffaa00'; ctx.beginPath(); ctx.moveTo(400, 150+w); ctx.lineTo(330, 250+w); ctx.lineTo(470, 250+w); ctx.fill(); },
-            text: "* Vulkin thinks its lava is healing you.",
-            gulletTime: 100, gulletColor: '#aa2200',
-            stomachBg: '#440000', stomachJuice: 'rgba(255, 0, 0, 0.9)', juiceSpeed: 5,
-            stomachIntro: "* You are inside Vulkin.\n* It is literally full of molten lava.\n* It hurts. A lot.",
-            options: [
-                { label: "Endure the lava", action: () => { takeDamage(4); tryEscape(30, 0); } },
-                { label: "Cry for help", action: () => tryEscape(15, 2) }
-            ]
+            gulletColor: '#5a002a', maxDepth: 200,
+            startRoom: "Toriel_Stomach"
         },
         "Muffet": {
-            reg: "HOTLAND", 
+            desc: "* Muffet thinks you look like a sweet treat.",
             draw: (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); },
-            text: "* Muffet pours you a cup of spiders.",
-            gulletTime: 150, gulletColor: '#2a003a',
-            stomachBg: '#1a002a', stomachJuice: 'rgba(150, 0, 255, 0.8)', juiceSpeed: 4,
-            stomachIntro: "* You are wrapped in tight webs inside her stomach.\n* Purple digestive fluid is rising.",
-            options: [
-                { label: "Struggle in the webs", action: () => tryEscape(10, 3) }, // Hard to escape
-                { label: "Bribe the stomach spiders", action: () => tryEscape(100, 0) } // Instant
-            ]
+            gulletColor: '#2a003a', maxDepth: 300,
+            startRoom: "Muffet_Stomach"
         }
     };
 
-    const regionalPools = {
-        "RUINS": ["Froggit", "Toriel"],
-        "SNOWDIN": ["Lesser Dog", "Papyrus"],
-        "WATERFALL": ["Aaron", "Undyne"],
-        "HOTLAND": ["Vulkin", "Muffet"]
-    };
-
-    // --- ENGINE LOGIC ---
-    function updateHp(amt) {
-        document.getElementById('hp-val').innerText = Math.max(0, playerHp);
-    }
-
-    function takeDamage(amt) {
-        playerHp -= amt;
-        updateHp();
-        // Flash screen red
-        document.getElementById('screen').style.backgroundColor = '#500';
-        setTimeout(() => document.getElementById('screen').style.backgroundColor = '#050505', 100);
-        
-        if (playerHp <= 0) {
-            state = 'GAMEOVER';
-            setUI("System", "* Your HP dropped to 0.\n* You were fully digested.", [
-                { label: "Load Save (Map)", action: () => { showMap(); } }
-            ]);
-        }
-    }
-
+    // --- CORE UI & LOGIC ---
     function setUI(speaker, text, btns) {
         document.getElementById('speaker').innerText = speaker;
         document.getElementById('text').innerHTML = text.replace(/\n/g, '<br>');
         let c = document.getElementById('choices'); c.innerHTML = '';
-        btns.forEach(b => {
-            let btn = document.createElement('button');
-            btn.innerText = b.label; btn.onclick = b.action; c.appendChild(btn);
-        });
+        if(btns) {
+            btns.forEach(b => {
+                let btn = document.createElement('button');
+                btn.innerText = b.label; btn.onclick = b.action; c.appendChild(btn);
+            });
+        }
     }
 
-    function showMap() {
-        state = 'MAP'; playerHp = 20; updateHp();
-        document.getElementById('map-menu').classList.remove('hidden');
+    function takeDamage(amt) {
+        player.hp -= amt;
+        document.getElementById('hp-val').innerText = Math.max(0, Math.floor(player.hp));
+        document.getElementById('c').style.opacity = '0.5';
+        setTimeout(() => document.getElementById('c').style.opacity = '1', 100);
+        if (player.hp <= 0) {
+            state = 'GAMEOVER';
+            setUI("System", "* You were dissolved into magic.", [{label: "Restart", action: initMenu}]);
+        }
     }
 
-    function explore(region) {
-        document.getElementById('map-menu').classList.add('hidden');
-        let pool = regionalPools[region];
-        currentMob = database[pool[Math.floor(Math.random() * pool.length)]];
-        startEncounter();
-    }
-
-    function startEncounter() {
-        state = 'ENCOUNTER';
-        juiceLevel = 0; escapeProgress = 0; gulletTimer = 0;
-        document.getElementById('juice-overlay').style.height = '0%';
-        
-        setUI(currentMob.name, currentMob.text, [
-            { label: "Talk", action: () => setUI(currentMob.name, "* The monster ignores your words.", [{label: "Back", action: startEncounter}]) },
-            { label: "Offer yourself as food", action: gulpPlayer },
-            { label: "Run away", action: showMap }
+    // --- GAME STATES ---
+    function initMenu() {
+        state = 'MENU'; player.hp = player.maxHp;
+        document.getElementById('hp-val').innerText = player.hp;
+        document.getElementById('loc-val').innerText = "World Map";
+        setUI("Map", "* Choose a monster to approach:", [
+            { label: "Approach Toriel", action: () => startEncounter("Toriel") },
+            { label: "Approach Muffet", action: () => startEncounter("Muffet") }
         ]);
     }
 
-    function gulpPlayer() {
-        state = 'GULLET';
-        setUI("System", "* CHOMP!\n* You are sliding down the esophagus!", []);
+    function startEncounter(mobName) {
+        state = 'ENCOUNTER'; currentMob = monsters[mobName];
+        document.getElementById('loc-val').innerText = mobName + "'s Room";
+        setUI(mobName, currentMob.desc, [
+            { label: "Offer yourself as food", action: triggerGulp },
+            { label: "Run Away", action: initMenu }
+        ]);
     }
 
-    function enterStomach() {
-        state = 'STOMACH';
-        document.getElementById('juice-overlay').style.backgroundColor = currentMob.stomachJuice;
-        buildStomachMenu();
+    function triggerGulp() {
+        state = 'GULLET'; gulletDepth = 0; fallSpeed = 2; salivaBonus = 0;
+        player.x = 400; player.y = 50;
+        setUI("System", "* CHOMP!\n* You are sliding down the esophagus!\n* (Saliva sometimes makes you slip faster!)", []);
     }
 
-    function buildStomachMenu() {
-        if (state !== 'STOMACH') return;
-        setUI("Stomach", currentMob.stomachIntro + `\n* Escape Progress: ${escapeProgress}%`, currentMob.options);
+    function gulpInception(roomID, gulletColor) {
+        // You got eaten while already inside someone!
+        state = 'GULLET'; gulletDepth = 0; fallSpeed = 3; salivaBonus = 5; // Spiders swallow fast
+        currentMob = { gulletColor: gulletColor, maxDepth: 100, startRoom: roomID };
+        player.x = 400; player.y = 50;
+        setUI("System", "* INCEPTION CHOMP!\n* You were swallowed by a creature INSIDE a creature!", []);
     }
 
-    function tryEscape(progressAmt, dmgAmt) {
-        if (dmgAmt > 0) takeDamage(dmgAmt);
-        if (playerHp <= 0) return; // Dead
-        
-        escapeProgress += progressAmt;
-        
-        // Shake screen
-        document.getElementById('screen').style.transform = `translate(${(Math.random()-0.5)*15}px, ${(Math.random()-0.5)*15}px)`;
-        setTimeout(() => document.getElementById('screen').style.transform = 'none', 50);
-
-        if (escapeProgress >= 100) {
+    function loadRoom(roomID) {
+        if (roomID === "ESCAPE") {
             state = 'ESCAPED';
-            document.getElementById('juice-overlay').style.height = '0%';
-            setUI("System", "* You forced your way out of the digestive tract!\n* You survived!", [
-                { label: "Return to Map", action: showMap }
-            ]);
-        } else {
-            buildStomachMenu(); // Update progress UI
+            setUI("System", "* You forced your way out of the mouth!\n* You are covered in saliva.", [{label: "Back to Map", action: initMenu}]);
+            return;
         }
+        if (roomID === "DIGESTED") {
+            takeDamage(999); return;
+        }
+
+        state = 'INTERNAL';
+        currentRoom = anatomyDB[roomID];
+        document.getElementById('loc-val').innerText = currentRoom.name;
+        
+        // Center player in new room
+        player.x = 400; player.y = 225;
+        setUI("Anatomy", `* You are in ${currentRoom.name}.\n* Use WASD to explore. Touch objects to interact.`, []);
     }
 
-    function updateStomachPhysics() {
-        if (state === 'STOMACH') {
-            if (frame % 30 === 0) {
-                juiceLevel += currentMob.juiceSpeed;
-                document.getElementById('juice-overlay').style.height = `${juiceLevel}%`;
-                
-                if (juiceLevel >= 100) {
-                    takeDamage(99); // Instant death if fluid fills
+    // --- INTERNAL EXPLORATION LOGIC (WASD) ---
+    function updateInternalPhysics() {
+        let spd = keys['ShiftLeft'] ? player.speed / 2 : player.speed;
+        let dx = 0, dy = 0;
+        if (keys['KeyW'] || keys['ArrowUp']) dy -= spd;
+        if (keys['KeyS'] || keys['ArrowDown']) dy += spd;
+        if (keys['KeyA'] || keys['ArrowLeft']) dx -= spd;
+        if (keys['KeyD'] || keys['ArrowRight']) dx += spd;
+
+        player.x += dx; player.y += dy;
+
+        // Room Boundaries (Fleshy walls)
+        let bounds = { 
+            left: 400 - currentRoom.width/2, right: 400 + currentRoom.width/2,
+            top: 225 - currentRoom.height/2, bottom: 225 + currentRoom.height/2 
+        };
+
+        // Check Room Exits (Top and Bottom)
+        if (player.y < bounds.top && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y > bounds.bottom && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+
+        // Hard clamping to walls
+        player.x = Math.max(bounds.left + 10, Math.min(bounds.right - 10, player.x));
+        player.y = Math.max(bounds.top, Math.min(bounds.bottom, player.y)); // Allow passing through Y for exits
+
+        // Acid Damage (Bottom 30% of room is acid)
+        if (player.y > bounds.bottom - (currentRoom.height * 0.3)) {
+            if (frame % 10 === 0) takeDamage(0.5); // Melt!
+        }
+
+        // Object Collision
+        let interacted = false;
+        currentRoom.props.forEach(p => {
+            let dist = Math.hypot(player.x - p.x, player.y - p.y);
+            if (dist < p.r + 10) {
+                interacted = true;
+                if (p.type === 'food') {
+                    setUI("Investigation", `* Floating ${p.name}. It is partially digested.`, []);
+                } else if (p.type === 'npc') {
+                    let btns = [];
+                    if (p.action) btns.push(p.action);
+                    setUI(p.name, p.dialogue, btns);
                 }
             }
+        });
+        
+        if (!interacted && state === 'INTERNAL') {
+            setUI("Anatomy", `* You are exploring ${currentRoom.name}.`, []);
         }
     }
 
-    // --- RENDER LOOP ---
+    function drawHeart(x, y) {
+        ctx.fillStyle = '#ff0000';
+        const pSize = 2;
+        const pxl = [ [0,1,1,0,1,1,0], [1,1,1,1,1,1,1], [1,1,1,1,1,1,1], [0,1,1,1,1,1,0], [0,0,1,1,1,0,0], [0,0,0,1,0,0,0] ];
+        for (let r=0; r<pxl.length; r++) for (let c=0; c<pxl[r].length; c++) 
+            if (pxl[r][c]) ctx.fillRect(x-7 + c*pSize, y-6 + r*pSize, pSize, pSize);
+    }
+
+    // --- MAIN RENDER LOOP ---
     function loop() {
         frame++;
-        ctx.clearRect(0, 0, 800, 380);
+        ctx.clearRect(0, 0, 800, 450);
 
-        if (state === 'ENCOUNTER') {
-            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,380);
-            let wob = Math.sin(frame * 0.05) * 5;
-            if (currentMob) currentMob.draw(wob);
-        } 
+        if (state === 'MENU') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,450);
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("ANATOMY EXPLORER", 400, 200);
+            ctx.textAlign = 'left';
+        }
+        else if (state === 'ENCOUNTER') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,450);
+            currentMob.draw(Math.sin(frame * 0.05) * 5);
+        }
         else if (state === 'GULLET') {
-            gulletTimer++;
-            ctx.fillStyle = currentMob.gulletColor; ctx.fillRect(0,0,800,380);
+            // Dynamic Saliva Physics
+            if (Math.random() < 0.02) salivaBonus = 4; // Sudden slippery drop!
+            if (salivaBonus > 0) salivaBonus -= 0.1;
             
-            // Draw fleshy falling effect
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3;
-            let scroll = (frame * 15) % 100;
-            for(let i = -100; i < 500; i += 100) {
-                let w = Math.sin((i+frame)*0.05)*30;
-                ctx.fillRect(0, i+scroll, 200+w, 100);
-                ctx.fillRect(600-w, i+scroll, 200+w, 100);
+            gulletDepth += (fallSpeed + salivaBonus);
+            
+            ctx.fillStyle = currentMob.gulletColor; ctx.fillRect(0,0,800,450);
+            
+            // Fleshy scrolling walls
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.4;
+            let scroll = gulletDepth % 100;
+            for(let i = -100; i < 600; i += 100) {
+                let w = Math.sin((i+frame)*0.05)*40;
+                ctx.fillRect(0, i+scroll, 300+w, 100);
+                ctx.fillRect(500-w, i+scroll, 300+w, 100);
             }
             ctx.globalAlpha = 1.0;
 
             // Draw falling player
-            ctx.fillStyle = '#ff0000';
-            let py = 50 + (gulletTimer / currentMob.gulletTime) * 300;
-            ctx.beginPath(); ctx.arc(400, py, 15, 0, Math.PI*2); ctx.fill();
+            drawHeart(player.x, 225); // Player stays centered, walls move up
 
-            // Long neck text check
-            if (currentMob.name === "Lesser Dog" && gulletTimer === 100) {
-                document.getElementById('text').innerHTML = "* You are sliding down the esophagus.<br>* ...It is very long.";
-            }
-
-            if (gulletTimer >= currentMob.gulletTime) {
-                enterStomach();
+            if (gulletDepth >= currentMob.maxDepth) {
+                loadRoom(currentMob.startRoom);
             }
         }
-        else if (state === 'STOMACH') {
-            ctx.fillStyle = currentMob.stomachBg; ctx.fillRect(0,0,800,380);
-            
-            // Draw Player inside
-            ctx.fillStyle = '#ff0000';
-            let pulse = Math.sin(frame * 0.1) * 10;
-            let py = 300 - (escapeProgress * 1.5) + pulse;
-            ctx.beginPath(); ctx.arc(400, py, 15, 0, Math.PI*2); ctx.fill();
+        else if (state === 'INTERNAL') {
+            updateInternalPhysics();
 
-            updateStomachPhysics();
+            // Draw Room Background
+            ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,450);
+            
+            let cx = 400, cy = 225, rw = currentRoom.width, rh = currentRoom.height;
+            let wobble = Math.sin(frame * 0.05) * 5;
+            
+            ctx.fillStyle = currentRoom.bg; 
+            ctx.fillRect(cx - rw/2 - wobble, cy - rh/2 + wobble, rw + wobble*2, rh - wobble*2);
+
+            // Draw Acid Pool (Bottom 30%)
+            ctx.fillStyle = currentRoom.acid;
+            ctx.fillRect(cx - rw/2, cy + rh/2 - (rh*0.3), rw, rh*0.3);
+
+            // Draw Exits
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5;
+            if (currentRoom.exits.up) { ctx.fillRect(cx - 50, cy - rh/2, 100, 20); }
+            if (currentRoom.exits.down) { ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20); }
+            ctx.globalAlpha = 1.0;
+
+            // Draw Props (Food / NPCs)
+            currentRoom.props.forEach(p => {
+                let pWobble = (p.type === 'food') ? Math.sin(frame*0.03 + p.x)*5 : 0; // Food floats
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y + pWobble, p.r, 0, Math.PI*2); ctx.fill();
+                if (p.type === 'food') {
+                    // Draw bite marks
+                    ctx.fillStyle = currentRoom.acid;
+                    ctx.beginPath(); ctx.arc(p.x+p.r/2, p.y-p.r/2 + pWobble, p.r/2, 0, Math.PI*2); ctx.fill();
+                }
+            });
+
+            drawHeart(player.x, player.y);
+        }
+        else if (state === 'GAMEOVER' || state === 'ESCAPED') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,450);
         }
 
         requestAnimationFrame(loop);
     }
 
-    // Init
-    showMap();
+    // Start Engine
+    initMenu();
     loop();
 
 </script>
