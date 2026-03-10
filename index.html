@@ -3,307 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale Boss Rush: Belly Escape</title>
+    <title>Undertale: The Belly Escape Engine</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body {
-            background-color: #000; color: #fff; margin: 0;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden; font-family: 'VT323', monospace;
-            user-select: none;
-        }
-        canvas { display: block; background-color: #000; border: 2px solid #444; }
+        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'VT323', monospace; user-select: none; }
+        canvas { display: block; background: #000; border: 2px solid #444; }
     </style>
 </head>
 <body>
-
 <canvas id="gameCanvas" width="640" height="480"></canvas>
-
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // --- Input ---
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     const keys = {};
-    window.addEventListener('keydown', e => { 
-        keys[e.code] = true; 
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","ShiftLeft"].includes(e.code)) e.preventDefault();
-    });
+    window.addEventListener('keydown', e => { keys[e.code] = true; if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","ShiftLeft"].includes(e.code)) e.preventDefault(); });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // --- Core Variables ---
-    let frame = 0, state = 'TITLE', battleTimer = 0, gulpTimer = 0;
-    
-    // Player
+    let frame = 0, state = 'TITLE', timer = 0, current = 0;
     const player = { x: 320, y: 320, vx: 0, vy: 0, speed: 4, hp: 20, maxHp: 20, iFrames: 0, isBlue: false };
-    let box = { x: 170, y: 220, w: 300, h: 150 };
-    let bullets = [], hazards = [];
-    let exitValve = { x: 320, y: 80, r: 25 };
+    let box = { x: 170, y: 220, w: 300, h: 150 }, bullets = [], hazards = [], exitValve = { x: 320, y: 80, r: 25 };
 
-    // --- Boss Database ---
-    let currentBoss = 0;
-    const bosses = [
-        {
-            name: "Toriel", region: "RUINS", text: "* Toriel blocks the way.", time: 600,
-            color: '#fff', gullet: '#5a002a', stomachBg: '#2a0015', stomachWall: '#7a003a', hazardColor: '#ff4400',
-            draw: () => {
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(320, 80, 35, 0, Math.PI*2); ctx.fill(); // Head
-                ctx.fillRect(300, 110, 40, 50); // Robe
-                ctx.beginPath(); ctx.moveTo(280, 50); ctx.lineTo(300, 80); ctx.lineTo(270, 85); ctx.fill(); // Ears
-                ctx.beginPath(); ctx.moveTo(360, 50); ctx.lineTo(340, 80); ctx.lineTo(370, 85); ctx.fill();
-            },
-            attack: () => {
-                if (frame % 20 === 0) {
-                    let angle = Math.sin(frame * 0.05) * 1.5 + Math.PI/2; 
-                    bullets.push({x: 320, y: 130, vx: Math.cos(angle)*4, vy: Math.sin(angle)*4, w: 10, h: 10, type: 'fire'});
-                }
-            }
-        },
-        {
-            name: "Papyrus", region: "SNOWDIN", text: "* Papyrus prepares a bone attack!", time: 700,
-            color: '#fff', gullet: '#aa4400', stomachBg: '#331100', stomachWall: '#cc5500', hazardColor: '#ffffcc',
-            draw: () => {
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(310, 60, 20, 25); // Skull
-                ctx.fillRect(305, 90, 30, 40); // Body
-                ctx.fillStyle = '#ff0000'; ctx.fillRect(300, 85, 40, 10); // Scarf
-            },
-            attack: () => {
-                player.isBlue = true; // Blue Soul Gravity!
-                if (frame % 40 === 0) {
-                    let h = 20 + Math.random() * 60;
-                    bullets.push({x: box.x + box.w, y: box.y + box.h - h, vx: -3.5, vy: 0, w: 15, h: h, type: 'bone'});
-                }
-            }
-        },
-        {
-            name: "Undyne", region: "WATERFALL", text: "* The wind is howling.", time: 800,
-            color: '#fff', gullet: '#003366', stomachBg: '#001133', stomachWall: '#0055aa', hazardColor: '#00ffff',
-            draw: () => {
-                ctx.fillStyle = '#00aaff'; ctx.beginPath(); ctx.arc(320, 80, 25, 0, Math.PI*2); ctx.fill(); // Head
-                ctx.fillStyle = '#000'; ctx.fillRect(310, 110, 20, 50); // Armor
-                ctx.fillStyle = '#ff0000'; ctx.fillRect(320, 40, 5, 40); // Hair ponytail
-            },
-            attack: () => {
-                player.isBlue = false; // Back to Red Soul
-                if (frame % 25 === 0) {
-                    let side = Math.floor(Math.random() * 4);
-                    let bx, by, bvx, bvy;
-                    if (side===0) { bx=box.x+Math.random()*box.w; by=box.y; bvx=0; bvy=4; } // Top
-                    else if (side===1) { bx=box.x+Math.random()*box.w; by=box.y+box.h; bvx=0; bvy=-4; } // Bottom
-                    else if (side===2) { bx=box.x; by=box.y+Math.random()*box.h; bvx=4; bvy=0; } // Left
-                    else { bx=box.x+box.w; by=box.y+Math.random()*box.h; bvx=-4; bvy=0; } // Right
-                    bullets.push({x: bx, y: by, vx: bvx, vy: bvy, w: (bvx===0?5:20), h: (bvy===0?5:20), type: 'spear'});
-                }
-            }
-        }
+    // --- ENEMY DATABASE (Ruins, Snowdin, Waterfall) ---
+    const enemies = [
+        { name: "Froggit", reg: "RUINS", txt: "* Froggit hops towards you.", t: 400, g: '#2a1a2a', bg: '#1a0a1a', w: '#3a1a3a', h: '#00ff00', 
+          atk: () => { if(frame%40===0) bullets.push({x: box.x+box.w*(Math.random()>0.5?1:0), y: box.y+box.h-10, vx: (Math.random()>0.5?3:-3), vy: -5, w:10, h:10, c:'#fff'}); } },
+        { name: "Vegetoid", reg: "RUINS", txt: "* Vegetoid came out of the earth.", t: 400, g: '#332200', bg: '#221100', w: '#553300', h: '#ff8800', 
+          atk: () => { if(frame%30===0) bullets.push({x: box.x+20+Math.random()*(box.w-40), y: box.y, vx: 0, vy: 3, w:8, h:15, c:'#ff8800'}); } },
+        { name: "Loox", reg: "RUINS", txt: "* Don't pick on Loox.", t: 400, g: '#440000', bg: '#220000', w: '#660000', h: '#ff0000', 
+          atk: () => { if(frame%45===0) bullets.push({x: box.x+box.w/2, y: box.y+10, vx: (Math.random()-0.5)*5, vy: 2, w:12, h:12, c:'#fff'}); } },
+        { name: "Toriel", reg: "RUINS BOSS", txt: "* Toriel blocks the way.", t: 600, g: '#5a002a', bg: '#2a0015', w: '#7a003a', h: '#ffaa00', 
+          atk: () => { if(frame%15===0) { let a = Math.sin(frame*.05)*1.5 + Math.PI/2; bullets.push({x:320, y:130, vx:Math.cos(a)*4, vy:Math.sin(a)*4, w:12, h:12, c:'#ffaa00'}); } } },
+        { name: "Snowdrake", reg: "SNOWDIN", txt: "* Snowdrake makes a bad pun.", t: 500, g: '#003344', bg: '#001122', w: '#005566', h: '#00ffff', 
+          atk: () => { if(frame%25===0) bullets.push({x: box.x+Math.random()*box.w, y: box.y, vx: (Math.random()-0.5)*2, vy: 3, w:6, h:15, c:'#00ffff'}); } },
+        { name: "Lesser Dog", reg: "SNOWDIN", txt: "* Lesser Dog pants excitedly.", t: 500, g: '#554444', bg: '#221111', w: '#775555', h: '#aaaaaa', 
+          atk: () => { if(frame%35===0) bullets.push({x: box.x+box.w, y: box.y+box.h-20, vx: -4, vy: 0, w:30, h:10, c:'#fff'}); } },
+        { name: "Papyrus", reg: "SNOWDIN BOSS", txt: "* NYEH HEH HEH!", t: 700, g: '#aa4400', bg: '#331100', w: '#cc5500', h: '#ffffaa', 
+          atk: () => { player.isBlue=true; if(frame%35===0) { let bh=20+Math.random()*60; bullets.push({x: box.x+box.w, y: box.y+box.h-bh, vx: -4, vy: 0, w:15, h:bh, c:'#fff'}); } } },
+        { name: "Aaron", reg: "WATERFALL", txt: "* Aaron flexes in.", t: 500, g: '#002200', bg: '#001100', w: '#004400', h: '#dddddd', 
+          atk: () => { player.isBlue=false; if(frame%20===0) bullets.push({x: box.x+box.w*(Math.random()>0.5?1:0), y: box.y+Math.random()*box.h, vx: (Math.random()>0.5?4:-4), vy: -2, w:10, h:10, c:'#fff'}); } },
+        { name: "Undyne", reg: "WATERFALL BOSS", txt: "* The wind is howling.", t: 800, g: '#001144', bg: '#000022', w: '#002266', h: '#00ffff', 
+          atk: () => { if(frame%20===0) { let s=Math.floor(Math.random()*4), bx,by,bvx,bvy; 
+          if(s===0){bx=box.x+Math.random()*box.w;by=box.y;bvx=0;bvy=5;} else if(s===1){bx=box.x+Math.random()*box.w;by=box.y+box.h;bvx=0;bvy=-5;}
+          else if(s===2){bx=box.x;by=box.y+Math.random()*box.h;bvx=5;bvy=0;} else {bx=box.x+box.w;by=box.y+Math.random()*box.h;bvx=-5;bvy=0;}
+          bullets.push({x:bx, y:by, vx:bvx, vy:bvy, w:(bvx===0?5:25), h:(bvy===0?5:25), c:'#00ffff'}); } } }
     ];
 
-    // --- Drawing Utilities ---
     function drawHeart(x, y) {
         if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return;
         ctx.fillStyle = player.isBlue ? '#0033ff' : '#ff0000';
-        const p = 2, pxs = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
-        for (let r=0; r<pxs.length; r++) for (let c=0; c<pxs[r].length; c++) 
-            if (pxs[r][c]) ctx.fillRect(x-7 + c*p, y-6 + r*p, p, p);
+        const pxs = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
+        for (let r=0; r<6; r++) for (let c=0; c<7; c++) if (pxs[r][c]) ctx.fillRect(x-7 + c*2, y-6 + r*2, 2, 2);
     }
 
-    function takeDamage(amt) {
+    function dmg(amt) {
         if (player.iFrames <= 0) {
             player.hp -= amt; player.iFrames = 40;
-            if (player.hp <= 0) {
-                if (state === 'BATTLE') triggerGulletDrop();
-                else state = 'GAMEOVER';
-            }
+            if (player.hp <= 0) { if (state === 'BATTLE') { state = 'GULLET'; timer = 0; bullets = []; player.x = 320; player.y = 50; player.isBlue = false; } else state = 'GAMEOVER'; }
         }
     }
 
-    // --- State Transitions ---
-    function initBattle() {
-        state = 'BATTLE'; battleTimer = 0; bullets = []; 
-        player.hp = player.maxHp; player.x = 320; player.y = 295; player.vx = 0; player.vy = 0;
-    }
-
-    function triggerGulletDrop() {
-        state = 'GULLET'; gulpTimer = 0; bullets = [];
-        player.x = 320; player.y = 100; player.isBlue = false;
-    }
-
+    function initBattle() { state = 'BATTLE'; timer = 0; bullets = []; player.hp = player.maxHp; player.x = 320; player.y = 295; player.vy = 0; }
+    
     function initStomach() {
-        state = 'STOMACH'; player.hp = 10; player.iFrames = 60;
-        player.x = 320; player.y = 420; player.isBlue = false;
-        
-        hazards = []; let boss = bosses[currentBoss];
-        for(let i=0; i<10; i++) {
-            hazards.push({
-                x: 180 + Math.random() * 280, y: 150 + Math.random() * 200,
-                vx: (Math.random() > 0.5 ? 2 : -2), vy: (Math.random() > 0.5 ? 2 : -2),
-                r: 10 + Math.random() * 15, type: boss.name === 'Papyrus' ? 'spaghetti' : 'acid'
-            });
-        }
+        state = 'STOMACH'; player.hp = 10; player.iFrames = 60; player.x = 320; player.y = 420; hazards = [];
+        for(let i=0; i<12; i++) hazards.push({ x: 180 + Math.random()*280, y: 150 + Math.random()*200, vx: (Math.random()>0.5?2:-2), vy: (Math.random()>0.5?2:-2), r: 8 + Math.random()*12 });
     }
 
-    // --- Player Physics ---
-    function movePlayer(bounds) {
-        let speed = keys['ShiftLeft'] ? player.speed / 2 : player.speed;
-        
+    function move(b) {
+        let s = keys['ShiftLeft'] ? player.speed / 2 : player.speed;
         if (player.isBlue && state === 'BATTLE') {
-            // Blue Soul Gravity
-            if (keys['ArrowLeft']) player.x -= speed;
-            if (keys['ArrowRight']) player.x += speed;
-            
-            player.vy += 0.25; // Gravity pull
-            player.y += player.vy;
-            
-            // Floor collision & Jump
-            if (player.y >= bounds.y + bounds.h - 8) {
-                player.y = bounds.y + bounds.h - 8;
-                player.vy = 0;
-                if (keys['ArrowUp']) player.vy = -6.5; // Jump
-            }
+            if (keys['ArrowLeft']) player.x -= s; if (keys['ArrowRight']) player.x += s;
+            player.vy += 0.3; player.y += player.vy;
+            if (player.y >= b.y + b.h - 8) { player.y = b.y + b.h - 8; player.vy = 0; if (keys['ArrowUp']) player.vy = -7; }
         } else {
-            // Standard Red Soul
-            if (keys['ArrowUp']) player.y -= speed;
-            if (keys['ArrowDown']) player.y += speed;
-            if (keys['ArrowLeft']) player.x -= speed;
-            if (keys['ArrowRight']) player.x += speed;
+            if (keys['ArrowUp']) player.y -= s; if (keys['ArrowDown']) player.y += s;
+            if (keys['ArrowLeft']) player.x -= s; if (keys['ArrowRight']) player.x += s;
         }
-
-        player.x = Math.max(bounds.x + 8, Math.min(bounds.x + bounds.w - 8, player.x));
-        player.y = Math.max(bounds.y + 8, Math.min(bounds.y + bounds.h - 8, player.y));
+        player.x = Math.max(b.x + 8, Math.min(b.x + b.w - 8, player.x)); player.y = Math.max(b.y + 8, Math.min(b.y + b.h - 8, player.y));
     }
 
-    // --- Main Engine Loop ---
-    let spaceHandled = false;
     function loop() {
-        frame++; ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (player.iFrames > 0) player.iFrames--;
-
-        let boss = bosses[currentBoss];
+        frame++; ctx.clearRect(0, 0, 640, 480); if (player.iFrames > 0) player.iFrames--;
+        let e = enemies[current];
 
         if (state === 'TITLE') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("BOSS RUSH: BELLY ESCAPE", 320, 200);
-            ctx.font = '24px VT323'; ctx.fillText("Arrows to Move | SHIFT to Focus", 320, 260);
-            if (keys['Space'] && !spaceHandled) { spaceHandled = true; currentBoss = 0; initBattle(); }
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323'; ctx.fillText("UNDERTALE: BELLY ESCAPE", 320, 200);
+            ctx.font = '24px VT323'; ctx.fillText("Arrows = Move | Shift = Slow | Space = Start", 320, 260);
+            if (keys['Space']) { current = 0; initBattle(); keys['Space'] = false; }
         }
         else if (state === 'BATTLE') {
-            battleTimer++;
-            boss.draw();
-            
+            timer++;
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(e.name.toUpperCase(), 320, 100);
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeRect(box.x, box.y, box.w, box.h);
-            ctx.fillStyle = '#fff'; ctx.font = '24px VT323'; ctx.textAlign = 'left';
-            ctx.fillText(boss.text, 50, 420);
-            
-            // HP Bar
-            ctx.fillStyle = '#ff0000'; ctx.fillRect(410, 405, player.maxHp*4, 20);
-            ctx.fillStyle = '#ffff00'; ctx.fillRect(410, 405, Math.max(0, player.hp)*4, 20);
-            ctx.fillStyle = '#fff'; ctx.fillText(`${player.hp}/${player.maxHp}`, 420 + player.maxHp*4, 420);
-            
-            // Progress Bar
-            ctx.fillStyle = '#00ff00'; ctx.fillRect(box.x, box.y + box.h + 10, box.w * (battleTimer/boss.time), 5);
+            ctx.textAlign = 'left'; ctx.fillText(e.txt, 50, 420);
+            ctx.fillStyle = '#f00'; ctx.fillRect(410, 405, 80, 20); ctx.fillStyle = '#ff0'; ctx.fillRect(410, 405, Math.max(0, player.hp)*4, 20);
+            ctx.fillStyle = '#fff'; ctx.fillText(`${player.hp}/20`, 500, 420);
+            ctx.fillStyle = '#0f0'; ctx.fillRect(box.x, box.y + box.h + 10, box.w * (timer/e.t), 5);
 
-            movePlayer(box); boss.attack();
+            move(box); e.atk();
 
-            // Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.x += b.vx; b.y += b.vy;
+                let b = bullets[i]; b.x += b.vx; b.y += b.vy;
+                if (e.name === 'Loox') { b.vy += 0.1; if (b.y > box.y+box.h-b.h) b.vy = -3; if (b.x < box.x || b.x > box.x+box.w) b.vx *= -1; }
+                if (e.name === 'Froggit') { b.vy += 0.2; if (b.y > box.y+box.h-b.h) b.vy = -4; }
                 
-                ctx.fillStyle = (b.type==='fire') ? '#ffaa00' : (b.type==='spear') ? '#00ffff' : '#fff';
-                ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
-
-                // Hitbox logic
-                if (Math.abs(player.x - b.x) < b.w/2 + 4 && Math.abs(player.y - b.y) < b.h/2 + 4) takeDamage(4);
+                ctx.fillStyle = b.c; ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+                if (Math.abs(player.x - b.x) < b.w/2 + 4 && Math.abs(player.y - b.y) < b.h/2 + 4) dmg(4);
                 if (b.x < 0 || b.x > 640 || b.y < 0 || b.y > 480) bullets.splice(i, 1);
             }
-
             drawHeart(player.x, player.y);
-            if (battleTimer >= boss.time && player.hp > 0) {
-                currentBoss++; if (currentBoss >= bosses.length) state = 'VICTORY'; else initBattle();
-            }
+            if (timer >= e.t && player.hp > 0) { current++; if (current >= enemies.length) state = 'VICTORY'; else initBattle(); }
         }
         else if (state === 'GULLET') {
-            gulpTimer++;
-            ctx.fillStyle = boss.gullet; ctx.fillRect(0, 0, 640, 480);
-            
-            // Fleshy scrolling walls
-            ctx.fillStyle = boss.stomachWall;
-            let scroll = (frame * 5) % 100;
-            for(let i=-100; i<600; i+=100) {
-                let wave = Math.sin((i + gulpTimer) * 0.05) * 30;
-                ctx.fillRect(0, i + scroll, 200 + wave, 110); // Left wall
-                ctx.fillRect(440 - wave, i + scroll, 200 + wave, 110); // Right wall
-            }
-
-            // Player falls
-            player.y += 3;
-            drawHeart(player.x, player.y);
-
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '30px VT323';
-            ctx.fillText("* SLIDING DOWN THE ESOPHAGUS...", 320, 50);
-
+            timer++; ctx.fillStyle = e.g; ctx.fillRect(0, 0, 640, 480);
+            ctx.fillStyle = e.w; let scr = (frame * 6) % 100;
+            for(let i=-100; i<600; i+=100) { let w = Math.sin((i+timer)*0.05)*40; ctx.fillRect(0, i+scr, 200+w, 110); ctx.fillRect(440-w, i+scr, 200+w, 110); }
+            player.y += 4; drawHeart(player.x, player.y);
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '30px VT323'; ctx.fillText("* FALLING DOWN THE GULLET...", 320, 50);
             if (player.y > 500) initStomach();
         }
         else if (state === 'STOMACH') {
-            ctx.fillStyle = boss.stomachBg; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            let stmBounds = { x: 120, y: 60, w: 400, h: 380 };
-            ctx.strokeStyle = boss.stomachWall; ctx.lineWidth = 20 + Math.sin(frame*0.05)*10;
-            ctx.strokeRect(stmBounds.x, stmBounds.y, stmBounds.w, stmBounds.h);
+            ctx.fillStyle = e.bg; ctx.fillRect(0, 0, 640, 480);
+            let sb = { x: 120, y: 60, w: 400, h: 380 };
+            ctx.strokeStyle = e.w; ctx.lineWidth = 20 + Math.sin(frame*0.05)*10; ctx.strokeRect(sb.x, sb.y, sb.w, sb.h);
+            ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.2)*4, 0, Math.PI*2); ctx.fill();
 
-            // Exit Valve
-            ctx.fillStyle = '#ffff00';
-            ctx.beginPath(); ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.2)*4, 0, Math.PI*2); ctx.fill();
-
-            movePlayer(stmBounds);
-
-            // Stomach Hazards
-            ctx.fillStyle = boss.hazardColor; ctx.globalAlpha = 0.8;
+            move(sb);
+            ctx.fillStyle = e.h; ctx.globalAlpha = 0.8;
             hazards.forEach(j => {
                 j.x += j.vx; j.y += j.vy;
-                if(j.x < stmBounds.x + j.r || j.x > stmBounds.x + stmBounds.w - j.r) j.vx *= -1;
-                if(j.y < stmBounds.y + j.r || j.y > stmBounds.y + stmBounds.h - j.r) j.vy *= -1;
-                
-                if (j.type === 'spaghetti') {
-                    ctx.fillRect(j.x-j.r, j.y-2, j.r*2, 4); // Draw noodle
-                } else {
-                    ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI*2); ctx.fill();
-                }
-                
-                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) takeDamage(1);
+                if(j.x < sb.x + j.r || j.x > sb.x + sb.w - j.r) j.vx *= -1;
+                if(j.y < sb.y + j.r || j.y > sb.y + sb.h - j.r) j.vy *= -1;
+                ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI*2); ctx.fill();
+                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) dmg(1);
             });
-            ctx.globalAlpha = 1.0;
-
-            ctx.fillStyle = '#fff'; ctx.font = '24px VT323'; ctx.textAlign = 'left';
-            ctx.fillText(`${boss.region}: ${boss.name.toUpperCase()}'S STOMACH`, 130, 45);
-            ctx.fillText(`SOUL: ${player.hp}`, 130, 460);
-
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(`${e.reg}: INSIDE ${e.name.toUpperCase()}`, 130, 45); ctx.fillText(`SOUL: ${player.hp}`, 130, 460);
             drawHeart(player.x, player.y);
 
             if (Math.hypot(player.x - exitValve.x, player.y - exitValve.y) < exitValve.r) {
-                state = 'ESCAPED';
-                setTimeout(() => {
-                    currentBoss++; if (currentBoss >= bosses.length) state = 'VICTORY'; else initBattle();
-                }, 2000);
+                state = 'ESCAPED'; setTimeout(() => { current++; if (current >= enemies.length) state = 'VICTORY'; else initBattle(); }, 2000);
             }
         }
-        else if (state === 'ESCAPED') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("* Escaped the digestive tract!", 320, 240);
-        }
-        else if (state === 'GAMEOVER') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("DIGESTED.", 320, 220);
-            ctx.font = '24px VT323'; ctx.fillText("Press SPACE to Restart.", 320, 270);
-            if (keys['Space'] && !spaceHandled) { spaceHandled = true; state = 'TITLE'; }
-        }
-        else if (state === 'VICTORY') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("YOU BEAT THE BOSS RUSH!", 320, 220);
-        }
-
-        if (!keys['Space']) spaceHandled = false;
+        else if (state === 'ESCAPED') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("* You escaped the digestive tract!", 320, 240); }
+        else if (state === 'GAMEOVER') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("DIGESTED.", 320, 220); ctx.fillText("Press Space", 320, 270); if(keys['Space']){state='TITLE'; keys['Space']=false;} }
+        else if (state === 'VICTORY') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("YOU SURVIVED EVERYTHING!", 320, 240); }
         requestAnimationFrame(loop);
     }
     loop();
