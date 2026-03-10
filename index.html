@@ -3,24 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale Battle: The Guardian</title>
+    <title>Undertale Ruins: Belly Escape</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body {
-            background-color: #000;
-            color: #fff;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'VT323', monospace;
+            background-color: #000; color: #fff; margin: 0;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden; font-family: 'VT323', monospace;
         }
-        canvas {
-            display: block;
-            background-color: #000;
-        }
+        canvas { display: block; background-color: #000; }
     </style>
 </head>
 <body>
@@ -31,375 +22,245 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // --- Input Handling ---
+    // --- Input ---
     const keys = {};
-    window.addEventListener('keydown', (e) => { 
-        keys[e.code] = true; 
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","Enter"].includes(e.code)) e.preventDefault();
-    });
-    window.addEventListener('keyup', (e) => keys[e.code] = false);
+    window.addEventListener('keydown', e => { keys[e.code] = true; });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // --- Game Variables ---
-    let state = 'TITLE'; // TITLE, DIALOGUE, BATTLE, STOMACH, GAMEOVER, VICTORY
+    // --- Game State ---
     let frame = 0;
+    let state = 'BATTLE'; // BATTLE, TRANSITION, STOMACH, ESCAPED
     
-    // Player
     const player = { x: 320, y: 320, speed: 4, hp: 20, maxHp: 20, iFrames: 0 };
+    let box = { x: 220, y: 220, w: 200, h: 150 };
     
-    // Battle Box
-    const box = { x: 200, y: 220, w: 240, h: 140, targetX: 200, targetY: 220, targetW: 240, targetH: 140 };
+    // --- Monster Database ---
+    const monsters = [
+        {
+            name: "Froggit",
+            text: "* Froggit hops towards you.",
+            color: "#fff",
+            stomachBg: "#0a1a0a", stomachWall: "#1a4a1a",
+            attack: function() {
+                // Flies attack
+                if (frame % 40 === 0) {
+                    bullets.push({x: box.x + box.w, y: box.y + box.h - 20, vx: -3, vy: 0, r: 4, type: 'fly'});
+                }
+            },
+            draw: function() {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(320, 100, 30, 0, Math.PI*2); ctx.fill(); // Body
+                ctx.beginPath(); ctx.arc(300, 60, 12, 0, Math.PI*2); ctx.fill(); // Eye L
+                ctx.beginPath(); ctx.arc(340, 60, 12, 0, Math.PI*2); ctx.fill(); // Eye R
+            }
+        },
+        {
+            name: "Moldsmal",
+            text: "* Moldsmal waits pensively.",
+            color: "#ff00ff",
+            stomachBg: "#1a001a", stomachWall: "#4a004a",
+            attack: function() {
+                // Descending zigzag spores
+                if (frame % 25 === 0) {
+                    bullets.push({x: box.x + 20 + Math.random()*(box.w-40), y: box.y, vx: 0, vy: 2, r: 5, type: 'spore', startX: 0});
+                }
+            },
+            draw: function() {
+                ctx.fillStyle = '#ffb3ff';
+                let w = Math.sin(frame * 0.05) * 10;
+                ctx.fillRect(280 - w, 60, 80 + w*2, 60 - w);
+            }
+        },
+        {
+            name: "Loox",
+            text: "* Please don't pick on Loox.",
+            color: "#ff3333",
+            stomachBg: "#220000", stomachWall: "#660000",
+            attack: function() {
+                // Bouncing eye rings
+                if (frame % 60 === 0) {
+                    bullets.push({x: box.x + box.w/2, y: box.y + 10, vx: (Math.random()-0.5)*4, vy: 3, r: 8, type: 'eye'});
+                }
+            },
+            draw: function() {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(320, 90, 35, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(320, 90, 15, 0, Math.PI*2); ctx.fill(); // Big single eye
+            }
+        }
+    ];
 
-    // Encounter Flow
-    let currentWave = 0;
-    let waveTimer = 0;
-    let stomachTimer = 0;
+    let currentMonster = 0;
     let bullets = [];
-    
-    // Dialogue System
-    let dialogueQueue = [];
-    let currentText = "";
-    let typeIndex = 0;
+    let stomachJuices = [];
+    let exitValve = { x: 320, y: 50, r: 20 };
 
     // --- Drawing Utilities ---
-    function drawHeart(x, y, color = '#ff0000') {
-        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return; // Blinking
-        ctx.fillStyle = color;
-        const p = 2; // Pixel scale
-        const pxs = [
-            [0,1,1,0,1,1,0], [1,1,1,1,1,1,1], [1,1,1,1,1,1,1],
-            [0,1,1,1,1,1,0], [0,0,1,1,1,0,0], [0,0,0,1,0,0,0]
-        ];
-        let ox = x - (7 * p) / 2; let oy = y - (6 * p) / 2;
+    function drawPlayer() {
+        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return;
+        ctx.fillStyle = '#ff0000';
+        const p = 2;
+        const pxs = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
+        let ox = player.x - 7, oy = player.y - 6;
         for (let r = 0; r < pxs.length; r++) {
             for (let c = 0; c < pxs[r].length; c++) {
                 if (pxs[r][c]) ctx.fillRect(ox + c * p, oy + r * p, p, p);
             }
         }
-        // Center hitbox dot if holding shift
-        if (keys['ShiftLeft'] || keys['ShiftRight']) {
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(x - 1, y - 1, 2, 2);
-        }
     }
 
-    function drawBox() {
-        // Smooth transition for box size
-        box.x += (box.targetX - box.x) * 0.1;
-        box.y += (box.targetY - box.y) * 0.1;
-        box.w += (box.targetW - box.w) * 0.1;
-        box.h += (box.targetH - box.h) * 0.1;
-
-        ctx.strokeStyle = state === 'STOMACH' ? '#cc0000' : '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(box.x, box.y, box.w, box.h);
-        
-        if (state === 'STOMACH') {
-            ctx.fillStyle = 'rgba(50, 0, 10, 0.5)';
-            ctx.fillRect(box.x, box.y, box.w, box.h);
-        }
-    }
-
-    function drawUI() {
-        ctx.fillStyle = '#fff';
-        ctx.font = '24px VT323';
-        ctx.textAlign = 'left';
-        ctx.fillText("CHARA   LV 1", 30, 430);
-        ctx.fillText("HP", 220, 430);
-        
-        // Health Bar
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(260, 412, player.maxHp * 2, 20);
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(260, 412, Math.max(0, player.hp) * 2, 20);
-        
-        ctx.fillStyle = '#fff';
-        ctx.fillText(`${Math.max(0, player.hp)} / ${player.maxHp}`, 270 + player.maxHp * 2, 430);
-    }
-
-    function drawEnemyGraphics() {
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        
-        if (currentWave === 0) { // Moldy
-            let w = Math.sin(frame * 0.1) * 10;
-            ctx.fillRect(300 - w/2, 60, 40 + w, 60 - w/2);
-            ctx.font = '20px VT323'; ctx.fillText("* Wiggle wiggle.", 450, 90);
-        } else if (currentWave === 1) { // Froggy
-            ctx.beginPath(); ctx.arc(320, 90, 30, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(300, 50, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(340, 50, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.font = '20px VT323'; ctx.fillText("* Ribbit.", 450, 90);
-        } else if (currentWave === 2) { // Boss (Guardian)
-            ctx.beginPath(); ctx.arc(320, 80, 40, 0, Math.PI * 2); ctx.fill(); // Head
-            ctx.fillRect(300, 120, 40, 50); // Body
-            ctx.beginPath(); ctx.moveTo(280, 40); ctx.lineTo(300, 80); ctx.lineTo(260, 80); ctx.fill(); // Horn L
-            ctx.beginPath(); ctx.moveTo(360, 40); ctx.lineTo(340, 80); ctx.lineTo(380, 80); ctx.fill(); // Horn R
-            ctx.font = '20px VT323'; ctx.fillText("* Prove yourself.", 450, 90);
-        }
-    }
-
-    function pushDialogue(texts) {
-        dialogueQueue = texts;
-        typeIndex = 0;
-        currentText = "";
-        state = 'DIALOGUE';
-    }
-
-    // --- Core Logic ---
-    function playerMovement() {
-        let speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? player.speed / 2 : player.speed;
-        let dx = 0, dy = 0;
-        
-        if (keys['ArrowUp'] || keys['KeyW']) dy -= speed;
-        if (keys['ArrowDown'] || keys['KeyS']) dy += speed;
-        if (keys['ArrowLeft'] || keys['KeyA']) dx -= speed;
-        if (keys['ArrowRight'] || keys['KeyD']) dx += speed;
-
-        player.x += dx; player.y += dy;
-
-        // Clamp to Box Boundaries (with a 4px padding for the heart size)
-        player.x = Math.max(box.x + 8, Math.min(box.x + box.w - 8, player.x));
-        player.y = Math.max(box.y + 8, Math.min(box.y + box.h - 8, player.y));
-    }
-
-    function damagePlayer(amt) {
+    function takeDamage(amt) {
         if (player.iFrames <= 0) {
             player.hp -= amt;
-            player.iFrames = 60; // 1 second of invincibility
-            if (player.hp <= 0) state = 'GAMEOVER';
+            player.iFrames = 30;
+            if (player.hp <= 0 && state === 'BATTLE') {
+                triggerGulp();
+            }
         }
     }
 
     function triggerGulp() {
-        state = 'STOMACH';
-        stomachTimer = 480; // 8 seconds
-        bullets = []; // Clear arena
-        box.targetW = 150; box.targetH = 200; // Constrict box
-        box.targetX = 320 - 75; box.targetY = 200;
-        player.x = 320; player.y = 300; // Center player
-    }
-
-    // --- Waves & Attacks ---
-    function runWaveLogic() {
-        waveTimer++;
-
-        if (currentWave === 0) { // Moldy Attack (Bouncing spores)
-            if (waveTimer % 30 === 0) {
-                bullets.push({ 
-                    x: box.x + Math.random() * box.w, y: box.y - 10, 
-                    vx: (Math.random() - 0.5) * 2, vy: 2, r: 4, type: 'spore' 
-                });
-            }
-            if (waveTimer > 600) endWave(); // 10 seconds
-        } 
-        else if (currentWave === 1) { // Froggy Attack (Leaping frogs)
-            if (waveTimer % 45 === 0) {
-                bullets.push({
-                    x: box.x + (Math.random() > 0.5 ? 10 : box.w - 10), y: box.y + box.h - 10,
-                    vx: (Math.random() > 0.5 ? 2 : -2), vy: -5, r: 6, type: 'frog'
-                });
-            }
-            if (waveTimer > 600) endWave();
-        }
-        else if (currentWave === 2) { // Boss Attack
-            // Shoot fire
-            if (waveTimer % 20 === 0) {
-                let angle = Math.atan2((box.y + box.h/2) - 80, 320 - 320); // Aim vaguely down
-                angle += (Math.random() - 0.5);
-                bullets.push({
-                    x: 320, y: 120, vx: Math.cos(angle)*3, vy: Math.sin(angle)*3, r: 5, type: 'fire'
-                });
-            }
-            // THE GULP ATTACK (Giant Mouth spawns and chases slowly)
-            if (waveTimer === 200 || waveTimer === 500) {
-                bullets.push({
-                    x: 320, y: 120, vx: 0, vy: 1.5, r: 25, type: 'mouth'
-                });
-            }
-            if (waveTimer > 900) endWave(); // 15 seconds
-        }
-
-        updateBullets();
-    }
-
-    function runStomachLogic() {
-        stomachTimer--;
-        
-        // Spawn fast acid drops
-        if (stomachTimer % 10 === 0) {
-            bullets.push({
-                x: box.x + Math.random() * box.w, y: box.y - 10,
-                vx: 0, vy: 4 + Math.random() * 2, r: 5, type: 'acid'
-            });
-        }
-
-        updateBullets();
-
-        if (stomachTimer <= 0) {
-            // Burped out, back to the fight
-            state = 'BATTLE';
-            bullets = [];
-            box.targetW = 240; box.targetH = 140; 
-            box.targetX = 200; box.targetY = 220;
-            player.iFrames = 60; // Safe frames upon return
-        }
-    }
-
-    function updateBullets() {
-        for (let i = bullets.length - 1; i >= 0; i--) {
-            let b = bullets[i];
-            
-            if (b.type === 'frog') {
-                b.vy += 0.2; // Gravity
-                if (b.y > box.y + box.h - b.r) { b.y = box.y + box.h - b.r; b.vy = -5; } // Bounce
-                if (b.x < box.x || b.x > box.x + box.w) b.vx *= -1; // Wall bounce
-            } else if (b.type === 'mouth') {
-                // Homing onto player slowly
-                let dx = player.x - b.x; let dy = player.y - b.y;
-                let dist = Math.hypot(dx, dy);
-                b.vx = (dx/dist) * 1.2; b.vy = (dy/dist) * 1.2;
-            }
-
-            b.x += b.vx; b.y += b.vy;
-
-            // Draw bullet
-            ctx.beginPath();
-            if (b.type === 'mouth') {
-                ctx.fillStyle = '#ff0055';
-                ctx.arc(b.x, b.y, b.r, 0.2, Math.PI * 2 - 0.2); // Pacman shape
-                ctx.lineTo(b.x, b.y); ctx.fill();
-            } else {
-                ctx.fillStyle = b.type === 'acid' ? '#00ff00' : '#fff';
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
-            }
-
-            // Collision with player
-            let dist = Math.hypot(player.x - b.x, player.y - b.y);
-            if (dist < b.r + 4) {
-                if (b.type === 'mouth') {
-                    triggerGulp();
-                    bullets.splice(i, 1);
-                } else {
-                    damagePlayer(b.type === 'acid' ? 2 : 4);
-                }
-            }
-
-            // Remove if way out of bounds
-            if (b.y > 600 || b.y < 0 || b.x < 0 || b.x > 640) bullets.splice(i, 1);
-        }
-    }
-
-    function endWave() {
+        state = 'TRANSITION';
         bullets = [];
-        currentWave++;
-        waveTimer = 0;
-        
-        if (currentWave === 1) pushDialogue(["* You defeated the Moldy.", "* A wild Froggy approaches!"]);
-        else if (currentWave === 2) pushDialogue(["* Froggy hopped away.", "* The Guardian blocks your path!"]);
-        else state = 'VICTORY';
+        setTimeout(() => {
+            state = 'STOMACH';
+            player.hp = 10; // Give soul some HP to survive the stomach
+            player.x = 320; player.y = 400; // Start at bottom of stomach
+            
+            // Generate random stomach juice pools based on monster
+            stomachJuices = [];
+            for(let i=0; i<8; i++) {
+                stomachJuices.push({
+                    x: 150 + Math.random() * 340,
+                    y: 100 + Math.random() * 250,
+                    r: 20 + Math.random() * 30,
+                    vx: (Math.random() - 0.5) * 2
+                });
+            }
+        }, 1500);
     }
 
     // --- Main Loop ---
-    let keyHandled = false;
-
     function loop() {
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+        
         if (player.iFrames > 0) player.iFrames--;
+        let m = monsters[currentMonster];
 
-        if (state === 'TITLE') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-            ctx.font = '40px VT323'; ctx.fillText("TALE OF THE GULP", 320, 200);
-            ctx.font = '24px VT323'; 
-            ctx.fillText("Arrow Keys to Move. Hold SHIFT to slow down.", 320, 260);
-            ctx.fillText("Press [Z] or [ENTER] to start.", 320, 320);
-            
-            if ((keys['Enter'] || keys['KeyZ']) && !keyHandled) {
-                keyHandled = true;
-                pushDialogue([
-                    "* You encounter a strange wiggling creature.",
-                    "* Survive its attacks."
-                ]);
-            }
-        } 
-        else if (state === 'DIALOGUE') {
-            drawUI();
-            if (currentWave < 3) drawEnemyGraphics();
-            
-            // Draw dialogue box
+        // Movement Logic
+        let dx = 0, dy = 0;
+        if (keys['ArrowUp']) dy -= player.speed;
+        if (keys['ArrowDown']) dy += player.speed;
+        if (keys['ArrowLeft']) dx -= player.speed;
+        if (keys['ArrowRight']) dx += player.speed;
+        player.x += dx; player.y += dy;
+
+        if (state === 'BATTLE') {
+            // Battle UI
+            m.draw();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
-            ctx.strokeRect(30, 280, 580, 120);
-            ctx.fillStyle = '#000'; ctx.fillRect(32, 282, 576, 116);
+            ctx.strokeRect(box.x, box.y, box.w, box.h);
             
-            // Typewriter effect
-            let targetText = dialogueQueue[0];
-            if (typeIndex < targetText.length) {
-                if (frame % 2 === 0) {
-                    currentText += targetText[typeIndex];
-                    typeIndex++;
-                }
-            }
-            
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = '28px VT323';
-            ctx.fillText(currentText, 50, 330);
+            ctx.fillStyle = '#fff'; ctx.font = '24px VT323';
+            ctx.fillText(m.text, 50, 420);
+            ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 450, 420);
 
-            // Advance dialogue
-            if ((keys['Enter'] || keys['KeyZ']) && !keyHandled) {
-                keyHandled = true;
-                if (typeIndex < targetText.length) {
-                    currentText = targetText; typeIndex = targetText.length; // Skip to end
-                } else {
-                    dialogueQueue.shift();
-                    if (dialogueQueue.length > 0) {
-                        currentText = ""; typeIndex = 0;
-                    } else {
-                        state = 'BATTLE'; waveTimer = 0;
-                        box.w = 240; box.h = 140; box.x = 200; box.y = 220; // Reset box
-                        player.x = 320; player.y = 320;
-                    }
+            // Bounds
+            player.x = Math.max(box.x + 8, Math.min(box.x + box.w - 8, player.x));
+            player.y = Math.max(box.y + 8, Math.min(box.y + box.h - 8, player.y));
+
+            // Attacks
+            m.attack();
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                if (b.type === 'spore') b.x += Math.sin(frame * 0.1) * 2;
+                if (b.type === 'eye') {
+                    b.vy += 0.1; // gravity
+                    if (b.y > box.y + box.h - b.r) b.vy = -3; // bounce
+                    if (b.x < box.x + b.r || b.x > box.x + box.w - b.r) b.vx *= -1;
                 }
+                
+                b.x += b.vx; b.y += b.vy;
+                
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                if (b.type === 'eye') { ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill(); }
+
+                if (Math.hypot(player.x - b.x, player.y - b.y) < b.r + 4) takeDamage(4);
+                if (b.x < 0 || b.x > 640 || b.y > 480) bullets.splice(i, 1);
             }
-        }
-        else if (state === 'BATTLE') {
-            drawUI();
-            drawEnemyGraphics();
-            drawBox();
-            playerMovement();
-            runWaveLogic();
-            drawHeart(player.x, player.y);
+            
+            drawPlayer();
+        } 
+        else if (state === 'TRANSITION') {
+            // Gulp animation
+            ctx.fillStyle = '#ff0000'; ctx.font = '40px VT323'; ctx.textAlign = 'center';
+            ctx.fillText("CHOMP!", 320, 240);
+            ctx.font = '24px VT323';
+            ctx.fillText("You were eaten! Sliding down the esophagus...", 320, 280);
+            ctx.textAlign = 'left';
         }
         else if (state === 'STOMACH') {
-            drawUI();
-            // Draw a slightly darker enemy to show you are inside them
-            ctx.globalAlpha = 0.3; drawEnemyGraphics(); ctx.globalAlpha = 1.0;
+            // Draw Stomach Anatomy
+            ctx.fillStyle = m.stomachBg; ctx.fillRect(0, 0, 640, 480);
             
-            drawBox();
-            playerMovement();
-            runStomachLogic();
-            drawHeart(player.x, player.y);
+            // Pulsing stomach walls
+            ctx.strokeStyle = m.stomachWall; ctx.lineWidth = 15 + Math.sin(frame*0.05)*5;
+            ctx.strokeRect(100, 50, 440, 380);
             
-            ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '24px VT323';
-            ctx.fillText(`SURVIVE ACID: ${Math.ceil(stomachTimer/60)}s`, 320, 180);
-        }
-        else if (state === 'GAMEOVER') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("GAME OVER", 320, 240);
-            ctx.font = '24px VT323'; ctx.fillText("Stay determined. Refresh to try again.", 320, 280);
-        }
-        else if (state === 'VICTORY') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
-            ctx.fillText("YOU WON!", 320, 240);
-            ctx.font = '24px VT323'; ctx.fillText("You survived the gauntlet.", 320, 280);
-        }
+            // Bounds (Stomach walls)
+            player.x = Math.max(120, Math.min(520, player.x));
+            player.y = Math.max(70, Math.min(410, player.y));
 
-        // Prevent rapid key firing
-        if (!keys['Enter'] && !keys['KeyZ']) keyHandled = false;
+            // Exit Valve (Sphincter)
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath(); ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.1)*3, 0, Math.PI*2); ctx.fill();
+            
+            // Stomach Juices (Hazards)
+            ctx.fillStyle = '#00ff00'; ctx.globalAlpha = 0.6;
+            stomachJuices.forEach(j => {
+                j.x += j.vx;
+                if(j.x < 120 || j.x > 520) j.vx *= -1;
+                ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI*2); ctx.fill();
+                
+                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) takeDamage(1); // Acid burns!
+            });
+            ctx.globalAlpha = 1.0;
+
+            // UI
+            ctx.fillStyle = '#fff'; ctx.font = '24px VT323';
+            ctx.fillText(`Inside ${m.name}'s Belly`, 120, 40);
+            ctx.fillText(`SOUL INTEGRITY: ${player.hp}`, 120, 460);
+
+            // Escape condition
+            if (Math.hypot(player.x - exitValve.x, player.y - exitValve.y) < exitValve.r) {
+                state = 'ESCAPED';
+                setTimeout(() => {
+                    currentMonster = (currentMonster + 1) % monsters.length;
+                    player.hp = player.maxHp;
+                    state = 'BATTLE';
+                }, 2000);
+            }
+
+            if (player.hp <= 0) {
+                ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+                ctx.fillText("DIGESTED.", 320, 240);
+            } else {
+                drawPlayer();
+            }
+            ctx.textAlign = 'left';
+        }
+        else if (state === 'ESCAPED') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323';
+            ctx.fillText("ESCAPED THE DIGESTIVE TRACT!", 320, 240);
+            ctx.textAlign = 'left';
+        }
 
         requestAnimationFrame(loop);
     }
-
-    // Start
     loop();
 </script>
 </body>
