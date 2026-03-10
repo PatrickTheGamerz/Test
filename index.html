@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale: Micro-Anatomy Inception</title>
+    <title>Undertale: Ecosystem Explorer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; box-shadow: 0 0 40px rgba(150,0,255,0.3); background: #050505; }
+        body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
+        #game { width: 800px; height: 600px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.95); border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; }
-        .speaker { color: #ffea00; font-size: 30px; margin-bottom: 5px; text-transform: uppercase; }
-        .text { font-size: 24px; line-height: 1.2; }
+        #ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.95); border-top: 4px solid #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
+        .speaker { color: #ffea00; font-size: 32px; margin-bottom: 5px; text-transform: uppercase; text-shadow: 2px 2px 0 #000; }
+        .text { font-size: 24px; line-height: 1.2; text-shadow: 1px 1px 0 #000; }
         #choices { position: absolute; right: 15px; top: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 11; }
-        button { background: #000; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 20px; padding: 5px 15px; cursor: pointer; transition: 0.2s; pointer-events: auto; }
-        button:hover { background: #fff; color: #000; padding-left: 20px; }
+        button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 20px; padding: 5px 15px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #fff; color: #000; padding-left: 20px; box-shadow: 0 0 10px #fff; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 26px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
         .hidden { display: none !important; }
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; }
         #toast { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 5px 15px; font-size: 24px; border-radius: 5px; opacity: 0; transition: 0.3s; z-index: 20; pointer-events: none; }
     </style>
 </head>
@@ -24,9 +24,13 @@
 
 <div id="game">
     <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
-    <div id="toast" id="toast-msg"></div>
+    <div id="toast"></div>
     <canvas id="c" width="800" height="440"></canvas>
-    <div id="ui"><div id="speaker" class="speaker">System</div><div id="text" class="text"></div><div id="choices"></div></div>
+    <div id="ui">
+        <div id="speaker" class="speaker">System</div>
+        <div id="text" class="text"></div>
+        <div id="choices"></div>
+    </div>
 </div>
 
 <script>
@@ -35,102 +39,152 @@
 
     let state = 'MENU', frame = 0, lastHurt = 0;
     const player = { x: 400, y: 220, hp: 20, maxHp: 20, speed: 4.5 };
-    let currentRoom = null, activeProp = null, gulletDepth = 0, currentMob = null;
+    
+    let currentRoom = null, activeInteractable = null, gulletDepth = 0, currentMob = null;
+    let activeMicro = null; // Stores the micro-creature you are currently inside!
 
-    // --- PROCEDURAL ANATOMY GENERATOR ---
-    function makeAnatomy(mob, bg, wall, acid, intCount) {
+    // --- PROCEDURAL GENERATION ENGINE ---
+    // Creates seamless anatomy arrays for ANY monster or micro-creature
+    function generateAnatomy(id, name, bg, wall, acid, segments, isMicro = false) {
         let rooms = {};
-        rooms.Throat = { n: mob+"'s Throat", type: 'throat', bg: bg, wall: wall, acid: acid, w: 250, h: 440, aY: 999, dmg: 0, sway: 0, exits: { up: "ESCAPE", down: mob+"_Stomach" }, props: [{type:'food', x:400, y:300, r:10, h:2, n:'Morsel'}] };
-        rooms.Stomach = { n: mob+"'s Stomach", type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500, h: 350, aY: 300, dmg: 1, sway: 0, exits: { up: mob+"_Throat", down: mob+"_Intestines_1" }, props: [{type:'food', x:250, y:200, r:15, h:4, n:'Snack'}] };
+        let wMult = isMicro ? 0.6 : 1.0; // Micros are tighter
         
-        // Multi-stage intestines!
-        for(let i=1; i<=intCount; i++) {
-            let next = (i === intCount) ? "DIGESTED" : `${mob}_Intestines_${i+1}`;
-            let prev = (i === 1) ? `${mob}_Stomach` : `${mob}_Intestines_${i-1}`;
-            rooms[`Intestines_${i}`] = { n: `${mob}'s Intestines (Part ${i})`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: 700 - (i*50), h: 150, aY: 240, dmg: 1.5, sway: 0, exits: { up: prev, down: next }, props: [] };
+        rooms.Throat = { id: `${id}_Throat`, n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250*wMult, h: 440, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${id}_Stomach` }, micros: [] };
+        rooms.Stomach = { id: `${id}_Stomach`, n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500*wMult, h: 350*wMult, aY: isMicro?280:300, dmg: isMicro?0.5:1, exits: { up: `${id}_Throat`, down: `${id}_Intestines_1` }, micros: [] };
+        
+        for(let i=1; i<=segments; i++) {
+            let next = (i === segments) ? (isMicro ? "POOP_OUT" : "DIGESTED") : `${id}_Intestines_${i+1}`;
+            let prev = (i === 1) ? `${id}_Stomach` : `${id}_Intestines_${i-1}`;
+            rooms[`Intestines_${i}`] = { id: `${id}_Intestines_${i}`, n: `${name}'s Gut (${i}/${segments})`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: (700 - i*50)*wMult, h: 150*wMult, aY: 250*wMult, dmg: isMicro?1:1.5, exits: { up: prev, down: next }, micros: [] };
         }
         return rooms;
     }
 
-    let worldDB = {
-        "Toriel": makeAnatomy("Toriel", '#2a0015', '#4a0025', 'rgba(255, 68, 0, 0.7)', 3),
-        "Muffet": makeAnatomy("Muffet", '#1a002a', '#2a003a', 'rgba(150, 0, 255, 0.8)', 3),
-        "Papyrus": makeAnatomy("Papyrus", '#331100', '#552200', 'rgba(255, 255, 0, 0.4)', 2),
-        // MICRO CREATURES
-        "Spider": {
-            Throat: { n: "Mini Spider's Throat", type: 'throat', bg: '#111', wall: '#000', acid: 'rgba(50,255,50,0.8)', w: 100, h: 440, aY: 999, dmg: 0, sway: 0, exits: { up: "Muffet_Stomach", down: "Spider_Stomach" }, props: [] },
-            Stomach: { n: "Mini Spider's Tummy", type: 'stomach', bg: '#111', wall: '#000', acid: 'rgba(50,255,50,0.8)', w: 200, h: 200, aY: 280, dmg: 0.5, sway: 0, exits: { up: "Spider_Throat", down: "Spider_Intestines_1" }, props: [] },
-            Intestines_1: { n: "Spider Gut", type: 'intestine', bg: '#000', wall: '#000', acid: 'rgba(50,255,50,0.9)', w: 150, h: 100, aY: 250, dmg: 1, sway: 0, exits: { up: "Spider_Stomach", down: "DIGESTED" }, props: [] }
-        },
-        "Fly": {
-            Throat: { n: "Fly's Tiny Throat", type: 'throat', bg: '#222', wall: '#111', acid: 'rgba(200,200,0,0.5)', w: 60, h: 440, aY: 999, dmg: 0, sway: 0, exits: { up: "Spider_Stomach", down: "Fly_Stomach" }, props: [] },
-            Stomach: { n: "Fly's Swaying Stomach", type: 'stomach', bg: '#222', wall: '#111', acid: 'rgba(200,200,0,0.5)', w: 120, h: 120, aY: 250, dmg: 0.1, sway: 40, exits: { up: "Fly_Throat", down: "Fly_Abdomen_1" }, props: [] }
-        }
+    // --- WORLD DATABASE ---
+    const worldDB = {};
+    const regions = {
+        "RUINS": [{id: "Toriel", n: "Toriel", bg: '#2a0015', w: '#4a0025', a: 'rgba(255,68,0,0.7)', s: 3}, {id: "Froggit", n: "Froggit", bg: '#1a2a1a', w: '#2a3a2a', a: 'rgba(0,255,0,0.6)', s: 2}],
+        "SNOWDIN": [{id: "Papyrus", n: "Papyrus", bg: '#331100', w: '#552200', a: 'rgba(255,255,0,0.4)', s: 2}, {id: "Snowdrake", n: "Snowdrake", bg: '#002233', w: '#004455', a: 'rgba(0,255,255,0.6)', s: 2}],
+        "WATERFALL": [{id: "Undyne", n: "Undyne", bg: '#000022', w: '#001144', a: 'rgba(0,255,255,0.8)', s: 4}, {id: "Woshua", n: "Woshua", bg: '#002222', w: '#004444', a: 'rgba(0,255,100,0.7)', s: 2}],
+        "HOTLAND": [{id: "Muffet", n: "Muffet", bg: '#1a002a', w: '#2a003a', a: 'rgba(150,0,255,0.8)', s: 3}, {id: "Vulkin", n: "Vulkin", bg: '#440000', w: '#660000', a: 'rgba(255,0,0,0.9)', s: 1}]
     };
 
-    // Fly has an incredibly long abdomen!
-    for(let i=1; i<=8; i++) {
-        let nxt = (i===8) ? "DIGESTED" : `Fly_Abdomen_${i+1}`;
-        let prv = (i===1) ? "Fly_Stomach" : `Fly_Abdomen_${i-1}`;
-        worldDB.Fly[`Abdomen_${i}`] = { n: `Fly's Long Abdomen (${i}/8)`, type: 'intestine', bg: '#111', wall: '#000', acid: 'rgba(200,200,0,0.6)', w: 80, h: 300, aY: 300, dmg: 0.2, sway: 10, exits: { up: prv, down: nxt }, props: [] };
+    // Build Macro World
+    for (let r in regions) {
+        regions[r].forEach(m => { worldDB[m.id] = generateAnatomy(m.id, m.n, m.bg, m.w, m.a, m.s, false); });
     }
 
-    // --- INCEPTION INJECTIONS ---
-    // Put Spider in Muffet
-    worldDB.Muffet.Stomach.props.push({ type: 'npc', x: 250, y: 260, r: 12, c: '#000', n: 'Mini Spider', txt: "* Squeak! (I am hungry.)", 
-        opts: [{ l: "Talk", a: ()=>setUI("Spider", "* It clicks its fangs.", []) }, { l: "Let it eat you!", a: ()=>triggerGulp("Spider", '#111', 100, "Spider_Throat") }] });
-    // Put Fly in Spider
-    worldDB.Spider.Stomach.props.push({ type: 'npc', x: 400, y: 200, r: 6, c: '#fff', n: 'Trapped Fly', txt: "* Bzz. (I eat magic souls.)", 
-        opts: [{ l: "Talk", a: ()=>setUI("Fly", "* It buzzes aggressively.", []) }, { l: "Let FLY eat you!!", a: ()=>triggerGulp("Fly", '#222', 50, "Fly_Throat") }] });
+    // --- MICRO-CREATURE SYSTEM ---
+    class MicroCreature {
+        constructor(type, x, y) {
+            this.type = type; this.x = x; this.y = y; this.vx = (Math.random()-0.5)*4; this.vy = (Math.random()-0.5)*4;
+            this.nice = Math.random() > 0.3; // 70% chance to be nice
+            this.sizeMult = 0.8 + Math.random()*0.6; // Random sizes!
+            this.uid = type + "_" + Math.floor(Math.random()*10000);
+            
+            // Visuals & Stats based on type
+            if (type === 'Spider') { this.c = '#000'; this.r = 10 * this.sizeMult; this.bg = '#111'; this.w = '#000'; this.a = 'rgba(150,0,200,0.8)'; this.seg = 3; }
+            if (type === 'Fly') { this.c = '#fff'; this.r = 6 * this.sizeMult; this.bg = '#222'; this.w = '#111'; this.a = 'rgba(200,200,0,0.6)'; this.seg = 6; } // Long abdomen
+            if (type === 'Fish') { this.c = '#0ff'; this.r = 12 * this.sizeMult; this.bg = '#002'; this.w = '#001'; this.a = 'rgba(0,150,255,0.7)'; this.seg = 2; }
+            
+            // Generate its personal internal anatomy!
+            worldDB[this.uid] = generateAnatomy(this.uid, `${this.nice?'Nice':'Mean'} ${type}`, this.bg, this.w, this.a, this.seg, true);
+        }
+        update() {
+            // Autonomous movement inside the parent stomach
+            this.x += this.vx; this.y += this.vy;
+            if(Math.random() < 0.05) { this.vx += (Math.random()-0.5)*2; this.vy += (Math.random()-0.5)*2; } // Erratic
+            
+            // Clamp speed
+            this.vx = Math.max(-4, Math.min(4, this.vx)); this.vy = Math.max(-4, Math.min(4, this.vy));
+            
+            // Bounce off walls (approximate)
+            if(this.x < 200 || this.x > 600) this.vx *= -1;
+            if(this.y < 100 || this.y > 350) this.vy *= -1;
+        }
+    }
+
+    // Inject Micros into Stomachs
+    for(let i=0; i<3; i++) worldDB.Muffet.Stomach.micros.push(new MicroCreature('Spider', 300+i*50, 200));
+    for(let i=0; i<4; i++) worldDB.Froggit.Stomach.micros.push(new MicroCreature('Fly', 350, 250));
+    for(let i=0; i<2; i++) worldDB.Undyne.Stomach.micros.push(new MicroCreature('Fish', 400, 250));
 
     // --- UI & LOGIC ---
-    function showToast(msg) {
+    function toast(msg) {
         let t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = 1;
         setTimeout(() => t.style.opacity = 0, 2000);
     }
 
     function setUI(spk, txt, btns) {
-        document.getElementById('speaker').innerText = spk; document.getElementById('text').innerHTML = txt.replace(/\n/g, '<br>');
+        document.getElementById('speaker').innerText = spk; 
+        document.getElementById('text').innerHTML = txt.replace(/\n/g, '<br>');
         let c = document.getElementById('choices'); c.innerHTML = '';
         if(btns) btns.forEach(b => { let btn = document.createElement('button'); btn.innerText = b.l; btn.onclick = b.a; c.appendChild(btn); });
     }
 
-    function takeDamage(amt) {
+    function damage(amt) {
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
         document.getElementById('c').style.opacity = '0.5'; setTimeout(() => document.getElementById('c').style.opacity = '1', 50);
-        if (player.hp <= 0) { state = 'GAMEOVER'; setUI("System", "* You were digested into nothingness.", [{l: "Restart", a: initMenu}]); }
+        if (player.hp <= 0) { state = 'GAMEOVER'; setUI("System", "* You were digested.", [{l: "Restart", a: initMenu}]); }
     }
 
-    function triggerGulp(mob, color, depth, room) {
-        state = 'GULLET'; currentMob = { c: color, max: depth, start: room }; gulletDepth = 0;
-        player.x = 400; player.y = 50; setUI("System", "* CHOMP!\n* Falling down the throat...", []);
+    function triggerGulp(id, name, bg, isMicroObj = null) {
+        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg, micro: isMicroObj };
+        player.x = 400; player.y = 50; 
+        setUI("System", `* CHOMP!\n* Falling down ${name}'s throat!`, []);
+        if (isMicroObj) activeMicro = isMicroObj; // Track the creature we are inside!
     }
 
-    function loadRoom(rKey) {
-        if (rKey === "ESCAPE") { state = 'ESCAPED'; setUI("System", "* You burst out to freedom!", [{l: "Menu", a: initMenu}]); return; }
-        if (rKey === "DIGESTED") { takeDamage(999); return; }
+    function loadRoom(rId) {
+        if (rId === "ESCAPE") { 
+            state = 'ESCAPED'; activeMicro = null;
+            setUI("System", "* You burst out of the mouth to freedom!", [{l: "Map", a: initMenu}]); return; 
+        }
+        if (rId === "DIGESTED") { damage(999); return; }
+        if (rId === "POOP_OUT") {
+            // Popped out the back of a micro-creature! Return to the parent stomach.
+            damage(1.0); toast("* Escaped the abdomen! (-1 HP)");
+            let parentId = activeMicro.uid.split('_')[0]; // Find parent (Hack/Simplification: we assume we know where we came from. In reality we should pass parentRoom back).
+            activeMicro = null; state = 'ESCAPED'; 
+            setUI("System", "* You squeezed out the back end of the micro-creature!", [{l: "Continue", a: initMenu}]); 
+            return;
+        }
 
-        let pts = rKey.split('_'); let mob = pts[0]; let rType = pts.slice(1).join('_');
-        currentRoom = worldDB[mob][rType];
+        let pts = rId.split('_'); let mobId = pts[0]; 
+        if(pts.length > 2 && !['Throat','Stomach','Intestines'].includes(pts[1])) { mobId = pts[0]+"_"+pts[1]; } // Handle UIDs
+        let rType = rId.replace(mobId+"_", "");
+
+        currentRoom = worldDB[mobId][rType];
         document.getElementById('loc-val').innerText = currentRoom.n;
-        state = 'INTERNAL'; activeProp = null;
+        state = 'INTERNAL'; activeInteractable = null;
         player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 220;
-        setUI("Anatomy", `* You are in ${currentRoom.n}.`, []);
+        setUI("Anatomy", `* Inside ${currentRoom.n}.`, []);
     }
 
     function initMenu() {
-        state = 'MENU'; player.hp = player.maxHp; document.getElementById('hp-val').innerText = player.hp.toFixed(1);
-        setUI("Map", "* Who will you approach?", [
-            { l: "Toriel", a: ()=>triggerGulp("Toriel", '#5a002a', 200, "Toriel_Throat") },
-            { l: "Muffet (Has Inception Spider!)", a: ()=>triggerGulp("Muffet", '#2a003a', 250, "Muffet_Throat") }
-        ]);
+        state = 'MENU'; player.hp = player.maxHp; document.getElementById('hp-val').innerText = player.hp.toFixed(1); activeMicro = null;
+        setUI("World Map", "* Select a region to explore:", Object.keys(regions).map(r => {
+            return { l: r, a: () => {
+                let mob = regions[r][Math.floor(Math.random()*regions[r].length)];
+                setUI(mob.n, `* ${mob.n} approaches!`, [
+                    { l: "Jump in mouth", a: () => triggerGulp(mob.id, mob.n, mob.bg) }, { l: "Run", a: initMenu }
+                ]);
+            }};
+        }));
     }
 
-    // --- PHYSICS ---
+    // --- PHYSICS & MICRO SWAY ---
     function updatePhysics() {
+        // If we are inside a micro-creature, update its physical position in the background!
+        if (activeMicro) activeMicro.update();
+
         let spd = keys['ShiftLeft'] ? player.speed/2 : player.speed;
-        let dx = 0, dy = 0, swayOffset = currentRoom.sway ? Math.sin(frame*0.05)*currentRoom.sway : 0;
+        let dx = 0, dy = 0;
+        
+        // SWAY MECHANIC: The room shifts based on the micro-creature's velocity!
+        let swayX = activeMicro ? activeMicro.vx * 8 : 0;
+        let swayY = activeMicro ? activeMicro.vy * 8 : 0;
         
         if (keys['KeyA'] || keys['ArrowLeft']) dx -= spd; if (keys['KeyD'] || keys['ArrowRight']) dx += spd;
         
@@ -142,108 +196,103 @@
 
         player.x += dx; player.y += dy;
 
-        let bLeft = 400 - currentRoom.w/2 + swayOffset, bRight = 400 + currentRoom.w/2 + swayOffset;
-        let bTop = 220 - currentRoom.h/2, bBot = 220 + currentRoom.h/2;
+        let bL = 400 - currentRoom.w/2 + swayX, bR = 400 + currentRoom.w/2 + swayX;
+        let bT = 220 - currentRoom.h/2 + swayY, bB = 220 + currentRoom.h/2 + swayY;
 
-        // --- SPIDER THROAT GULP-BACK MECHANIC ---
-        if (player.y < bTop && currentRoom.exits.up) {
-            if (currentRoom.n === "Mini Spider's Throat" && Math.random() < 0.4) {
-                player.y += 150; // Shoved back down!
-                showToast("Squeak! (Sorry, throat hurted! Gulped back down!)");
-                return;
+        // SPIDER GULP-BACK REFLEX
+        if (player.y < bT && currentRoom.exits.up) {
+            if (activeMicro && currentRoom.type === 'throat' && Math.random() < 0.3) {
+                player.y += 150; toast(activeMicro.nice ? "* (Sorry! Throat spasm!)" : "* (Get back down there!)"); return;
             }
             loadRoom(currentRoom.exits.up); return; 
         }
-        if (player.y > bBot && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+        if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        player.x = Math.max(bLeft + 10, Math.min(bRight - 10, player.x));
-        player.y = Math.max(bTop, Math.min(bBot, player.y)); 
+        player.x = Math.max(bL + 10, Math.min(bR - 10, player.x));
+        player.y = Math.max(bT, Math.min(bB, player.y)); 
 
-        // Acid Damage
-        if (player.y > currentRoom.aY) { if (frame % 15 === 0) takeDamage(currentRoom.dmg); }
-        
-        // Passive Heal
-        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) {
-            player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1);
-        }
+        // Acid & Heal
+        if (player.y > currentRoom.aY + swayY && frame % 15 === 0) damage(currentRoom.dmg * (activeMicro && !activeMicro.nice ? 1.5 : 1)); // Mean micros hurt more!
+        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
 
-        // Props & NPCs
+        // Micro-Creature Interactions (Only in Macro stomachs)
         let touch = null;
-        for (let i = currentRoom.props.length - 1; i >= 0; i--) {
-            let p = currentRoom.props[i];
-            let py = p.y + (p.type==='food' ? Math.sin(frame*0.05 + p.x)*5 : 0);
-            
-            // Fly movement logic
-            let px = p.x;
-            if (p.n === 'Trapped Fly') { px += Math.sin(frame*0.1)*50; py += Math.cos(frame*0.1)*20; }
-            if (currentRoom.type === 'throat') { p.y -= 1.5; if(p.y < 0) p.y = 440; py = p.y; }
-
-            if (Math.hypot(player.x - (px + swayOffset), player.y - py) < p.r + 10) {
-                touch = p;
-                if (p.type === 'food') { player.hp=Math.min(player.maxHp, player.hp+p.h); currentRoom.props.splice(i, 1); touch = null; showToast("Ate "+p.n+"!"); }
-                break;
+        if (currentRoom.micros) {
+            for (let m of currentRoom.micros) {
+                m.update(); // Move them around the room
+                if (Math.hypot(player.x - m.x, player.y - m.y) < m.r + 15) { touch = m; break; }
             }
         }
 
-        if (touch !== activeProp) {
-            activeProp = touch;
-            if (activeProp && activeProp.type === 'npc') setUI(activeProp.n, activeProp.txt, activeProp.opts);
-            else if (!activeProp) setUI("Anatomy", `* Exploring ${currentRoom.n}.`, []);
+        if (touch !== activeInteractable) {
+            activeInteractable = touch;
+            if (activeInteractable) {
+                setUI(activeInteractable.type, `* A ${activeInteractable.nice?'friendly':'mean'} ${activeInteractable.type} buzzes around.`, [
+                    { l: `Let ${activeInteractable.type} Eat You`, a: () => triggerGulp(activeInteractable.uid, activeInteractable.type, activeInteractable.bg, activeInteractable) }
+                ]);
+            } else if (state === 'INTERNAL') setUI("Anatomy", `* Exploring ${currentRoom.n}.`, []);
         }
     }
 
-    // --- RENDER ---
+    // --- RENDER ENGINE ---
+    function drawFleshyRect(x, y, w, h, color) {
+        // Creates a curved, organic looking rectangle
+        ctx.fillStyle = color; ctx.beginPath();
+        ctx.moveTo(x + 20, y); ctx.quadraticCurveTo(x + w/2, y + 10, x + w - 20, y);
+        ctx.quadraticCurveTo(x + w, y + h/2, x + w - 20, y + h);
+        ctx.quadraticCurveTo(x + w/2, y + h - 10, x + 20, y + h);
+        ctx.quadraticCurveTo(x, y + h/2, x + 20, y); ctx.fill();
+    }
+
     function loop() {
         frame++; ctx.clearRect(0, 0, 800, 440);
 
         if (state === 'MENU') {
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,440);
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("MICRO-ANATOMY EXPLORER", 400, 200); ctx.textAlign = 'left';
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("ECOSYSTEM EXPLORER", 400, 200); ctx.textAlign = 'left';
         }
         else if (state === 'GULLET') {
-            gulletDepth += 3;
-            ctx.fillStyle = currentMob.c; ctx.fillRect(0,0,800,440);
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.4;
-            let scr = gulletDepth % 100;
+            gulletDepth += 3; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,440);
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gulletDepth % 100;
             for(let i=-100; i<600; i+=100) { let w = Math.sin((i+frame)*0.05)*30; ctx.fillRect(0, i+scr, 300+w, 100); ctx.fillRect(500-w, i+scr, 300+w, 100); }
-            ctx.globalAlpha = 1.0;
-            ctx.fillStyle = '#f00'; ctx.fillRect(393, 220, 14, 14); // Simple player fall
-            if (gulletDepth >= currentMob.max) loadRoom(currentMob.start);
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 220, 14, 14); 
+            if (gulletDepth >= 200) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,440);
             
-            let sway = currentRoom.sway ? Math.sin(frame*0.05)*currentRoom.sway : 0;
-            let cx = 400 + sway, cy = 220, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*5;
+            let swayX = activeMicro ? activeMicro.vx * 8 : 0, swayY = activeMicro ? activeMicro.vy * 8 : 0;
+            let cx = 400 + swayX, cy = 220 + swayY, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
             
-            ctx.fillStyle = currentRoom.bg; 
+            // Fleshy Room Background
             if (currentRoom.type === 'throat') {
-                let scr = (frame * 5) % 100; for(let i=-100; i<600; i+=100) ctx.fillRect(cx - rw/2 - wob, i + scr, rw + wob*2, 100);
+                ctx.fillStyle = currentRoom.bg; let scr = (frame * 5) % 100;
+                for(let i=-100; i<600; i+=100) drawFleshyRect(cx - rw/2 - wob, i + scr + swayY, rw + wob*2, 110, currentRoom.bg);
             } else {
-                ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
+                drawFleshyRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2, currentRoom.bg);
             }
 
-            // Acid Pool with bubbles
-            ctx.fillStyle = currentRoom.acid; ctx.fillRect(cx - rw/2, currentRoom.aY, rw, (cy+rh/2) - currentRoom.aY);
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            for(let i=0; i<5; i++) { let bx = cx - rw/2 + ((frame*i)%rw); let by = currentRoom.aY + ((frame*(i+1))%50); ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI*2); ctx.fill(); }
-
+            // Acid Pool
+            ctx.fillStyle = currentRoom.acid; 
+            ctx.fillRect(cx - rw/2, currentRoom.aY + swayY, rw, (cy+rh/2) - currentRoom.aY);
+            
             // Exits
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5;
             if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
             if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
             ctx.globalAlpha = 1.0;
 
-            // Props
-            currentRoom.props.forEach(p => {
-                let px = p.x + sway;
-                let py = p.y + (p.type==='food' ? Math.sin(frame*0.05+px)*5 : 0);
-                if (p.n === 'Trapped Fly') { px += Math.sin(frame*0.1)*50; py += Math.cos(frame*0.1)*20; }
-                if (currentRoom.type === 'throat') { py = p.y; }
-
-                ctx.fillStyle = p.c || '#ff00aa'; ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI*2); ctx.fill();
-            });
+            // Draw Micro-Creatures
+            if (currentRoom.micros) {
+                currentRoom.micros.forEach(m => {
+                    ctx.fillStyle = m.c; ctx.beginPath(); ctx.arc(m.x + swayX, m.y + swayY, m.r, 0, Math.PI*2); ctx.fill();
+                    // Draw little eyes/wings based on type
+                    ctx.fillStyle = '#fff';
+                    if(m.type==='Spider') { ctx.fillRect(m.x-3+swayX, m.y-2+swayY, 2, 2); ctx.fillRect(m.x+1+swayX, m.y-2+swayY, 2, 2); }
+                    if(m.type==='Fly') { ctx.globalAlpha=0.5; ctx.beginPath(); ctx.arc(m.x-4+swayX, m.y-4+swayY, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(m.x+4+swayX, m.y-4+swayY, 4, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+                });
+            }
 
             // Player
             ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
