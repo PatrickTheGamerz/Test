@@ -11,9 +11,10 @@
         /* Screens */
         #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
         .title-text { font-size: 40px; color: #ffea00; text-shadow: 3px 3px 0 #f00; margin-bottom: 20px; }
-        input[type="text"] { width: 400px; padding: 10px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #fff; outline: none; }
+        input[type="text"] { width: 450px; padding: 10px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #fff; outline: none; text-align: center; }
         button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 10px 20px; cursor: pointer; transition: 0.2s; }
         button:hover { background: #fff; color: #000; padding-left: 25px; box-shadow: 0 0 10px #fff; }
+        #api-error { color: #ff4444; font-size: 20px; margin-top: 10px; }
         
         /* Canvas & Rendering */
         #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; }
@@ -25,9 +26,10 @@
         #chat-log { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 24px; line-height: 1.2; }
         .msg-player { color: #00ffff; align-self: flex-end; text-align: right; }
         .msg-monster { color: #ffea00; align-self: flex-start; }
-        .msg-sys { color: #888; align-self: center; font-style: italic; }
+        .msg-sys { color: #ff4444; align-self: center; font-style: italic; }
+        .msg-info { color: #888; align-self: center; font-style: italic; }
         #chat-input-area { display: flex; border-top: 2px solid #333; }
-        #chat-input { flex-grow: 1; border: none; border-right: 2px solid #333; padding: 10px; font-family: 'VT323', monospace; font-size: 24px; background: #111; color: #fff; outline: none; }
+        #chat-input { flex-grow: 1; border: none; border-right: 2px solid #333; padding: 10px; font-family: 'VT323', monospace; font-size: 24px; background: #111; color: #fff; outline: none; text-align: left;}
         #chat-send { border: none; width: 100px; padding: 0; text-align: center; }
         .hidden { display: none !important; }
     </style>
@@ -38,11 +40,12 @@
     <div id="api-screen">
         <div class="title-text">AI KARMA ENGINE</div>
         <div style="font-size: 24px; text-align: center; max-width: 600px;">
-            Enter a valid Google Gemini API Key to enable live chatting.<br>
-            The monster's AI will decide if it wants to eat you based on what you say!
+            Paste your Google Gemini API Key below.<br>
+            (It should start with "AIza...")
         </div>
         <input type="text" id="api-key-input" placeholder="AIzaSy...">
-        <button onclick="saveApiKey()">START GAME</button>
+        <button onclick="saveApiKey()">CONNECT API</button>
+        <div id="api-error"></div>
     </div>
 
     <div id="map-menu" class="hidden">
@@ -60,7 +63,7 @@
     
     <div id="chat-ui">
         <div id="chat-log">
-            <div class="msg-sys">* Awaiting connection...</div>
+            <div class="msg-info">* Awaiting connection...</div>
         </div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
@@ -73,7 +76,6 @@
     // --- LERP PHYSICS & ENGINE SETUP ---
     const ctx = document.getElementById('c').getContext('2d');
     const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
-    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
 
     let apiKey = "";
     let state = 'MENU', frame = 0, lastHurt = 0;
@@ -104,10 +106,15 @@
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
 
-    // --- AI CHAT INTEGRATION ---
+    // --- BULLETPROOF AI CHAT INTEGRATION ---
     function saveApiKey() {
-        apiKey = document.getElementById('api-key-input').value.trim();
-        if(!apiKey) { alert("Please enter an API Key!"); return; }
+        const inputKey = document.getElementById('api-key-input').value.trim();
+        const errBox = document.getElementById('api-error');
+        
+        if(!inputKey) { errBox.innerText = "Please enter a key!"; return; }
+        if(!inputKey.startsWith("AIza")) { errBox.innerText = "Invalid key! Google API keys must start with 'AIza'."; return; }
+        
+        apiKey = inputKey;
         document.getElementById('api-screen').classList.add('hidden');
         document.getElementById('map-menu').classList.remove('hidden');
     }
@@ -121,7 +128,6 @@
         log.scrollTop = log.scrollHeight;
     }
 
-    // Handle Enter Key
     document.getElementById('chat-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') sendChat();
     });
@@ -138,11 +144,11 @@
         
         let locString = state === 'ENCOUNTER' ? 'standing outside you' : `inside your ${currentRoom.n}`;
 
-        // Prompt heavily reinforced for JSON output
+        // Robust prompt that uses a strict template for the regex parser to easily find.
         const prompt = `You are ${currentMob.n} from Undertale. The player is ${locString}. The player says: "${text}". 
-Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
-Format: {"reply": "your dialogue", "action": "none"}
-If the player is outside and you decide to eat them based on what they said, set action to "gulp". 
+Respond in character. You MUST include a JSON object anywhere in your response formatted EXACTLY like this:
+{"reply": "your dialogue here", "action": "none"}
+If the player is outside and you decide to eat them, set action to "gulp". 
 If they are inside your stomach and you decide to throw them up, set action to "spit".`;
 
         try {
@@ -150,24 +156,23 @@ If they are inside your stomach and you decide to throw them up, set action to "
                 method: "POST", 
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: prompt }] }],
-                    // This configuration explicitly tells Gemini to format the response as JSON
-                    generationConfig: { responseMimeType: "application/json" } 
+                    contents: [{ parts: [{ text: prompt }] }] 
                 })
             });
 
             if (!response.ok) {
                 const errText = await response.text();
-                throw new Error(`API Error ${response.status}: ${errText}`);
+                throw new Error(`${response.status} - ${errText}`);
             }
 
             const data = await response.json();
             let aiText = data.candidates[0].content.parts[0].text;
             
-            // Failsafe cleanup just in case
-            aiText = aiText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const result = JSON.parse(aiText);
-
+            // REGEX EXTRACTOR: Safely grabs the JSON block even if the AI wraps it in markdown!
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error("AI did not return a valid command object.");
+            
+            const result = JSON.parse(jsonMatch[0]);
             logMsg(currentMob.n, result.reply, "msg-monster");
 
             // Execute AI Game State Actions!
@@ -178,10 +183,18 @@ If they are inside your stomach and you decide to throw them up, set action to "
             }
 
         } catch (e) {
-            console.error("AI Error:", e);
-            logMsg("System", "* The AI connection failed. Check your browser console (F12) for details.", "msg-sys");
+            console.error("AI API Error:", e);
+            
+            // Diagnostic Error Messages sent straight to the chat UI
+            if (e.message.includes("400")) {
+                logMsg("System", "* API Error 400: Your API key might be invalid or the prompt failed.", "msg-sys");
+            } else if (e.message.includes("Failed to fetch")) {
+                logMsg("System", "* Network Error: Your browser is blocking the API request (CORS issue).", "msg-sys");
+            } else {
+                logMsg("System", `* Error: ${e.message}`, "msg-sys");
+            }
         } finally {
-            isAiTyping = false; // Always re-enable chat!
+            isAiTyping = false;
         }
     }
 
@@ -192,7 +205,8 @@ If they are inside your stomach and you decide to throw them up, set action to "
         document.getElementById('chat-send').disabled = false;
         state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg };
         document.getElementById('loc-val').innerText = id + " Encounter";
-        logMsg("System", `* ${id} approaches. Type to talk to them!`, "msg-sys");
+        document.getElementById('chat-log').innerHTML = ''; // Clear chat
+        logMsg("System", `* ${id} approaches. Type below to talk to them!`, "msg-info");
     }
 
     function damage(amt) {
@@ -204,13 +218,13 @@ If they are inside your stomach and you decide to throw them up, set action to "
     function triggerGulp(id, name, bg) {
         state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg };
         player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        logMsg("System", `* CHOMP! ${name} decided to swallow you!`, "msg-sys");
+        logMsg("System", `* CHOMP! ${name} decided to swallow you!`, "msg-info");
     }
 
     function loadRoom(rId) {
         if (rId === "ESCAPE") { 
             state = 'ESCAPED'; 
-            logMsg("System", "* You were spat out to freedom!", "msg-sys"); 
+            logMsg("System", "* You were spat out to freedom!", "msg-info"); 
             setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
             return; 
         }
@@ -222,24 +236,22 @@ If they are inside your stomach and you decide to throw them up, set action to "
         state = 'INTERNAL'; 
         player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
         player.vx = 0; player.vy = 0;
-        logMsg("System", `* You fell into ${currentRoom.n}. You can still talk from inside!`, "msg-sys");
+        logMsg("System", `* You fell into ${currentRoom.n}. You can still talk from inside!`, "msg-info");
     }
 
     // --- REALISTIC GRAVITY PHYSICS ---
     function updatePhysics() {
         let spd = keys['ShiftLeft'] ? player.speed*0.5 : player.speed;
         
-        // Left/Right momentum
         if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
         if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
-        // True Gravity implementation
         if (currentRoom.type === 'throat') { 
-            player.vy += player.gravity * 2; // Fast fall
+            player.vy += player.gravity * 2; 
             if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
         } else {
-            player.vy += player.gravity; // Normal gravity pulling to stomach floor
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim upward
+            player.vy += player.gravity; 
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; 
         }
 
         player.vx *= player.friction; 
@@ -247,22 +259,16 @@ If they are inside your stomach and you decide to throw them up, set action to "
         player.x += player.vx; 
         player.y += player.vy;
 
-        // Bounding Box
         let bL = 400 - currentRoom.w/2, bR = 400 + currentRoom.w/2;
         let bT = 200 - currentRoom.h/2, bB = 200 + currentRoom.h/2;
 
-        // Fleshy Exits
         if (player.y < bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
         if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        // Wall collisions
         player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); 
-        
-        // Floor/Ceiling collisions (Fixes falling through the stomach floor!)
         if (player.y > bB) { player.y = bB; player.vy = 0; }
         if (player.y < bT) { player.y = bT; player.vy = 0; }
 
-        // Acid Damage
         if (player.y > currentRoom.aY && frame % 15 === 0) damage(currentRoom.dmg);
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
     }
@@ -291,23 +297,19 @@ If they are inside your stomach and you decide to throw them up, set action to "
             
             let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
             
-            // Fleshy Organ Render
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3; ctx.fillRect(cx - rw/2 - wob - 10, cy - rh/2 + wob - 10, rw + wob*2 + 20, rh - wob*2 + 20); ctx.globalAlpha = 1.0;
             ctx.fillStyle = currentRoom.bg; ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
 
-            // Splashing Acid
             ctx.fillStyle = currentRoom.acid; 
             ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
             for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
             
-            // Doors
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6;
             if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
             if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
             ctx.globalAlpha = 1.0;
 
-            // Player Render
             ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
         }
         else if (state === 'GAMEOVER') {
