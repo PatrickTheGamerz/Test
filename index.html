@@ -3,153 +3,861 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale: The Belly Escape Engine</title>
+    <title>Undertale: The Belly Escape (Ultimate Engine)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'VT323', monospace; user-select: none; }
-        canvas { display: block; background: #000; border: 2px solid #444; }
+        
+        /* Reset and Base Styles */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Game Container */
+        #game-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Canvas Setup */
+        canvas {
+            display: block;
+            background-color: #000;
+            border: 2px solid #333;
+            image-rendering: pixelated;
+        }
+
+        /* Retro CRT Scanline Overlay */
+        #scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="640" height="480"></canvas>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <div id="scanlines"></div>
+</div>
+
 <script>
-    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    /**
+     * UNDERTALE: BELLY ESCAPE ENGINE
+     * A massive, single-file HTML5 framework.
+     */
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ==========================================
+    // INPUT HANDLING
+    // ==========================================
     const keys = {};
-    window.addEventListener('keydown', e => { keys[e.code] = true; if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","ShiftLeft"].includes(e.code)) e.preventDefault(); });
-    window.addEventListener('keyup', e => keys[e.code] = false);
+    let keyJustPressed = {};
 
-    let frame = 0, state = 'TITLE', timer = 0, current = 0;
-    const player = { x: 320, y: 320, vx: 0, vy: 0, speed: 4, hp: 20, maxHp: 20, iFrames: 0, isBlue: false };
-    let box = { x: 170, y: 220, w: 300, h: 150 }, bullets = [], hazards = [], exitValve = { x: 320, y: 80, r: 25 };
+    window.addEventListener('keydown', (e) => {
+        if (!keys[e.code]) keyJustPressed[e.code] = true;
+        keys[e.code] = true;
+        // Prevent scrolling
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "ShiftLeft"].includes(e.code)) {
+            e.preventDefault();
+        }
+    });
 
-    // --- ENEMY DATABASE (Ruins, Snowdin, Waterfall) ---
-    const enemies = [
-        { name: "Froggit", reg: "RUINS", txt: "* Froggit hops towards you.", t: 400, g: '#2a1a2a', bg: '#1a0a1a', w: '#3a1a3a', h: '#00ff00', 
-          atk: () => { if(frame%40===0) bullets.push({x: box.x+box.w*(Math.random()>0.5?1:0), y: box.y+box.h-10, vx: (Math.random()>0.5?3:-3), vy: -5, w:10, h:10, c:'#fff'}); } },
-        { name: "Vegetoid", reg: "RUINS", txt: "* Vegetoid came out of the earth.", t: 400, g: '#332200', bg: '#221100', w: '#553300', h: '#ff8800', 
-          atk: () => { if(frame%30===0) bullets.push({x: box.x+20+Math.random()*(box.w-40), y: box.y, vx: 0, vy: 3, w:8, h:15, c:'#ff8800'}); } },
-        { name: "Loox", reg: "RUINS", txt: "* Don't pick on Loox.", t: 400, g: '#440000', bg: '#220000', w: '#660000', h: '#ff0000', 
-          atk: () => { if(frame%45===0) bullets.push({x: box.x+box.w/2, y: box.y+10, vx: (Math.random()-0.5)*5, vy: 2, w:12, h:12, c:'#fff'}); } },
-        { name: "Toriel", reg: "RUINS BOSS", txt: "* Toriel blocks the way.", t: 600, g: '#5a002a', bg: '#2a0015', w: '#7a003a', h: '#ffaa00', 
-          atk: () => { if(frame%15===0) { let a = Math.sin(frame*.05)*1.5 + Math.PI/2; bullets.push({x:320, y:130, vx:Math.cos(a)*4, vy:Math.sin(a)*4, w:12, h:12, c:'#ffaa00'}); } } },
-        { name: "Snowdrake", reg: "SNOWDIN", txt: "* Snowdrake makes a bad pun.", t: 500, g: '#003344', bg: '#001122', w: '#005566', h: '#00ffff', 
-          atk: () => { if(frame%25===0) bullets.push({x: box.x+Math.random()*box.w, y: box.y, vx: (Math.random()-0.5)*2, vy: 3, w:6, h:15, c:'#00ffff'}); } },
-        { name: "Lesser Dog", reg: "SNOWDIN", txt: "* Lesser Dog pants excitedly.", t: 500, g: '#554444', bg: '#221111', w: '#775555', h: '#aaaaaa', 
-          atk: () => { if(frame%35===0) bullets.push({x: box.x+box.w, y: box.y+box.h-20, vx: -4, vy: 0, w:30, h:10, c:'#fff'}); } },
-        { name: "Papyrus", reg: "SNOWDIN BOSS", txt: "* NYEH HEH HEH!", t: 700, g: '#aa4400', bg: '#331100', w: '#cc5500', h: '#ffffaa', 
-          atk: () => { player.isBlue=true; if(frame%35===0) { let bh=20+Math.random()*60; bullets.push({x: box.x+box.w, y: box.y+box.h-bh, vx: -4, vy: 0, w:15, h:bh, c:'#fff'}); } } },
-        { name: "Aaron", reg: "WATERFALL", txt: "* Aaron flexes in.", t: 500, g: '#002200', bg: '#001100', w: '#004400', h: '#dddddd', 
-          atk: () => { player.isBlue=false; if(frame%20===0) bullets.push({x: box.x+box.w*(Math.random()>0.5?1:0), y: box.y+Math.random()*box.h, vx: (Math.random()>0.5?4:-4), vy: -2, w:10, h:10, c:'#fff'}); } },
-        { name: "Undyne", reg: "WATERFALL BOSS", txt: "* The wind is howling.", t: 800, g: '#001144', bg: '#000022', w: '#002266', h: '#00ffff', 
-          atk: () => { if(frame%20===0) { let s=Math.floor(Math.random()*4), bx,by,bvx,bvy; 
-          if(s===0){bx=box.x+Math.random()*box.w;by=box.y;bvx=0;bvy=5;} else if(s===1){bx=box.x+Math.random()*box.w;by=box.y+box.h;bvx=0;bvy=-5;}
-          else if(s===2){bx=box.x;by=box.y+Math.random()*box.h;bvx=5;bvy=0;} else {bx=box.x+box.w;by=box.y+Math.random()*box.h;bvx=-5;bvy=0;}
-          bullets.push({x:bx, y:by, vx:bvx, vy:bvy, w:(bvx===0?5:25), h:(bvy===0?5:25), c:'#00ffff'}); } } }
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        keyJustPressed[e.code] = false;
+    });
+
+    function isJustPressed(code) {
+        if (keyJustPressed[code]) {
+            keyJustPressed[code] = false;
+            return true;
+        }
+        return false;
+    }
+
+    // ==========================================
+    // GAME STATE & GLOBAL VARIABLES
+    // ==========================================
+    let frameCount = 0;
+    let gameState = 'TITLE'; // TITLE, DIALOGUE, BATTLE, GULLET, STOMACH, ESCAPED, GAMEOVER, VICTORY
+    let stateTimer = 0;
+    let currentMonsterIndex = 0;
+
+    // Player Object
+    const player = {
+        x: 320, y: 320,
+        vx: 0, vy: 0,
+        speed: 4,
+        hp: 20, maxHp: 20,
+        iFrames: 0,
+        isBlue: false // Gravity toggle
+    };
+
+    // Battle Box Object
+    let box = {
+        x: 170, y: 220,
+        w: 300, h: 150,
+        targetX: 170, targetY: 220,
+        targetW: 300, targetH: 150
+    };
+
+    // Entity Arrays
+    let bullets = [];
+    let hazards = [];
+    let particles = [];
+    
+    // Stomach Exit
+    const exitValve = { x: 320, y: 80, r: 25 };
+
+    // Dialogue System Variables
+    let currentDialogue = [];
+    let dialogueLine = "";
+    let typeIndex = 0;
+
+    // ==========================================
+    // MONSTER DATABASE
+    // Research applied: Lore-accurate text, regions, and custom attack patterns
+    // ==========================================
+    const monsters = [
+        // --- RUINS ---
+        {
+            name: "Froggit", region: "RUINS",
+            dialogue: ["* Froggit hops towards you.", "* Life is difficult for this enemy."],
+            surviveTime: 400,
+            color: '#ffffff', gullet: '#2a1a2a', stomachBg: '#1a0a1a', stomachWall: '#3a1a3a', hazardColor: '#00ff00',
+            attack: function() {
+                if (frameCount % 40 === 0) {
+                    let side = Math.random() > 0.5 ? 1 : -1;
+                    spawnBullet(side === 1 ? box.x + 10 : box.x + box.w - 10, box.y + box.h - 10, side * -2, -5, 10, 10, 'frog', '#fff');
+                }
+            }
+        },
+        {
+            name: "Whimsun", region: "RUINS",
+            dialogue: ["* Whimsun is too sensitive to fight.", "* It is crying."],
+            surviveTime: 300,
+            color: '#ffffff', gullet: '#1a2a3a', stomachBg: '#0a1a2a', stomachWall: '#2a3a4a', hazardColor: '#88ccff',
+            attack: function() {
+                if (frameCount % 30 === 0) {
+                    spawnBullet(box.x + Math.random() * box.w, box.y - 10, 0, 2, 8, 8, 'tear', '#88ccff');
+                }
+            }
+        },
+        {
+            name: "Moldsmal", region: "RUINS",
+            dialogue: ["* Moldsmal waits pensively.", "* Slime sounds."],
+            surviveTime: 400,
+            color: '#ffb3ff', gullet: '#3a003a', stomachBg: '#1a001a', stomachWall: '#4a004a', hazardColor: '#ff00ff',
+            attack: function() {
+                if (frameCount % 25 === 0) {
+                    spawnBullet(box.x + 20 + Math.random()*(box.w-40), box.y, 0, 2.5, 6, 6, 'spore', '#ff00ff');
+                }
+            }
+        },
+        {
+            name: "Loox", region: "RUINS",
+            dialogue: ["* Please don't pick on Loox.", "* It glares at you."],
+            surviveTime: 450,
+            color: '#ff3333', gullet: '#440000', stomachBg: '#220000', stomachWall: '#660000', hazardColor: '#ff0000',
+            attack: function() {
+                if (frameCount % 50 === 0) {
+                    spawnBullet(box.x + box.w/2, box.y + 10, (Math.random()-0.5)*4, 2, 12, 12, 'eye', '#fff');
+                }
+            }
+        },
+        {
+            name: "Vegetoid", region: "RUINS",
+            dialogue: ["* Vegetoid came out of the earth.", "* Eat your greens."],
+            surviveTime: 450,
+            color: '#ffaa00', gullet: '#332200', stomachBg: '#221100', stomachWall: '#553300', hazardColor: '#ff8800',
+            attack: function() {
+                if (frameCount % 25 === 0) {
+                    spawnBullet(box.x + 10 + Math.random()*(box.w-20), box.y - 10, 0, 3, 8, 15, 'carrot', '#ffaa00');
+                }
+            }
+        },
+        {
+            name: "Toriel", region: "RUINS BOSS",
+            dialogue: ["* Toriel blocks the way.", "* Prove to me you are strong enough to survive."],
+            surviveTime: 800,
+            color: '#ffffff', gullet: '#5a002a', stomachBg: '#2a0015', stomachWall: '#7a003a', hazardColor: '#ff4400',
+            attack: function() {
+                if (frameCount % 15 === 0) {
+                    let angle = Math.sin(frameCount * 0.05) * 1.5 + Math.PI/2; 
+                    spawnBullet(320, 130, Math.cos(angle)*4, Math.sin(angle)*4, 12, 12, 'fire', '#ff4400');
+                }
+                if (frameCount % 60 === 0) {
+                    let dx = player.x - 320; let dy = player.y - 130;
+                    let dist = Math.hypot(dx, dy);
+                    spawnBullet(320, 130, (dx/dist)*3, (dy/dist)*3, 16, 16, 'fireball', '#ffaa00');
+                }
+            }
+        },
+
+        // --- SNOWDIN ---
+        {
+            name: "Snowdrake", region: "SNOWDIN",
+            dialogue: ["* Snowdrake makes a bad pun.", "* It's a 'chill' reception."],
+            surviveTime: 500,
+            color: '#00ffff', gullet: '#003344', stomachBg: '#001122', stomachWall: '#005566', hazardColor: '#00ffff',
+            attack: function() {
+                if (frameCount % 20 === 0) {
+                    spawnBullet(box.x + Math.random()*box.w, box.y, (Math.random()-0.5)*2, 3, 6, 15, 'ice', '#00ffff');
+                }
+            }
+        },
+        {
+            name: "Ice Cap", region: "SNOWDIN",
+            dialogue: ["* Ice Cap struts in.", "* It wants you to look at its hat."],
+            surviveTime: 500,
+            color: '#ffffff', gullet: '#112244', stomachBg: '#0a1122', stomachWall: '#224466', hazardColor: '#aaddff',
+            attack: function() {
+                if (frameCount % 30 === 0) {
+                    spawnBullet(box.x + box.w/2, box.y, (Math.random()-0.5)*5, 4, 10, 10, 'icicle', '#aaddff');
+                }
+            }
+        },
+        {
+            name: "Lesser Dog", region: "SNOWDIN",
+            dialogue: ["* Lesser Dog pants excitedly.", "* It wields a sword and shield."],
+            surviveTime: 550,
+            color: '#ffffff', gullet: '#554444', stomachBg: '#221111', stomachWall: '#775555', hazardColor: '#cccccc',
+            attack: function() {
+                if (frameCount % 40 === 0) {
+                    spawnBullet(box.x + box.w, box.y + box.h - 20, -4, 0, 30, 10, 'sword', '#fff');
+                }
+            }
+        },
+        {
+            name: "Doggo", region: "SNOWDIN",
+            dialogue: ["* Doggo blocks the way.", "* He can't see you if you don't move!"],
+            surviveTime: 550,
+            color: '#ffffff', gullet: '#443322', stomachBg: '#221a11', stomachWall: '#664433', hazardColor: '#00aaff',
+            attack: function() {
+                // Blue attack: Don't move!
+                if (frameCount % 50 === 0) {
+                    spawnBullet(box.x, box.y + Math.random() * box.h, 5, 0, 40, 6, 'blue_sword', '#00aaff');
+                }
+            }
+        },
+        {
+            name: "Papyrus", region: "SNOWDIN BOSS",
+            dialogue: ["* NYEH HEH HEH!", "* YOU'RE BLUE NOW! THAT'S MY ATTACK!"],
+            surviveTime: 800,
+            color: '#ffffff', gullet: '#aa4400', stomachBg: '#331100', stomachWall: '#cc5500', hazardColor: '#ffffaa',
+            attack: function() {
+                player.isBlue = true; // Engage Blue Soul Gravity
+                if (frameCount % 35 === 0) {
+                    let h = 20 + Math.random() * 80; // Random bone height
+                    spawnBullet(box.x + box.w, box.y + box.h - h, -4.5, 0, 15, h, 'bone', '#fff');
+                }
+            }
+        },
+
+        // --- WATERFALL ---
+        {
+            name: "Aaron", region: "WATERFALL",
+            dialogue: ["* Aaron flexes in.", "* Muscles are cute. ; )"],
+            surviveTime: 600,
+            color: '#dddddd', gullet: '#002200', stomachBg: '#001100', stomachWall: '#004400', hazardColor: '#ffffff',
+            attack: function() {
+                player.isBlue = false; // Reset to Red Soul
+                if (frameCount % 15 === 0) {
+                    let side = Math.random() > 0.5 ? 1 : -1;
+                    spawnBullet(side === 1 ? box.x : box.x + box.w, box.y + box.h, side * 3, -6, 12, 12, 'flex', '#fff');
+                }
+            }
+        },
+        {
+            name: "Woshua", region: "WATERFALL",
+            dialogue: ["* Woshua shuffles around.", "* Green means clean."],
+            surviveTime: 600,
+            color: '#ffffff', gullet: '#003333', stomachBg: '#001a1a', stomachWall: '#005555', hazardColor: '#00ff00',
+            attack: function() {
+                if (frameCount % 30 === 0) {
+                    // Spiral water drop attack
+                    let angle = frameCount * 0.1;
+                    spawnBullet(box.x + box.w/2, box.y + box.h/2, Math.cos(angle)*3, Math.sin(angle)*3, 8, 8, 'water', '#00aaff');
+                }
+            }
+        },
+        {
+            name: "Undyne", region: "WATERFALL BOSS",
+            dialogue: ["* The wind is howling.", "* You're gonna have to try a little harder than THAT!"],
+            surviveTime: 900,
+            color: '#00aaff', gullet: '#001144', stomachBg: '#000022', stomachWall: '#002266', hazardColor: '#00ffff',
+            attack: function() {
+                // Bullet Hell: Spears from all 4 walls
+                if (frameCount % 18 === 0) {
+                    let side = Math.floor(Math.random() * 4);
+                    let bx, by, bvx, bvy, bw, bh;
+                    if (side === 0) { bx = box.x + Math.random()*box.w; by = box.y; bvx = 0; bvy = 5; bw = 6; bh = 25; } // Top
+                    else if (side === 1) { bx = box.x + Math.random()*box.w; by = box.y + box.h; bvx = 0; bvy = -5; bw = 6; bh = 25; } // Bottom
+                    else if (side === 2) { bx = box.x; by = box.y + Math.random()*box.h; bvx = 5; bvy = 0; bw = 25; bh = 6; } // Left
+                    else { bx = box.x + box.w; by = box.y + Math.random()*box.h; bvx = -5; bvy = 0; bw = 25; bh = 6; } // Right
+                    
+                    spawnBullet(bx, by, bvx, bvy, bw, bh, 'spear', '#00ffff');
+                }
+            }
+        }
     ];
 
-    function drawHeart(x, y) {
-        if (player.iFrames > 0 && Math.floor(frame / 5) % 2 === 0) return;
-        ctx.fillStyle = player.isBlue ? '#0033ff' : '#ff0000';
-        const pxs = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
-        for (let r=0; r<6; r++) for (let c=0; c<7; c++) if (pxs[r][c]) ctx.fillRect(x-7 + c*2, y-6 + r*2, 2, 2);
+    // ==========================================
+    // ENTITY FACTORIES & PHYSICS
+    // ==========================================
+    function spawnBullet(x, y, vx, vy, w, h, type, color) {
+        bullets.push({ x: x, y: y, vx: vx, vy: vy, w: w, h: h, type: type, color: color });
     }
 
-    function dmg(amt) {
+    function spawnHazard(x, y, vx, vy, r, type) {
+        hazards.push({ x: x, y: y, vx: vx, vy: vy, r: r, type: type });
+    }
+
+    function takeDamage(amount) {
         if (player.iFrames <= 0) {
-            player.hp -= amt; player.iFrames = 40;
-            if (player.hp <= 0) { if (state === 'BATTLE') { state = 'GULLET'; timer = 0; bullets = []; player.x = 320; player.y = 50; player.isBlue = false; } else state = 'GAMEOVER'; }
-        }
-    }
-
-    function initBattle() { state = 'BATTLE'; timer = 0; bullets = []; player.hp = player.maxHp; player.x = 320; player.y = 295; player.vy = 0; }
-    
-    function initStomach() {
-        state = 'STOMACH'; player.hp = 10; player.iFrames = 60; player.x = 320; player.y = 420; hazards = [];
-        for(let i=0; i<12; i++) hazards.push({ x: 180 + Math.random()*280, y: 150 + Math.random()*200, vx: (Math.random()>0.5?2:-2), vy: (Math.random()>0.5?2:-2), r: 8 + Math.random()*12 });
-    }
-
-    function move(b) {
-        let s = keys['ShiftLeft'] ? player.speed / 2 : player.speed;
-        if (player.isBlue && state === 'BATTLE') {
-            if (keys['ArrowLeft']) player.x -= s; if (keys['ArrowRight']) player.x += s;
-            player.vy += 0.3; player.y += player.vy;
-            if (player.y >= b.y + b.h - 8) { player.y = b.y + b.h - 8; player.vy = 0; if (keys['ArrowUp']) player.vy = -7; }
-        } else {
-            if (keys['ArrowUp']) player.y -= s; if (keys['ArrowDown']) player.y += s;
-            if (keys['ArrowLeft']) player.x -= s; if (keys['ArrowRight']) player.x += s;
-        }
-        player.x = Math.max(b.x + 8, Math.min(b.x + b.w - 8, player.x)); player.y = Math.max(b.y + 8, Math.min(b.y + b.h - 8, player.y));
-    }
-
-    function loop() {
-        frame++; ctx.clearRect(0, 0, 640, 480); if (player.iFrames > 0) player.iFrames--;
-        let e = enemies[current];
-
-        if (state === 'TITLE') {
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '40px VT323'; ctx.fillText("UNDERTALE: BELLY ESCAPE", 320, 200);
-            ctx.font = '24px VT323'; ctx.fillText("Arrows = Move | Shift = Slow | Space = Start", 320, 260);
-            if (keys['Space']) { current = 0; initBattle(); keys['Space'] = false; }
-        }
-        else if (state === 'BATTLE') {
-            timer++;
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(e.name.toUpperCase(), 320, 100);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeRect(box.x, box.y, box.w, box.h);
-            ctx.textAlign = 'left'; ctx.fillText(e.txt, 50, 420);
-            ctx.fillStyle = '#f00'; ctx.fillRect(410, 405, 80, 20); ctx.fillStyle = '#ff0'; ctx.fillRect(410, 405, Math.max(0, player.hp)*4, 20);
-            ctx.fillStyle = '#fff'; ctx.fillText(`${player.hp}/20`, 500, 420);
-            ctx.fillStyle = '#0f0'; ctx.fillRect(box.x, box.y + box.h + 10, box.w * (timer/e.t), 5);
-
-            move(box); e.atk();
-
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i]; b.x += b.vx; b.y += b.vy;
-                if (e.name === 'Loox') { b.vy += 0.1; if (b.y > box.y+box.h-b.h) b.vy = -3; if (b.x < box.x || b.x > box.x+box.w) b.vx *= -1; }
-                if (e.name === 'Froggit') { b.vy += 0.2; if (b.y > box.y+box.h-b.h) b.vy = -4; }
-                
-                ctx.fillStyle = b.c; ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
-                if (Math.abs(player.x - b.x) < b.w/2 + 4 && Math.abs(player.y - b.y) < b.h/2 + 4) dmg(4);
-                if (b.x < 0 || b.x > 640 || b.y < 0 || b.y > 480) bullets.splice(i, 1);
+            player.hp -= amount;
+            player.iFrames = 45; // 0.75 seconds of invincibility at 60fps
+            createExplosion(player.x, player.y, '#ff0000', 10);
+            
+            // Death Check -> Route to Gullet
+            if (player.hp <= 0) {
+                if (gameState === 'BATTLE') {
+                    transitionToGullet();
+                } else if (gameState === 'STOMACH') {
+                    gameState = 'GAMEOVER';
+                }
             }
-            drawHeart(player.x, player.y);
-            if (timer >= e.t && player.hp > 0) { current++; if (current >= enemies.length) state = 'VICTORY'; else initBattle(); }
         }
-        else if (state === 'GULLET') {
-            timer++; ctx.fillStyle = e.g; ctx.fillRect(0, 0, 640, 480);
-            ctx.fillStyle = e.w; let scr = (frame * 6) % 100;
-            for(let i=-100; i<600; i+=100) { let w = Math.sin((i+timer)*0.05)*40; ctx.fillRect(0, i+scr, 200+w, 110); ctx.fillRect(440-w, i+scr, 200+w, 110); }
-            player.y += 4; drawHeart(player.x, player.y);
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '30px VT323'; ctx.fillText("* FALLING DOWN THE GULLET...", 320, 50);
-            if (player.y > 500) initStomach();
-        }
-        else if (state === 'STOMACH') {
-            ctx.fillStyle = e.bg; ctx.fillRect(0, 0, 640, 480);
-            let sb = { x: 120, y: 60, w: 400, h: 380 };
-            ctx.strokeStyle = e.w; ctx.lineWidth = 20 + Math.sin(frame*0.05)*10; ctx.strokeRect(sb.x, sb.y, sb.w, sb.h);
-            ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frame*0.2)*4, 0, Math.PI*2); ctx.fill();
+    }
 
-            move(sb);
-            ctx.fillStyle = e.h; ctx.globalAlpha = 0.8;
-            hazards.forEach(j => {
-                j.x += j.vx; j.y += j.vy;
-                if(j.x < sb.x + j.r || j.x > sb.x + sb.w - j.r) j.vx *= -1;
-                if(j.y < sb.y + j.r || j.y > sb.y + sb.h - j.r) j.vy *= -1;
-                ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI*2); ctx.fill();
-                if (Math.hypot(player.x - j.x, player.y - j.y) < j.r) dmg(1);
+    function createExplosion(x, y, color, count) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 20 + Math.random() * 20,
+                color: color
             });
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(`${e.reg}: INSIDE ${e.name.toUpperCase()}`, 130, 45); ctx.fillText(`SOUL: ${player.hp}`, 130, 460);
-            drawHeart(player.x, player.y);
+        }
+    }
 
-            if (Math.hypot(player.x - exitValve.x, player.y - exitValve.y) < exitValve.r) {
-                state = 'ESCAPED'; setTimeout(() => { current++; if (current >= enemies.length) state = 'VICTORY'; else initBattle(); }, 2000);
+    // ==========================================
+    // STATE TRANSITIONS
+    // ==========================================
+    function triggerDialogue(texts) {
+        gameState = 'DIALOGUE';
+        currentDialogue = texts;
+        dialogueLine = "";
+        typeIndex = 0;
+        stateTimer = 0;
+        player.x = 320; player.y = 320; // Reset player
+    }
+
+    function initBattle() {
+        gameState = 'BATTLE';
+        stateTimer = 0;
+        bullets = [];
+        particles = [];
+        player.hp = player.maxHp;
+        player.x = 320; player.y = 295;
+        player.vx = 0; player.vy = 0;
+    }
+
+    function transitionToGullet() {
+        gameState = 'GULLET';
+        stateTimer = 0;
+        bullets = [];
+        player.x = 320;
+        player.y = -50; // Start high up to fall down
+        player.isBlue = false; // Reset gravity
+    }
+
+    function initStomach() {
+        gameState = 'STOMACH';
+        stateTimer = 0;
+        hazards = [];
+        player.hp = 10; // Soul integrity reset inside stomach
+        player.iFrames = 60;
+        player.x = 320; player.y = 420; // Bottom of the belly
+        
+        let m = monsters[currentMonsterIndex];
+        
+        // Populate Stomach Hazards based on Monster
+        let hazardCount = 10 + Math.floor(currentMonsterIndex / 2); // Harder later
+        for(let i=0; i<hazardCount; i++) {
+            spawnHazard(
+                160 + Math.random() * 320, 
+                100 + Math.random() * 240, 
+                (Math.random() > 0.5 ? 2.5 : -2.5), 
+                (Math.random() > 0.5 ? 2.5 : -2.5), 
+                10 + Math.random() * 15, 
+                m.name === 'Papyrus' ? 'spaghetti' : 'acid'
+            );
+        }
+    }
+
+    // ==========================================
+    // DRAWING FUNCTIONS
+    // ==========================================
+    function drawPlayerHeart(x, y) {
+        if (player.iFrames > 0 && Math.floor(frameCount / 5) % 2 === 0) return; // Blinking
+        
+        ctx.fillStyle = player.isBlue ? '#0033ff' : '#ff0000';
+        const pSize = 2; // Pixel scale
+        const pixels = [
+            [0,1,1,0,1,1,0],
+            [1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,0],
+            [0,0,1,1,1,0,0],
+            [0,0,0,1,0,0,0]
+        ];
+        
+        let oX = x - (7 * pSize) / 2;
+        let oY = y - (6 * pSize) / 2;
+
+        for (let r = 0; r < pixels.length; r++) {
+            for (let c = 0; c < pixels[r].length; c++) {
+                if (pixels[r][c]) {
+                    ctx.fillRect(oX + c * pSize, oY + r * pSize, pSize, pSize);
+                }
             }
         }
-        else if (state === 'ESCAPED') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("* You escaped the digestive tract!", 320, 240); }
-        else if (state === 'GAMEOVER') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("DIGESTED.", 320, 220); ctx.fillText("Press Space", 320, 270); if(keys['Space']){state='TITLE'; keys['Space']=false;} }
-        else if (state === 'VICTORY') { ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.fillText("YOU SURVIVED EVERYTHING!", 320, 240); }
+        
+        // Focus core (Shift key)
+        if (keys['ShiftLeft'] || keys['ShiftRight']) {
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(x - 1, y - 1, 2, 2);
+        }
+    }
+
+    function drawMonster(m) {
+        ctx.fillStyle = m.color;
+        ctx.textAlign = 'center';
+        ctx.font = '30px VT323';
+        
+        // Draw generic placeholder graphics based on type to save code length
+        // but adding sine wave wobble to make them feel alive
+        let wobble = Math.sin(frameCount * 0.05) * 5;
+        
+        if (m.region.includes('BOSS')) {
+            // Bosses get bigger shapes
+            ctx.fillRect(320 - 40 - wobble, 60, 80 + wobble*2, 80);
+            ctx.fillText(m.name.toUpperCase(), 320, 40);
+        } else {
+            // Regular mobs get smaller shapes
+            ctx.beginPath();
+            ctx.arc(320, 90 + wobble, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillText(m.name, 320, 40);
+        }
+        ctx.textAlign = 'left';
+    }
+
+    function drawParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.life--;
+            
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.life / 40);
+            ctx.fillRect(p.x, p.y, 4, 4);
+            ctx.globalAlpha = 1.0;
+            
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function drawUI() {
+        ctx.fillStyle = '#fff'; 
+        ctx.font = '24px VT323'; 
+        
+        // Health Bar
+        ctx.fillText("HP", 20, 460);
+        ctx.fillStyle = '#ff0000'; ctx.fillRect(60, 445, player.maxHp * 4, 20);
+        ctx.fillStyle = '#ffff00'; ctx.fillRect(60, 445, Math.max(0, player.hp) * 4, 20);
+        ctx.fillStyle = '#fff'; ctx.fillText(`${Math.max(0, player.hp)} / ${player.maxHp}`, 70 + player.maxHp * 4, 460);
+        
+        // Current Region text
+        ctx.textAlign = 'right';
+        ctx.fillText(`LV 1   ${monsters[currentMonsterIndex].region}`, 620, 460);
+        ctx.textAlign = 'left';
+    }
+
+    // ==========================================
+    // LOGIC UPDATES
+    // ==========================================
+    function updatePlayerMovement(bounds) {
+        let currentSpeed = keys['ShiftLeft'] ? player.speed / 2 : player.speed;
+        
+        if (player.isBlue && gameState === 'BATTLE') {
+            // --- BLUE SOUL GRAVITY MECHANICS ---
+            if (keys['ArrowLeft']) player.x -= currentSpeed;
+            if (keys['ArrowRight']) player.x += currentSpeed;
+            
+            player.vy += 0.35; // Gravity acceleration
+            player.y += player.vy;
+            
+            // Floor Collision
+            if (player.y >= bounds.y + bounds.h - 8) {
+                player.y = bounds.y + bounds.h - 8;
+                player.vy = 0;
+                // Jump
+                if (keys['ArrowUp']) {
+                    player.vy = -7.5;
+                }
+            }
+        } else {
+            // --- RED SOUL STANDARD MECHANICS ---
+            if (keys['ArrowUp']) player.y -= currentSpeed;
+            if (keys['ArrowDown']) player.y += currentSpeed;
+            if (keys['ArrowLeft']) player.x -= currentSpeed;
+            if (keys['ArrowRight']) player.x += currentSpeed;
+        }
+
+        // Clamp to Box Boundaries
+        player.x = Math.max(bounds.x + 8, Math.min(bounds.x + bounds.w - 8, player.x));
+        player.y = Math.max(bounds.y + 8, Math.min(bounds.y + bounds.h - 8, player.y));
+    }
+
+    function updateBullets() {
+        let m = monsters[currentMonsterIndex];
+        
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            
+            // Custom Bullet Behaviors
+            if (b.type === 'frog') {
+                b.vy += 0.2; // Gravity arc
+                if (b.y > box.y + box.h - b.h) b.vy = -5; // Bounce off floor
+            }
+            else if (b.type === 'eye') {
+                b.vy += 0.1; // Float
+                if (b.y > box.y + box.h - b.h) b.vy = -4; 
+                if (b.x < box.x || b.x > box.x + box.w) b.vx *= -1; // Bounce walls
+            }
+            else if (b.type === 'spore') {
+                b.x += Math.sin(frameCount * 0.1) * 2; // Wiggle
+            }
+            else if (b.type === 'flex') {
+                b.vy += 0.2; // Heavy gravity
+            }
+
+            // Apply Velocity
+            b.x += b.vx;
+            b.y += b.vy;
+
+            // Draw Bullet
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+
+            // Collision Detection with Player
+            let hitPadding = keys['ShiftLeft'] ? 2 : 4; // Smaller hitbox when focused
+            if (Math.abs(player.x - b.x) < b.w/2 + hitPadding && Math.abs(player.y - b.y) < b.h/2 + hitPadding) {
+                // Ignore damage if it's a blue attack and player isn't moving
+                let isMoving = (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']);
+                if (b.type === 'blue_sword' && !isMoving) {
+                    // Do nothing! You are safe.
+                } else {
+                    takeDamage(m.region.includes('BOSS') ? 4 : 3); // Bosses hit harder
+                }
+            }
+
+            // Garbage Collection (Offscreen)
+            if (b.x < -50 || b.x > 700 || b.y < -50 || b.y > 600) {
+                bullets.splice(i, 1);
+            }
+        }
+    }
+
+    // ==========================================
+    // MAIN GAME LOOP
+    // ==========================================
+    function loop() {
+        frameCount++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let m = monsters[currentMonsterIndex];
+
+        // -----------------------------
+        // STATE: TITLE
+        // -----------------------------
+        if (gameState === 'TITLE') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; 
+            ctx.font = '50px VT323'; ctx.fillText("TALE OF THE GULP", 320, 150);
+            
+            ctx.font = '24px VT323'; 
+            ctx.fillText("Survive the Monster Gauntlet.", 320, 220);
+            ctx.fillText("Arrows = Move | Shift = Focus | Z / Enter = Accept", 320, 260);
+            ctx.fillText("If your HP hits 0... you get eaten.", 320, 300);
+            
+            ctx.fillStyle = (Math.floor(frameCount / 20) % 2 === 0) ? '#ffea00' : '#fff';
+            ctx.fillText("PRESS [Z] TO START", 320, 380);
+            ctx.textAlign = 'left';
+
+            if (isJustPressed('KeyZ') || isJustPressed('Enter')) {
+                currentMonsterIndex = 0;
+                triggerDialogue(monsters[currentMonsterIndex].dialogue);
+            }
+        }
+        
+        // -----------------------------
+        // STATE: DIALOGUE
+        // -----------------------------
+        else if (gameState === 'DIALOGUE') {
+            stateTimer++;
+            drawMonster(m);
+            drawUI();
+            
+            // Draw Battle Box
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+            ctx.strokeRect(30, 260, 580, 140);
+            ctx.fillStyle = '#000'; ctx.fillRect(32, 262, 576, 136);
+
+            // Typewriter Effect
+            let targetText = currentDialogue[0];
+            if (typeIndex < targetText.length) {
+                if (frameCount % 2 === 0) {
+                    dialogueLine += targetText[typeIndex];
+                    typeIndex++;
+                }
+            }
+
+            ctx.fillStyle = '#fff'; ctx.font = '28px VT323';
+            ctx.fillText(dialogueLine, 50, 310);
+
+            // Input to advance
+            if (isJustPressed('KeyZ') || isJustPressed('Enter')) {
+                if (typeIndex < targetText.length) {
+                    dialogueLine = targetText; // Skip typing
+                    typeIndex = targetText.length;
+                } else {
+                    currentDialogue.shift();
+                    if (currentDialogue.length > 0) {
+                        dialogueLine = ""; typeIndex = 0;
+                    } else {
+                        initBattle();
+                    }
+                }
+            }
+        }
+
+        // -----------------------------
+        // STATE: BATTLE
+        // -----------------------------
+        else if (gameState === 'BATTLE') {
+            stateTimer++;
+            drawMonster(m);
+            drawUI();
+
+            // Draw Battle Box
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+            ctx.strokeRect(box.x, box.y, box.w, box.h);
+            
+            // Survival Timer Progress Bar
+            let progress = stateTimer / m.surviveTime;
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(box.x, box.y + box.h + 10, box.w * progress, 5);
+
+            // Execute Monster Attack Logic
+            m.attack();
+
+            // Update Systems
+            updatePlayerMovement(box);
+            updateBullets();
+            drawPlayerHeart(player.x, player.y);
+            drawParticles();
+
+            // Wave Complete Condition
+            if (stateTimer >= m.surviveTime && player.hp > 0) {
+                currentMonsterIndex++;
+                if (currentMonsterIndex >= monsters.length) {
+                    gameState = 'VICTORY';
+                } else {
+                    triggerDialogue(monsters[currentMonsterIndex].dialogue);
+                }
+            }
+        }
+
+        // -----------------------------
+        // STATE: GULLET DROP (Transition)
+        // -----------------------------
+        else if (gameState === 'GULLET') {
+            stateTimer++;
+            
+            // Background Throat Color
+            ctx.fillStyle = m.gullet; 
+            ctx.fillRect(0, 0, 640, 480);
+            
+            // Fleshy scrolling esophageal walls using sine math
+            ctx.fillStyle = m.stomachWall;
+            let scrollSpeed = (frameCount * 8) % 100;
+            
+            for(let i = -100; i < 600; i += 100) {
+                let wave = Math.sin((i + stateTimer) * 0.05) * 40;
+                ctx.fillRect(0, i + scrollSpeed, 200 + wave, 110); // Left esophagus wall
+                ctx.fillRect(440 - wave, i + scrollSpeed, 200 + wave, 110); // Right esophagus wall
+            }
+
+            // Player falls downward rapidly
+            player.y += 5;
+            drawPlayerHeart(player.x, player.y);
+
+            // Text
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '36px VT323';
+            ctx.fillText("* CHOMP! SLIDING DOWN THE GULLET...", 320, 80);
+            ctx.textAlign = 'left';
+
+            // Hit the bottom
+            if (player.y > 520) {
+                initStomach();
+            }
+        }
+
+        // -----------------------------
+        // STATE: STOMACH DUNGEON
+        // -----------------------------
+        else if (gameState === 'STOMACH') {
+            stateTimer++;
+
+            // Draw Anatomy
+            ctx.fillStyle = m.stomachBg; ctx.fillRect(0, 0, 640, 480);
+            
+            let stmBox = { x: 120, y: 80, w: 400, h: 360 };
+            
+            // Pulsating Stomach Wall
+            ctx.strokeStyle = m.stomachWall; 
+            ctx.lineWidth = 25 + Math.sin(frameCount * 0.05) * 15;
+            ctx.strokeRect(stmBox.x, stmBox.y, stmBox.w, stmBox.h);
+
+            // Exit Valve (Sphincter/Burp Valve)
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath(); 
+            ctx.arc(exitValve.x, exitValve.y, exitValve.r + Math.sin(frameCount * 0.2) * 5, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.fillStyle = '#000'; ctx.font = '16px VT323'; ctx.textAlign = 'center';
+            ctx.fillText("EXIT", exitValve.x, exitValve.y + 5);
+            ctx.textAlign = 'left';
+
+            // Update Physics
+            updatePlayerMovement(stmBox);
+
+            // Stomach Hazards Update
+            ctx.fillStyle = m.hazardColor; ctx.globalAlpha = 0.85;
+            hazards.forEach(h => {
+                h.x += h.vx; h.y += h.vy;
+                
+                // Bounce off fleshy walls
+                if (h.x < stmBox.x + h.r || h.x > stmBox.x + stmBox.w - h.r) h.vx *= -1;
+                if (h.y < stmBox.y + h.r || h.y > stmBox.y + stmBox.h - h.r) h.vy *= -1;
+                
+                // Draw custom hazard geometry based on monster
+                if (h.type === 'spaghetti') {
+                    // Papyrus noodles
+                    ctx.fillRect(h.x - h.r, h.y - 3, h.r * 2.5, 6);
+                } else if (h.type === 'fire') {
+                    // Toriel fire acids
+                    ctx.beginPath(); ctx.moveTo(h.x, h.y - h.r); ctx.lineTo(h.x - h.r, h.y + h.r); ctx.lineTo(h.x + h.r, h.y + h.r); ctx.fill();
+                } else {
+                    // Standard stomach acid droplet
+                    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, Math.PI*2); ctx.fill();
+                }
+                
+                // Acid Damage
+                if (Math.hypot(player.x - h.x, player.y - h.y) < h.r) {
+                    takeDamage(1); // Burns constantly
+                }
+            });
+            ctx.globalAlpha = 1.0;
+
+            // UI
+            ctx.fillStyle = '#fff'; ctx.font = '24px VT323';
+            ctx.fillText(`ANATOMY: INSIDE ${m.name.toUpperCase()}`, 130, 60);
+            ctx.fillText(`SOUL INTEGRITY: ${player.hp}`, 130, 460);
+
+            drawPlayerHeart(player.x, player.y);
+            drawParticles();
+
+            // Escape Check
+            if (Math.hypot(player.x - exitValve.x, player.y - exitValve.y) < exitValve.r) {
+                gameState = 'ESCAPED';
+                setTimeout(() => {
+                    currentMonsterIndex++;
+                    if (currentMonsterIndex >= monsters.length) {
+                        gameState = 'VICTORY';
+                    } else {
+                        triggerDialogue(["* You crawled out of the digestive tract!", "* The next enemy approaches."]);
+                    }
+                }, 2500);
+            }
+        }
+
+        // -----------------------------
+        // STATE: ESCAPED
+        // -----------------------------
+        else if (gameState === 'ESCAPED') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; 
+            ctx.font = '50px VT323'; ctx.fillText("* YOU ESCAPED!", 320, 240);
+            ctx.textAlign = 'left';
+        }
+
+        // -----------------------------
+        // STATE: GAME OVER
+        // -----------------------------
+        else if (gameState === 'GAMEOVER') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; 
+            ctx.font = '60px VT323'; ctx.fillText("DIGESTED.", 320, 200);
+            ctx.font = '24px VT323'; ctx.fillText("Stay determined...", 320, 260);
+            ctx.fillText("Press [Z] to Try Again", 320, 320);
+            ctx.textAlign = 'left';
+
+            if (isJustPressed('KeyZ') || isJustPressed('Enter')) {
+                gameState = 'TITLE';
+            }
+        }
+
+        // -----------------------------
+        // STATE: VICTORY
+        // -----------------------------
+        else if (gameState === 'VICTORY') {
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; 
+            ctx.font = '50px VT323'; ctx.fillText("YOU SURVIVED THE GAUNTLET!", 320, 200);
+            ctx.font = '24px VT323'; ctx.fillText("You explored every stomach and lived.", 320, 260);
+            ctx.fillText("Press [Z] to return to Title", 320, 320);
+            ctx.textAlign = 'left';
+
+            if (isJustPressed('KeyZ') || isJustPressed('Enter')) {
+                gameState = 'TITLE';
+            }
+        }
+
+        // Request next frame
         requestAnimationFrame(loop);
     }
+
+    // Start Engine
     loop();
+
 </script>
 </body>
 </html>
