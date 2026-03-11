@@ -2,204 +2,170 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini 2.5 Flash Storyteller</title>
+    <title>Undertale: AI Chat & Anatomy Engine</title>
     <style>
-        :root {
-            --primary: #10b981; /* Emerald green for Gemini */
-            --primary-hover: #059669;
-            --bg: #111827;
-            --box-bg: #1f2937;
-            --text: #f3f4f6;
-            --border: #374151;
-        }
-        body {
-            font-family: 'Georgia', serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
-            margin: 0;
-        }
-        .container {
-            background: var(--box-bg);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            max-width: 700px;
-            width: 100%;
-            border: 1px solid var(--border);
-        }
-        h1 { margin-top: 0; color: #6ee7b7; text-align: center; font-family: 'Segoe UI', sans-serif;}
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .field { margin-bottom: 20px; }
-        .field.full { grid-column: span 2; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #9ca3af; font-family: 'Segoe UI', sans-serif;}
-        input, textarea, select {
-            width: 100%;
-            padding: 14px;
-            background: #111827;
-            color: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary); }
-        button {
-            width: 100%;
-            padding: 16px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        button:hover { background-color: var(--primary-hover); }
-        button:disabled { background-color: #4b5563; cursor: not-allowed; }
-        #output-container {
-            margin-top: 30px;
-            display: none;
-        }
-        #output {
-            padding: 30px;
-            background: #111827;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            line-height: 1.8;
-            font-size: 18px;
-            white-space: pre-wrap;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 14px;
-            color: #9ca3af;
-        }
-        .error { color: #f87171; margin-top: 10px; font-size: 14px; text-align: center; font-family: 'Segoe UI', sans-serif;}
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
+        #game { width: 800px; height: 650px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; display: flex; flex-direction: column; }
         
-        .cursor::after {
-            content: '▌';
-            animation: blink 1s step-start infinite;
-            color: var(--primary);
-        }
-        @keyframes blink { 50% { opacity: 0; } }
+        /* Screens */
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .title-text { font-size: 40px; color: #ffea00; text-shadow: 3px 3px 0 #f00; margin-bottom: 20px; }
+        input[type="text"] { width: 450px; padding: 10px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #fff; outline: none; text-align: center; }
+        button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 10px 20px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #fff; color: #000; padding-left: 25px; box-shadow: 0 0 10px #fff; }
+        #api-error { color: #ff4444; font-size: 20px; margin-top: 10px; }
+        
+        /* Canvas & Rendering */
+        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; }
+        canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
+        
+        /* Live AI Chat UI */
+        #chat-ui { width: 100%; height: 250px; background: #0a0a0a; border-top: 4px solid #fff; display: flex; flex-direction: column; z-index: 10; }
+        #chat-log { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 24px; line-height: 1.2; }
+        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; }
+        .msg-monster { color: #ffea00; align-self: flex-start; }
+        .msg-sys { color: #ff4444; align-self: center; font-style: italic; }
+        .msg-info { color: #888; align-self: center; font-style: italic; }
+        #chat-input-area { display: flex; border-top: 2px solid #333; }
+        #chat-input { flex-grow: 1; border: none; border-right: 2px solid #333; padding: 10px; font-family: 'VT323', monospace; font-size: 24px; background: #111; color: #fff; outline: none; text-align: left;}
+        #chat-send { border: none; width: 100px; padding: 0; text-align: center; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>⚡ Gemini 2.5 Flash Storyteller</h1>
-    
-    <div class="grid">
-        <div class="field full">
-            <label for="apiKey">Google AI Studio API Key:</label>
-            <input type="password" id="apiKey" placeholder="AIza...">
+<div id="game">
+    <div id="api-screen">
+        <div class="title-text">AI KARMA ENGINE</div>
+        <div style="font-size: 24px; text-align: center; max-width: 600px;">
+            Paste your Google AI Studio API Key below.<br>
+            (It should start with "AIza...")
         </div>
-
-        <div class="field">
-            <label for="genre">Genre:</label>
-            <select id="genre">
-                <option value="Fantasy">Fantasy</option>
-                <option value="Sci-Fi">Sci-Fi</option>
-                <option value="Mystery">Mystery</option>
-                <option value="Cyberpunk">Cyberpunk</option>
-                <option value="Romance">Romance</option>
-                <option value="Historical Fiction">Historical Fiction</option>
-            </select>
-        </div>
-
-        <div class="field">
-            <label for="tone">Tone:</label>
-            <select id="tone">
-                <option value="Dark and Gritty">Dark & Gritty</option>
-                <option value="Whimsical and Light">Whimsical & Light</option>
-                <option value="Suspenseful">Suspenseful</option>
-                <option value="Melancholic">Melancholic</option>
-                <option value="Action-Packed">Action-Packed</option>
-            </select>
-        </div>
-
-        <div class="field full">
-            <label for="prompt">Story Idea / Core Concept:</label>
-            <textarea id="prompt" rows="3" placeholder="e.g. A space smuggler realizes their ship's AI has fallen in love with them..."></textarea>
-        </div>
+        <input type="text" id="api-key-input" placeholder="AIzaSy...">
+        <button onclick="saveApiKey()">CONNECT API</button>
+        <div id="api-error"></div>
     </div>
 
-    <button id="generateBtn">Write My Story</button>
-    <div id="errorMsg" class="error"></div>
+    <div id="map-menu" class="hidden">
+        <div class="title-text">SELECT A REGION</div>
+        <button onclick="explore('Toriel', '#2a0015')">THE RUINS (Toriel)</button>
+        <button onclick="explore('Papyrus', '#331100')">SNOWDIN (Papyrus)</button>
+        <button onclick="explore('Undyne', '#000022')">WATERFALL (Undyne)</button>
+        <button onclick="explore('Muffet', '#1a002a')">HOTLAND (Muffet)</button>
+    </div>
 
-    <div id="output-container">
-        <div id="output"></div>
-        <div class="stats">
-            <span id="wordCount">0 words</span>
-            <span>Gemini 2.5 Flash</span>
+    <div id="render-area">
+        <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
+        <canvas id="c" width="800" height="400"></canvas>
+    </div>
+    
+    <div id="chat-ui">
+        <div id="chat-log">
+            <div class="msg-info">* Awaiting connection...</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
+            <button id="chat-send" onclick="sendChat()" disabled>SEND</button>
         </div>
     </div>
 </div>
 
 <script>
-    const generateBtn = document.getElementById('generateBtn');
-    const outputContainer = document.getElementById('output-container');
-    const output = document.getElementById('output');
-    const errorMsg = document.getElementById('errorMsg');
-    const wordCountSpan = document.getElementById('wordCount');
+    // --- LERP PHYSICS & ENGINE SETUP ---
+    const ctx = document.getElementById('c').getContext('2d');
+    const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
 
-    generateBtn.addEventListener('click', async () => {
-        const apiKey = document.getElementById('apiKey').value.trim();
-        const prompt = document.getElementById('prompt').value.trim();
-        const genre = document.getElementById('genre').value;
-        const tone = document.getElementById('tone').value;
+    let apiKey = "";
+    let state = 'MENU', frame = 0, lastHurt = 0;
+    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 1.5, friction: 0.85, gravity: 0.6 };
+    let currentRoom = null, gulletDepth = 0, currentMob = null;
+    let isAiTyping = false;
 
-        if (!apiKey || !prompt) {
-            errorMsg.innerText = "Please provide both your Gemini API key and a story idea.";
-            return;
-        }
+    // --- PROCEDURAL ANATOMY ---
+    function makeAnatomy(name, bg, wall, acid) {
+        return {
+            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500, h: 300, aY: 200, dmg: 1, exits: { up: `${name}_Throat`, down: `${name}_Intestines_1` } },
+            Intestines_1: { n: `${name}'s Intestines`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: 600, h: 150, aY: 180, dmg: 1.5, exits: { up: `${name}_Stomach`, down: "DIGESTED" } }
+        };
+    }
 
-        // Prepare UI
-        generateBtn.disabled = true;
-        generateBtn.innerText = "Writing...";
-        outputContainer.style.display = "block";
-        output.innerHTML = '<span class="cursor"></span>'; 
-        wordCountSpan.innerText = "0 words";
-        errorMsg.innerText = "";
+    const worldDB = {
+        "Toriel": makeAnatomy("Toriel", '#2a0015', '#4a0025', 'rgba(255, 68, 0, 0.7)'),
+        "Papyrus": makeAnatomy("Papyrus", '#331100', '#552200', 'rgba(255, 255, 0, 0.4)'),
+        "Undyne": makeAnatomy("Undyne", '#000022', '#001144', 'rgba(0, 255, 255, 0.8)'),
+        "Muffet": makeAnatomy("Muffet", '#1a002a', '#2a003a', 'rgba(150, 0, 255, 0.8)')
+    };
 
-        const systemPrompt = `You are an elite, award-winning author. Write a highly engaging story. 
-        Rules:
-        1. Emphasize "Show, Don't Tell". Use vivid sensory details (sight, sound, smell).
-        2. Create compelling, realistic dialogue.
-        3. Pacing is crucial: build tension and deliver a satisfying arc.
-        4. No cliché openings. Start *in media res* (in the middle of the action).`;
+    const mobVisuals = {
+        "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
+        "Papyrus": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(380, 100+w, 40, 40); ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#f00'; ctx.fillRect(350, 140+w, 100, 20); },
+        "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
+        "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
+    };
 
-        const userPrompt = `Write a ${genre} story with a ${tone} tone. The core concept is: ${prompt}`;
+    // --- REBUILT AI CHAT INTEGRATION ---
+    function saveApiKey() {
+        const inputKey = document.getElementById('api-key-input').value.trim();
+        const errBox = document.getElementById('api-error');
+        
+        if(!inputKey) { errBox.innerText = "Please enter a key!"; return; }
+        if(!inputKey.startsWith("AIza")) { errBox.innerText = "Invalid key! Google API keys must start with 'AIza'."; return; }
+        
+        apiKey = inputKey;
+        document.getElementById('api-screen').classList.add('hidden');
+        document.getElementById('map-menu').classList.remove('hidden');
+    }
 
-        // Gemini 2.5 Flash Endpoint
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+    function logMsg(sender, text, type) {
+        const log = document.getElementById('chat-log');
+        const div = document.createElement('div');
+        div.className = type;
+        div.innerText = sender ? `${sender}: ${text}` : text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    document.getElementById('chat-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    async function sendChat() {
+        if (isAiTyping || state === 'MENU') return;
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = "";
+        logMsg("You", text, "msg-player");
+        isAiTyping = true;
+        
+        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `inside your ${currentRoom.n}`;
+
+        // Uses the precise system format from your working example
+        const systemPrompt = `You are ${currentMob.n} from Undertale. The player is ${locString}.
+Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
+Format: {"reply": "your dialogue here", "action": "none"}
+If the player is outside and you decide to eat them, set action to "gulp". 
+If they are inside your stomach and you decide to throw them up, set action to "spit".`;
+
+        const userPrompt = text;
+
+        // Using standard gemini-1.5-flash endpoint
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                    contents: [{
-                        role: "user",
-                        parts: [{ text: userPrompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.8
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                    generationConfig: { 
+                        temperature: 0.8,
+                        responseMimeType: "application/json" // Enforces JSON strictly
                     }
                 })
             });
@@ -209,58 +175,155 @@
                 throw new Error(errorData.error?.message || "Google API Connection Failed.");
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let storyText = "";
-            let buffer = ""; // This buffer prevents the stream from crashing on incomplete chunks!
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                // Add new chunk to the buffer
-                buffer += decoder.decode(value, { stream: true });
-                
-                // Split buffer by new lines
-                const lines = buffer.split("\n");
-                
-                // Keep the last line in the buffer (it might be incomplete)
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const dataStr = line.substring(6).trim();
-                        if (!dataStr) continue;
-                        
-                        try {
-                            const parsed = JSON.parse(dataStr);
-                            const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (textPart) {
-                                storyText += textPart;
-                                output.innerHTML = storyText + '<span class="cursor"></span>';
-                                
-                                // Update live word count
-                                const words = storyText.trim().split(/\s+/).filter(w => w.length > 0).length;
-                                wordCountSpan.innerText = words + " words";
-                            }
-                        } catch (e) {
-                            // Silently ignore incomplete JSON blocks that sneak through
-                        }
-                    }
-                }
-            }
+            const data = await response.json();
+            let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
             
-            output.innerHTML = storyText; // Remove cursor at the end
+            if (!aiText) throw new Error("AI returned empty content.");
+
+            // Failsafe JSON extraction
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error("AI did not return a valid JSON object.");
+            
+            const result = JSON.parse(jsonMatch[0]);
+            logMsg(currentMob.n, result.reply, "msg-monster");
+
+            // Execute AI Game State Actions
+            if (result.action === 'gulp' && state === 'ENCOUNTER') {
+                setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
+            } else if (result.action === 'spit' && state === 'INTERNAL') {
+                setTimeout(() => loadRoom("ESCAPE"), 1500);
+            }
 
         } catch (err) {
-            errorMsg.innerText = "Error: " + err.message;
-            outputContainer.style.display = "none";
+            console.error("AI API Error:", err);
+            logMsg("System", "* Error: " + err.message, "msg-sys");
         } finally {
-            generateBtn.disabled = false;
-            generateBtn.innerText = "Write Another Story";
+            isAiTyping = false;
         }
-    });
-</script>
+    }
 
+    // --- GAME LOGIC ---
+    function explore(id, bg) {
+        document.getElementById('map-menu').classList.add('hidden');
+        document.getElementById('chat-input').disabled = false;
+        document.getElementById('chat-send').disabled = false;
+        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg };
+        document.getElementById('loc-val').innerText = id + " Encounter";
+        document.getElementById('chat-log').innerHTML = ''; // Clear chat
+        logMsg("System", `* ${id} approaches. Type below to talk to them!`, "msg-info");
+    }
+
+    function damage(amt) {
+        player.hp -= amt; lastHurt = frame;
+        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
+        if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were digested.", "msg-sys"); }
+    }
+
+    function triggerGulp(id, name, bg) {
+        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg };
+        player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
+        logMsg("System", `* CHOMP! ${name} decided to swallow you!`, "msg-info");
+    }
+
+    function loadRoom(rId) {
+        if (rId === "ESCAPE") { 
+            state = 'ESCAPED'; 
+            logMsg("System", "* You were spat out to freedom!", "msg-info"); 
+            setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
+            return; 
+        }
+        if (rId === "DIGESTED") { damage(999); return; }
+
+        let rType = rId.replace(currentMob.id + "_", "");
+        currentRoom = worldDB[currentMob.id][rType];
+        document.getElementById('loc-val').innerText = currentRoom.n;
+        state = 'INTERNAL'; 
+        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
+        player.vx = 0; player.vy = 0;
+        logMsg("System", `* You fell into ${currentRoom.n}. You can still talk from inside!`, "msg-info");
+    }
+
+    // --- REALISTIC GRAVITY PHYSICS ---
+    function updatePhysics() {
+        let spd = keys['ShiftLeft'] ? player.speed*0.5 : player.speed;
+        
+        if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
+        if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
+        
+        if (currentRoom.type === 'throat') { 
+            player.vy += player.gravity * 2; 
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
+        } else {
+            player.vy += player.gravity; 
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; 
+        }
+
+        player.vx *= player.friction; 
+        player.vy *= player.friction;
+        player.x += player.vx; 
+        player.y += player.vy;
+
+        let bL = 400 - currentRoom.w/2, bR = 400 + currentRoom.w/2;
+        let bT = 200 - currentRoom.h/2, bB = 200 + currentRoom.h/2;
+
+        if (player.y < bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+
+        player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); 
+        if (player.y > bB) { player.y = bB; player.vy = 0; }
+        if (player.y < bT) { player.y = bT; player.vy = 0; }
+
+        if (player.y > currentRoom.aY && frame % 15 === 0) damage(currentRoom.dmg);
+        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
+    }
+
+    // --- RENDER LOOP ---
+    function loop() {
+        frame++; ctx.clearRect(0, 0, 800, 400);
+
+        if (state === 'MENU' || state === 'ESCAPED') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+        }
+        else if (state === 'ENCOUNTER') {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+            mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
+        }
+        else if (state === 'GULLET') {
+            gulletDepth += 4; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gulletDepth % 100;
+            for(let i=-100; i<600; i+=100) { let w = Math.sin((i+frame)*0.05)*30; ctx.fillRect(0, i+scr, 300+w, 100); ctx.fillRect(500-w, i+scr, 300+w, 100); }
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 200, 14, 14); 
+            if (gulletDepth >= 300) loadRoom(currentMob.id + "_Throat");
+        }
+        else if (state === 'INTERNAL') {
+            updatePhysics();
+            ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
+            
+            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
+            
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3; ctx.fillRect(cx - rw/2 - wob - 10, cy - rh/2 + wob - 10, rw + wob*2 + 20, rh - wob*2 + 20); ctx.globalAlpha = 1.0;
+            ctx.fillStyle = currentRoom.bg; ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
+
+            ctx.fillStyle = currentRoom.acid; 
+            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } 
+            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
+            
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6;
+            if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
+            if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
+        }
+        else if (state === 'GAMEOVER') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,400);
+            ctx.fillStyle = '#f00'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("GAME OVER", 400, 200); ctx.textAlign = 'left';
+        }
+
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
 </body>
 </html>
