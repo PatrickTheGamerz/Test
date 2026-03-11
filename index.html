@@ -2,36 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Biology Engine</title>
+    <title>Undertale: Apex Biology Engine v2</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #020202; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 100px rgba(150, 0, 0, 0.3); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
+        body { background: #010101; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
+        #game { width: 800px; height: 650px; border: 4px solid #222; position: relative; box-shadow: 0 0 120px rgba(200, 0, 50, 0.2); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
         
-        /* Screens */
-        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a0000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 10px; letter-spacing: 2px; }
-        input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #555; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
-        input[type="text"]:focus { border-color: #ffea00; box-shadow: 0 0 15px rgba(255,234,0,0.5); }
-        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; }
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #110000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 20px; letter-spacing: 2px; }
+        input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #0a0a0a; color: #fff; border: 2px solid #444; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
+        input[type="text"]:focus { border-color: #00ffff; box-shadow: 0 0 15px rgba(0,255,255,0.4); }
+        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase;}
         button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
-        .map-btn { width: 400px; margin: 5px; background: #220000; border-color: #ff4444; }
-        #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
+        .map-btn { width: 400px; margin: 5px; background: #1a0000; border-color: #ff4444; }
+        #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; }
         
-        /* Canvas & Rendering */
         #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 8px; border: 1px solid #333; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 8px; border: 1px solid #444; }
         
-        /* Live AI Chat UI */
         #chat-ui { width: 100%; height: 250px; background: #050505; border-top: 4px solid #222; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
         #chat-log { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 1.3; scroll-behavior: smooth; }
         .msg-player { color: #00ffff; align-self: flex-end; text-align: right; background: rgba(0, 255, 255, 0.1); padding: 5px 15px; border-radius: 15px 15px 0 15px; }
         .msg-monster { color: #ffea00; align-self: flex-start; background: rgba(255, 234, 0, 0.1); padding: 5px 15px; border-radius: 15px 15px 15px 0; }
         .msg-sys { color: #ff4444; align-self: center; font-style: italic; background: rgba(255, 0, 0, 0.1); padding: 2px 10px; border-radius: 10px; }
-        .msg-info { color: #aaa; align-self: center; font-style: italic; }
+        .msg-info { color: #888; align-self: center; font-style: italic; }
         #chat-input-area { display: flex; border-top: 2px solid #222; background: #000; }
-        #chat-input { flex-grow: 1; border: none; padding: 15px; font-family: 'VT323', monospace; font-size: 24px; background: transparent; color: #fff; outline: none; }
+        #chat-input { flex-grow: 1; border: none; padding: 15px; font-family: inherit; font-size: 24px; background: transparent; color: #fff; outline: none; }
         #chat-send { border: none; width: 120px; padding: 0; text-align: center; background: #111; border-radius: 0 0 10px 0; color: #fff; font-family: inherit; font-size: 24px; cursor: pointer;}
         #chat-send:hover:not(:disabled) { background: #333; color: #fff; }
         .hidden { display: none !important; }
@@ -42,10 +39,6 @@
 <div id="game">
     <div id="api-screen">
         <div class="title-text">AI KARMA ENGINE</div>
-        <div style="font-size: 24px; text-align: center; max-width: 650px; color: #ddd; margin-bottom: 20px;">
-            Paste your Google AI Studio API Key below.<br>
-            <span style="color: #00ffff;">Powered by Gemini 2.5 Flash</span>
-        </div>
         <input type="text" id="api-key-input" placeholder="AIzaSy...">
         <button onclick="saveApiKey()">CONNECT API</button>
         <div id="api-error"></div>
@@ -60,14 +53,12 @@
     </div>
 
     <div id="render-area">
-        <div id="stats">HP: <span id="hp-val">20.0</span> | <span id="loc-val">Menu</span></div>
+        <div id="stats">HP: <span id="hp-val">20.00</span> | <span id="loc-val">Menu</span></div>
         <canvas id="c" width="800" height="400"></canvas>
     </div>
     
     <div id="chat-ui">
-        <div id="chat-log">
-            <div class="msg-info">* Awaiting connection to Gemini 2.5 Flash...</div>
-        </div>
+        <div id="chat-log"><div class="msg-info">* Awaiting connection to Gemini 2.5 Flash...</div></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
             <button id="chat-send" onclick="sendChat()" disabled>SEND</button>
@@ -76,20 +67,22 @@
 </div>
 
 <script>
-    // --- LERP PHYSICS & ENGINE SETUP ---
     const ctx = document.getElementById('c').getContext('2d');
     const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
 
-    let apiKey = "";
-    let state = 'MENU', frame = 0, lastHurt = 0;
-    
+    let apiKey = ""; let state = 'MENU'; let frame = 0; let lastHurt = 0;
     const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.85, gravity: 0.5, buoyancy: 0.8 };
-    let currentRoom = null, gulletDepth = 0, currentMob = null;
-    let isAiTyping = false;
-    let particles = [];
-    let activeInteractable = null;
+    let currentRoom = null, gulletDepth = 0, currentMob = null, activeInteractable = null;
+    let isAiTyping = false, particles = [];
 
-    // --- PROCEDURAL ANATOMY WITH DAMAGE SCALING ---
+    // --- VARIANT DATABASE ---
+    const variantPools = {
+        Toriel: ["Gentle", "Fierce", "Drunky (Woozy/Hiccuping)", "Overprotective", "Sleepy", "Royal"],
+        Undyne: ["Heroic", "Fierce", "Gentle", "Anime-Fan", "DETERMINED", "Casual"],
+        Muffet: ["Greedy", "Fierce", "Gentle", "Sugar-Rush", "Business", "Sleepy"],
+        Papyrus: ["Slacker (Storyshift Chara Vibe)", "COOL DUDE", "ROYAL GUARD!", "Prankster"]
+    };
+
     function makeAnatomy(name, bg, wall, acid, baseDmg, isMicro = false) {
         let wM = isMicro ? 0.6 : 1.0;
         return {
@@ -101,97 +94,75 @@
     }
 
     const worldDB = {};
-
     const mobVisuals = {
         "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
-        "Papyrus": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(380, 100+w, 40, 40); ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#f00'; ctx.fillRect(350, 140+w, 100, 20); },
+        "Papyrus": (w) => { ctx.fillStyle='#ff9900'; ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#fff'; ctx.fillRect(380, 110+w, 40, 40); }, // Hoodie vibe!
         "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
 
-    // --- MICRO-CREATURE SYSTEM (Inception Swallowing!) ---
     class MicroCreature {
         constructor(type, x, y) {
             this.type = type; this.x = x; this.y = y; 
             this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3;
             this.uid = type + "_" + Math.floor(Math.random()*10000);
             
-            // EXACT DAMAGE NUMBERS REQUESTED!
             let acidColor, dmg;
             if (type === 'Spider') { this.c = '#111'; this.r = 12; acidColor = 'rgba(150,0,200,0.8)'; dmg = 0.15; }
             if (type === 'Fish')   { this.c = '#0ff'; this.r = 14; acidColor = 'rgba(0,200,255,0.7)'; dmg = 0.25; }
             if (type === 'Fly')    { this.c = '#fff'; this.r = 8;  acidColor = 'rgba(200,200,0,0.6)'; dmg = 0.01; }
             
-            // Generate their internal anatomy
             worldDB[this.uid] = makeAnatomy(this.type, '#1a1a1a', '#0a0a0a', acidColor, dmg, true);
         }
-        update(bounds) {
+        update(b) {
             this.x += this.vx; this.y += this.vy;
-            if(Math.random() < 0.05) { this.vx += (Math.random()-0.5)*2; this.vy += (Math.random()-0.5)*2; }
+            if(Math.random()<0.05){this.vx+=(Math.random()-0.5)*2; this.vy+=(Math.random()-0.5)*2;}
             this.vx = Math.max(-3, Math.min(3, this.vx)); this.vy = Math.max(-3, Math.min(3, this.vy));
-            
-            // Soft bounce off walls
-            if(this.x < bounds.l + 20 || this.x > bounds.r - 20) this.vx *= -1;
-            if(this.y < bounds.t + 20 || this.y > bounds.b - 20) this.vy *= -1;
+            if(this.x < b.l+20 || this.x > b.r-20) this.vx *= -1;
+            if(this.y < b.t+20 || this.y > b.b-20) this.vy *= -1;
         }
     }
 
     function spawnParticles(color) {
         particles = [];
-        for(let i=0; i<40; i++) {
-            particles.push({ x: Math.random()*800, y: Math.random()*400, r: Math.random()*5+2, vx: (Math.random()-0.5)*0.5, vy: -Math.random()*1.5 - 0.5, c: color });
-        }
+        for(let i=0; i<50; i++) particles.push({ x: Math.random()*800, y: Math.random()*400, r: Math.random()*6+2, vx: (Math.random()-0.5)*0.8, vy: -Math.random()*2 - 0.5, c: color });
     }
 
-    // --- GEMINI 2.5 FLASH API INTEGRATION ---
+    // --- API & CHAT ---
     function saveApiKey() {
-        const inputKey = document.getElementById('api-key-input').value.trim();
-        const errBox = document.getElementById('api-error');
-        if(!inputKey) { errBox.innerText = "Please enter a key!"; return; }
-        if(!inputKey.startsWith("AIza")) { errBox.innerText = "Invalid key! Must start with 'AIza'."; return; }
-        
-        apiKey = inputKey;
-        document.getElementById('api-screen').classList.add('hidden');
-        document.getElementById('map-menu').classList.remove('hidden');
+        apiKey = document.getElementById('api-key-input').value.trim();
+        if(!apiKey.startsWith("AIza")) { document.getElementById('api-error').innerText = "Invalid key!"; return; }
+        document.getElementById('api-screen').classList.add('hidden'); document.getElementById('map-menu').classList.remove('hidden');
     }
 
     function logMsg(sender, text, type) {
         const log = document.getElementById('chat-log');
-        const div = document.createElement('div');
-        div.className = type;
+        const div = document.createElement('div'); div.className = type;
         div.innerText = sender ? `${sender}: ${text}` : text;
-        log.appendChild(div);
-        log.scrollTop = log.scrollHeight;
+        log.appendChild(div); log.scrollTop = log.scrollHeight;
     }
 
-    document.getElementById('chat-input').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') sendChat();
-    });
+    document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
     async function sendChat() {
         if (isAiTyping || state === 'MENU') return;
-        const input = document.getElementById('chat-input');
-        const text = input.value.trim();
+        const text = document.getElementById('chat-input').value.trim();
         if (!text) return;
 
-        input.value = "";
-        logMsg("You", text, "msg-player");
-        isAiTyping = true;
+        document.getElementById('chat-input').value = "";
+        logMsg("You", text, "msg-player"); isAiTyping = true;
         
-        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `currently digested and stuck inside your ${currentRoom.n}`;
-
-        const systemPrompt = `You are ${currentMob.n} from Undertale. The player is ${locString}.
-Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
+        let loc = state === 'ENCOUNTER' ? 'standing outside you' : `digested and currently inside your ${currentRoom.n}`;
+        
+        // Context passes the specific VARIANT MOOD to the AI!
+        const systemPrompt = `You are ${currentMob.n} from Undertale. You are currently acting in a "${currentMob.variant}" mood. The player is ${loc}.
+Respond in character matching your mood perfectly. You MUST return ONLY a raw JSON object.
 Format: {"reply": "your dialogue here", "action": "none"}
-If the player is outside and you decide to eat them, set action to "gulp". 
-If they are inside your stomach/abdomen and you decide to throw them up, set action to "spit".`;
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+If outside and you decide to eat them, set action to "gulp". If inside and you decide to throw them up, set action to "spit".`;
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ role: "user", parts: [{ text: text }] }],
@@ -199,124 +170,88 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
                 })
             });
 
-            if (!response.ok) throw new Error(`API HTTP Error: ${response.status}`);
-
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
-            let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            
+            let aiText = data.candidates[0].content.parts[0].text;
             const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error("AI did not return a valid JSON object.");
-            
             const result = JSON.parse(jsonMatch[0]);
             logMsg(currentMob.n, result.reply, "msg-monster");
 
-            if (result.action === 'gulp' && state === 'ENCOUNTER') {
-                setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
-            } else if (result.action === 'spit' && state === 'INTERNAL') {
-                setTimeout(() => loadRoom("ESCAPE"), 1500);
-            }
+            if (result.action === 'gulp' && state === 'ENCOUNTER') setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
+            else if (result.action === 'spit' && state === 'INTERNAL') setTimeout(() => loadRoom("ESCAPE"), 1500);
 
-        } catch (err) {
-            console.error("AI API Error:", err);
-            logMsg("System", "* Error connecting to AI: " + err.message, "msg-sys");
-        } finally {
-            isAiTyping = false;
-        }
+        } catch (err) { logMsg("System", "* Error connecting to AI: " + err.message, "msg-sys"); } 
+        finally { isAiTyping = false; }
     }
 
     // --- GAME LOGIC ---
     function explore(id, bg, wall, acid) {
         document.getElementById('map-menu').classList.add('hidden');
-        document.getElementById('chat-input').disabled = false;
-        document.getElementById('chat-send').disabled = false;
+        document.getElementById('chat-input').disabled = false; document.getElementById('chat-send').disabled = false;
         
-        // VARIANT SYSTEM: 50% chance for Gentle vs Fierce
-        let isGentle = Math.random() > 0.5;
-        let variantName = isGentle ? `Gentle ${id}` : `Fierce ${id}`;
-        let baseDmg = isGentle ? 0.1 : 0.5; // EXACT DAMAGE REQUESTED
-        let finalBg = isGentle ? '#552233' : bg; // Gentle is brighter
+        // Assign random variant!
+        let vPool = variantPools[id];
+        let variant = vPool[Math.floor(Math.random() * vPool.length)];
         
-        worldDB[id] = makeAnatomy(variantName, finalBg, wall, acid, baseDmg);
+        // Dynamic Damage Scaling
+        let baseDmg = 0.5;
+        if(variant.includes("Gentle") || variant.includes("Slacker")) baseDmg = 0.1;
+        if(variant.includes("Fierce") || variant.includes("DETERMINED")) baseDmg = 1.0;
         
-        // Populate with Micro-Creatures!
+        worldDB[id] = makeAnatomy(id, bg, wall, acid, baseDmg);
+        
         if(id === 'Muffet') worldDB[id].Stomach.entities.push(new MicroCreature('Spider', 350, 250), new MicroCreature('Fly', 450, 200));
         if(id === 'Undyne') worldDB[id].Stomach.entities.push(new MicroCreature('Fish', 400, 250));
         
-        state = 'ENCOUNTER'; currentMob = { id: id, n: variantName, bg: finalBg, acid: acid };
-        document.getElementById('loc-val').innerText = variantName;
+        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid, variant: variant };
+        document.getElementById('loc-val').innerText = `${variant} ${id}`;
         document.getElementById('chat-log').innerHTML = ''; 
-        logMsg("System", `* ${variantName} approaches. Normal damage is ${baseDmg}.`, "msg-info");
+        logMsg("System", `* You encountered a [${variant}] ${id}. Normal acid damage is ${baseDmg}.`, "msg-info");
     }
 
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
-        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(2); // Show 2 decimals for tiny fly damage!
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.fillRect(0,0,800,400);
+        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(2);
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
         if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were fully digested.", "msg-sys"); }
     }
 
     function triggerGulp(id, name, bg) {
-        state = 'GULLET'; gulletDepth = 0;
-        player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        
-        // If gulping from inception, override currentMob
-        if (id !== currentMob.id) {
-            currentMob = { id: id, n: name, bg: bg };
-        }
+        state = 'GULLET'; gulletDepth = 0; player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
+        if (id !== currentMob.id) currentMob = { id: id, n: name, bg: bg, variant: "Normal" }; // For micro-creatures
         logMsg("System", `* CHOMP! Swallowed by ${name}!`, "msg-info");
     }
 
     function loadRoom(rId) {
-        if (rId === "ESCAPE") { 
-            state = 'ESCAPED'; 
-            logMsg("System", "* You were spat out to freedom!", "msg-info"); 
-            setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
-            return; 
-        }
+        if (rId === "ESCAPE") { state = 'ESCAPED'; logMsg("System", "* Spat out to freedom!", "msg-info"); setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000); return; }
         if (rId === "DIGESTED") { damage(999); return; }
-        if (rId === "POOP_OUT") { 
-            state = 'ESCAPED'; 
-            logMsg("System", "* You passed through the micro-creature! (-1 HP)", "msg-info"); 
-            damage(1.0);
-            setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
-            return; 
-        }
+        if (rId === "POOP_OUT") { state = 'ESCAPED'; logMsg("System", "* Passed through the micro-creature! (-1 HP)", "msg-info"); damage(1.0); setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000); return; }
 
         let rType = rId.replace(currentMob.id + "_", "");
         currentRoom = worldDB[currentMob.id][rType];
-        
         document.getElementById('loc-val').innerText = currentRoom.n;
-        state = 'INTERNAL'; 
-        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
-        player.vx = 0; player.vy = 0;
+        state = 'INTERNAL'; player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; player.vx = 0; player.vy = 0;
         spawnParticles(currentRoom.acid);
         logMsg("System", `* Entered ${currentRoom.n}.`, "msg-info");
     }
 
-    // --- HYPER-REALISTIC FLUID PHYSICS ---
+    // --- PHYSICS ---
     function updatePhysics() {
         let spd = keys['ShiftLeft'] ? player.speed*0.6 : player.speed;
         let inAcid = player.y > currentRoom.aY;
         
-        if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
-        if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
+        if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
         if (currentRoom.type === 'throat') { 
-            player.vy += player.gravity; 
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
+            player.vy += player.gravity; if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
         } else {
             player.vy += player.gravity;
             if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; 
             if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; 
         }
 
-        if (inAcid) {
-            player.vy -= player.buoyancy; // Acid pushes up
-            player.vx *= 0.75; player.vy *= 0.75; // Fluid drag
-            if (frame % 20 === 0) damage(currentRoom.dmg);
-        } else {
-            player.vx *= player.friction; player.vy *= player.friction; // Air drag
-        }
+        if (inAcid) { player.vy -= player.buoyancy; player.vx *= 0.75; player.vy *= 0.75; if (frame % 20 === 0) damage(currentRoom.dmg); } 
+        else { player.vx *= player.friction; player.vy *= player.friction; }
 
         player.x += player.vx; player.y += player.vy;
 
@@ -326,133 +261,94 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
         if (player.y <= bT - 5 && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
         if (player.y >= bB + 5 && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        player.x = Math.max(bL, Math.min(bR, player.x)); 
-        player.y = Math.max(bT, Math.min(bB, player.y)); 
+        player.x = Math.max(bL, Math.min(bR, player.x)); player.y = Math.max(bT, Math.min(bB, player.y)); 
         if (player.y >= bB || player.y <= bT) player.vy = 0; 
         
-        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { 
-            player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(2); 
-        }
+        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(2); }
 
-        // Micro-Creature Interactions
         let touch = null;
         if (currentRoom.entities) {
-            currentRoom.entities.forEach(e => {
-                e.update({l: bL, r: bR, t: bT, b: bB});
-                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 20) touch = e;
-            });
+            currentRoom.entities.forEach(e => { e.update({l: bL, r: bR, t: bT, b: bB}); if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 20) touch = e; });
         }
-
         if (touch !== activeInteractable) {
             activeInteractable = touch;
-            if (activeInteractable) {
-                logMsg("System", `* A ${activeInteractable.type} is floating here. [Press 'E' to let it swallow you]`, "msg-info");
-            }
+            if (activeInteractable) logMsg("System", `* A ${activeInteractable.type} is floating here. [Press 'E' to let it swallow you]`, "msg-info");
         }
-
-        // Swallow Input ('E')
-        if (activeInteractable && keys['KeyE']) {
-            triggerGulp(activeInteractable.uid, activeInteractable.type, '#111');
-            keys['KeyE'] = false; // Debounce
-        }
-    }
-
-    function drawParticles() {
-        particles.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
-            if (p.y < currentRoom.aY - 20) p.y = 400; 
-            ctx.fillStyle = p.c; ctx.globalAlpha = 0.6;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1.0;
-        });
+        if (activeInteractable && keys['KeyE']) { triggerGulp(activeInteractable.uid, activeInteractable.type, '#111'); keys['KeyE'] = false; }
     }
 
     function loop() {
         frame++; ctx.clearRect(0, 0, 800, 400);
 
-        if (state === 'MENU' || state === 'ESCAPED') {
-            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
-        }
+        if (state === 'MENU' || state === 'ESCAPED') { ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400); }
         else if (state === 'ENCOUNTER') {
             let grd = ctx.createRadialGradient(400, 200, 50, 400, 200, 400);
-            grd.addColorStop(0, currentMob.bg); grd.addColorStop(1, '#000');
-            ctx.fillStyle = grd; ctx.fillRect(0,0,800,400);
-            mobVisuals[currentMob.id.replace('Gentle ', '').replace('Fierce ', '')](Math.sin(frame * 0.05) * 5);
+            grd.addColorStop(0, currentMob.bg); grd.addColorStop(1, '#000'); ctx.fillStyle = grd; ctx.fillRect(0,0,800,400);
+            mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
         }
         else if (state === 'GULLET') {
             gulletDepth += 6; ctx.fillStyle = currentMob.bg || '#111'; ctx.fillRect(0,0,800,400);
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6; let scr = gulletDepth % 120;
-            for(let i=-120; i<600; i+=120) { 
-                let w = Math.sin((i+frame)*0.08)*40; 
-                ctx.fillRect(0, i+scr, 300+w, 120); ctx.fillRect(500-w, i+scr, 300+w, 120); 
-            }
-            ctx.globalAlpha = 1.0; 
-            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000';
-            ctx.fillRect(393, 200, 14, 14); ctx.shadowBlur = 0;
+            for(let i=-120; i<600; i+=120) { let w = Math.sin((i+frame)*0.08)*40; ctx.fillRect(0, i+scr, 300+w, 120); ctx.fillRect(500-w, i+scr, 300+w, 120); }
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000'; ctx.fillRect(393, 200, 14, 14); ctx.shadowBlur = 0;
             if (gulletDepth >= 350) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
             let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h;
-            
-            // Organic Breathing
             let breath = 1 + Math.sin(frame * 0.03) * 0.015;
             ctx.save(); ctx.translate(cx, cy); ctx.scale(breath, breath); ctx.translate(-cx, -cy);
             
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
             
-            // Fleshy Gradients
-            ctx.shadowBlur = 30; ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            // Ultra-fleshy wall gradient
+            ctx.shadowBlur = 40; ctx.shadowColor = 'rgba(0,0,0,1)';
             let organGrad = ctx.createRadialGradient(cx, cy, rh*0.1, cx, cy, rw*0.8);
-            organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(1, '#050505');
-            ctx.fillStyle = organGrad; 
-            ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 40); ctx.fill(); ctx.shadowBlur = 0;
+            organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(0.8, '#110000'); organGrad.addColorStop(1, '#000');
+            ctx.fillStyle = organGrad; ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 50); ctx.fill(); ctx.shadowBlur = 0;
 
-            // Multi-Layered Splashing Acid
-            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.6;
+            // Fluid Rendering
+            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
-            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.06 + x*0.04)*15); } 
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.05 + x*0.03)*18); 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
 
-            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.8;
-            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 10);
-            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + 10 + Math.cos(frame*0.09 + x*0.06)*10); } 
+            ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 15);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) ctx.lineTo(x, currentRoom.aY + 15 + Math.cos(frame*0.08 + x*0.05)*12); 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill(); ctx.globalAlpha = 1.0;
             
-            drawParticles();
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; if (p.y < currentRoom.aY - 20) p.y = 400; 
+                ctx.fillStyle = p.c; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1.0;
+            });
             
-            // Draw Micro-creatures!
             if (currentRoom.entities) {
                 currentRoom.entities.forEach(e => {
                     ctx.fillStyle = e.c; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
-                    // Draw little wings/eyes
                     ctx.fillStyle='#fff';
-                    if(e.type==='Fly') { ctx.globalAlpha=0.5; ctx.beginPath(); ctx.arc(e.x-5, e.y-5, 5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(e.x+5, e.y-5, 5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
-                    if(e.type==='Spider') { ctx.fillRect(e.x-3, e.y-2, 2, 2); ctx.fillRect(e.x+1, e.y-2, 2, 2); }
+                    if(e.type==='Fly') { ctx.globalAlpha=0.6; ctx.beginPath(); ctx.arc(e.x-5, e.y-5, 6, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(e.x+5, e.y-5, 6, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+                    if(e.type==='Spider') { ctx.fillRect(e.x-4, e.y-2, 3, 3); ctx.fillRect(e.x+1, e.y-2, 3, 3); }
                 });
             }
             
-            // Exits
-            ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.8; let wob = Math.sin(frame*0.05)*10;
+            ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.9; let wob = Math.sin(frame*0.05)*10;
             if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0;
 
-            // Player Soul
-            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 20; ctx.shadowColor = '#ff0000';
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 25; ctx.shadowColor = '#ff0000';
             ctx.fillRect(player.x-8, player.y-8, 16, 16); ctx.shadowBlur = 0;
             
             ctx.restore();
             
-            // Vignette
             let vig = ctx.createRadialGradient(400, 200, 150, 400, 200, 500);
-            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.9)');
+            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.95)');
             ctx.fillStyle = vig; ctx.fillRect(0,0,800,400);
         }
         else if (state === 'GAMEOVER') {
             ctx.fillStyle = '#050000'; ctx.fillRect(0,0,800,400);
             ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '70px VT323'; 
-            ctx.shadowBlur = 30; ctx.shadowColor = '#ff0000';
-            ctx.fillText("DIGESTED", 400, 220); ctx.textAlign = 'left'; ctx.shadowBlur = 0;
+            ctx.shadowBlur = 30; ctx.shadowColor = '#ff0000'; ctx.fillText("DIGESTED", 400, 220); ctx.textAlign = 'left'; ctx.shadowBlur = 0;
         }
 
         requestAnimationFrame(loop);
