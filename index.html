@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Biology Engine v2</title>
+    <title>Undertale: Apex Biology Engine v3</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #010101; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 650px; border: 4px solid #222; position: relative; box-shadow: 0 0 120px rgba(200, 0, 50, 0.2); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
+        #game { width: 800px; height: 650px; border: 4px solid #222; position: relative; box-shadow: 0 0 120px rgba(0, 255, 100, 0.15); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
         
-        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #110000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
-        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 20px; letter-spacing: 2px; }
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a110a 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #005500; margin-bottom: 20px; letter-spacing: 2px; }
         input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #0a0a0a; color: #fff; border: 2px solid #444; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
         input[type="text"]:focus { border-color: #00ffff; box-shadow: 0 0 15px rgba(0,255,255,0.4); }
         button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase;}
         button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
-        .map-btn { width: 400px; margin: 5px; background: #1a0000; border-color: #ff4444; }
+        .map-btn { width: 400px; margin: 5px; background: #0a1a0a; border-color: #44ff44; }
         #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; }
         
         #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; }
@@ -47,7 +47,7 @@
     <div id="map-menu" class="hidden">
         <div class="title-text">SELECT A REGION</div>
         <button class="map-btn" onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 80, 0, 0.7)')">THE RUINS (Toriel)</button>
-        <button class="map-btn" onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.5)')">SNOWDIN (Papyrus)</button>
+        <button class="map-btn" onclick="explore('Chara', '#002200', '#004400', 'rgba(0, 255, 100, 0.5)')">SNOWDIN (Storyshift Chara)</button>
         <button class="map-btn" onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.7)')">WATERFALL (Undyne)</button>
         <button class="map-btn" onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.7)')">HOTLAND (Muffet)</button>
     </div>
@@ -77,10 +77,10 @@
 
     // --- VARIANT DATABASE ---
     const variantPools = {
-        Toriel: ["Gentle", "Fierce", "Drunky (Woozy/Hiccuping)", "Overprotective", "Sleepy", "Royal"],
+        Toriel: ["Gentle", "Fierce", "Drunky (Woozy/Hiccuping)", "Overprotective", "Sleepy", "Strict"],
         Undyne: ["Heroic", "Fierce", "Gentle", "Anime-Fan", "DETERMINED", "Casual"],
         Muffet: ["Greedy", "Fierce", "Gentle", "Sugar-Rush", "Business", "Sleepy"],
-        Papyrus: ["Slacker (Storyshift Chara Vibe)", "COOL DUDE", "ROYAL GUARD!", "Prankster"]
+        Chara: ["Slacker", "Chocolate-Deprived", "Protective", "Pun-Loving", "Fierce", "Sleepy"]
     };
 
     function makeAnatomy(name, bg, wall, acid, baseDmg, isMicro = false) {
@@ -96,7 +96,12 @@
     const worldDB = {};
     const mobVisuals = {
         "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
-        "Papyrus": (w) => { ctx.fillStyle='#ff9900'; ctx.fillRect(360, 150+w, 80, 100); ctx.fillStyle='#fff'; ctx.fillRect(380, 110+w, 40, 40); }, // Hoodie vibe!
+        "Chara": (w) => { 
+            ctx.fillStyle='#33aa33'; ctx.fillRect(360, 150+w, 80, 100); // Green Hoodie
+            ctx.fillStyle='#ffeebb'; ctx.fillRect(375, 110+w, 50, 45); // Face
+            ctx.fillStyle='#663300'; ctx.fillRect(370, 100+w, 60, 20); // Brown hair
+            ctx.fillStyle='#ffffaa'; ctx.fillRect(350, 160+w, 100, 20); // Yellow stripe
+        },
         "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
@@ -104,20 +109,30 @@
     class MicroCreature {
         constructor(type, x, y) {
             this.type = type; this.x = x; this.y = y; 
-            this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3;
             this.uid = type + "_" + Math.floor(Math.random()*10000);
             
-            let acidColor, dmg;
-            if (type === 'Spider') { this.c = '#111'; this.r = 12; acidColor = 'rgba(150,0,200,0.8)'; dmg = 0.15; }
-            if (type === 'Fish')   { this.c = '#0ff'; this.r = 14; acidColor = 'rgba(0,200,255,0.7)'; dmg = 0.25; }
-            if (type === 'Fly')    { this.c = '#fff'; this.r = 8;  acidColor = 'rgba(200,200,0,0.6)'; dmg = 0.01; }
+            const prefixes = ["Friendly", "Aggressive", "Sleepy", "Hyper"];
+            this.variant = prefixes[Math.floor(Math.random() * prefixes.length)];
             
-            worldDB[this.uid] = makeAnatomy(this.type, '#1a1a1a', '#0a0a0a', acidColor, dmg, true);
+            let acidColor, dmg, spdMult;
+            if (type === 'Spider') { this.c = '#111'; this.r = 12; acidColor = 'rgba(150,0,200,0.8)'; dmg = 0.15; spdMult = 1; }
+            if (type === 'Fish')   { this.c = '#0ff'; this.r = 14; acidColor = 'rgba(0,200,255,0.7)'; dmg = 0.25; spdMult = 1.2; }
+            if (type === 'Fly')    { this.c = '#fff'; this.r = 8;  acidColor = 'rgba(200,200,0,0.6)'; dmg = 0.01; spdMult = 1.5; }
+            
+            // Apply Variant Effects
+            if(this.variant === 'Friendly') { dmg = 0.00; spdMult *= 0.5; }
+            if(this.variant === 'Aggressive') { dmg *= 2.0; spdMult *= 1.5; }
+            if(this.variant === 'Sleepy') { spdMult *= 0.2; }
+            
+            this.vx = (Math.random()-0.5)*3 * spdMult; this.vy = (Math.random()-0.5)*3 * spdMult;
+            this.baseDmg = dmg;
+
+            worldDB[this.uid] = makeAnatomy(`${this.variant} ${this.type}`, '#1a1a1a', '#0a0a0a', acidColor, dmg, true);
         }
         update(b) {
             this.x += this.vx; this.y += this.vy;
             if(Math.random()<0.05){this.vx+=(Math.random()-0.5)*2; this.vy+=(Math.random()-0.5)*2;}
-            this.vx = Math.max(-3, Math.min(3, this.vx)); this.vy = Math.max(-3, Math.min(3, this.vy));
+            this.vx = Math.max(-4, Math.min(4, this.vx)); this.vy = Math.max(-4, Math.min(4, this.vy));
             if(this.x < b.l+20 || this.x > b.r-20) this.vx *= -1;
             if(this.y < b.t+20 || this.y > b.b-20) this.vy *= -1;
         }
@@ -154,7 +169,6 @@
         
         let loc = state === 'ENCOUNTER' ? 'standing outside you' : `digested and currently inside your ${currentRoom.n}`;
         
-        // Context passes the specific VARIANT MOOD to the AI!
         const systemPrompt = `You are ${currentMob.n} from Undertale. You are currently acting in a "${currentMob.variant}" mood. The player is ${loc}.
 Respond in character matching your mood perfectly. You MUST return ONLY a raw JSON object.
 Format: {"reply": "your dialogue here", "action": "none"}
@@ -189,19 +203,18 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
         document.getElementById('map-menu').classList.add('hidden');
         document.getElementById('chat-input').disabled = false; document.getElementById('chat-send').disabled = false;
         
-        // Assign random variant!
         let vPool = variantPools[id];
         let variant = vPool[Math.floor(Math.random() * vPool.length)];
         
-        // Dynamic Damage Scaling
         let baseDmg = 0.5;
-        if(variant.includes("Gentle") || variant.includes("Slacker")) baseDmg = 0.1;
-        if(variant.includes("Fierce") || variant.includes("DETERMINED")) baseDmg = 1.0;
+        if(variant.includes("Gentle") || variant.includes("Slacker") || variant.includes("Sleepy")) baseDmg = 0.1;
+        if(variant.includes("Fierce") || variant.includes("DETERMINED") || variant.includes("Strict")) baseDmg = 1.0;
         
         worldDB[id] = makeAnatomy(id, bg, wall, acid, baseDmg);
         
         if(id === 'Muffet') worldDB[id].Stomach.entities.push(new MicroCreature('Spider', 350, 250), new MicroCreature('Fly', 450, 200));
         if(id === 'Undyne') worldDB[id].Stomach.entities.push(new MicroCreature('Fish', 400, 250));
+        if(id === 'Chara') worldDB[id].Stomach.entities.push(new MicroCreature('Fly', 400, 200)); // Even Chara accidentally swallowed a fly
         
         state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid, variant: variant };
         document.getElementById('loc-val').innerText = `${variant} ${id}`;
@@ -210,6 +223,7 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
     }
 
     function damage(amt) {
+        if(amt <= 0) return;
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(2);
         ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
@@ -218,7 +232,7 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
 
     function triggerGulp(id, name, bg) {
         state = 'GULLET'; gulletDepth = 0; player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        if (id !== currentMob.id) currentMob = { id: id, n: name, bg: bg, variant: "Normal" }; // For micro-creatures
+        if (id !== currentMob.id) currentMob = { id: id, n: name, bg: bg, variant: "Normal" }; 
         logMsg("System", `* CHOMP! Swallowed by ${name}!`, "msg-info");
     }
 
@@ -272,9 +286,9 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
         }
         if (touch !== activeInteractable) {
             activeInteractable = touch;
-            if (activeInteractable) logMsg("System", `* A ${activeInteractable.type} is floating here. [Press 'E' to let it swallow you]`, "msg-info");
+            if (activeInteractable) logMsg("System", `* A [${activeInteractable.variant}] ${activeInteractable.type} is floating here. [Press 'E' to let it swallow you]`, "msg-info");
         }
-        if (activeInteractable && keys['KeyE']) { triggerGulp(activeInteractable.uid, activeInteractable.type, '#111'); keys['KeyE'] = false; }
+        if (activeInteractable && keys['KeyE']) { triggerGulp(activeInteractable.uid, `${activeInteractable.variant} ${activeInteractable.type}`, '#111'); keys['KeyE'] = false; }
     }
 
     function loop() {
@@ -297,15 +311,16 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
             updatePhysics();
             let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h;
             let breath = 1 + Math.sin(frame * 0.03) * 0.015;
+            
+            // DYNAMIC LIGHTING: Draw pitch black first, then punch a hole with radial gradient
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,400);
+
             ctx.save(); ctx.translate(cx, cy); ctx.scale(breath, breath); ctx.translate(-cx, -cy);
             
-            ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
-            
-            // Ultra-fleshy wall gradient
-            ctx.shadowBlur = 40; ctx.shadowColor = 'rgba(0,0,0,1)';
+            // Draw Organ Layout
             let organGrad = ctx.createRadialGradient(cx, cy, rh*0.1, cx, cy, rw*0.8);
             organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(0.8, '#110000'); organGrad.addColorStop(1, '#000');
-            ctx.fillStyle = organGrad; ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 50); ctx.fill(); ctx.shadowBlur = 0;
+            ctx.fillStyle = organGrad; ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 50); ctx.fill();
 
             // Fluid Rendering
             ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.5;
@@ -336,14 +351,18 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
             if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0;
 
-            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 25; ctx.shadowColor = '#ff0000';
-            ctx.fillRect(player.x-8, player.y-8, 16, 16); ctx.shadowBlur = 0;
-            
             ctx.restore();
             
-            let vig = ctx.createRadialGradient(400, 200, 150, 400, 200, 500);
-            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.95)');
-            ctx.fillStyle = vig; ctx.fillRect(0,0,800,400);
+            // OVERLAY DYNAMIC LIGHTING FROM PLAYER SOUL
+            let light = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 250);
+            light.addColorStop(0, 'rgba(0,0,0,0)'); // Transparent near player
+            light.addColorStop(1, 'rgba(0,0,0,0.95)'); // Pitch black at edges
+            ctx.fillStyle = light; ctx.fillRect(0,0,800,400);
+
+            // Draw player soul on top of lighting
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 25; ctx.shadowColor = '#ff0000';
+            ctx.fillRect(player.x-8, player.y-8, 16, 16); ctx.shadowBlur = 0;
+
         }
         else if (state === 'GAMEOVER') {
             ctx.fillStyle = '#050000'; ctx.fillRect(0,0,800,400);
