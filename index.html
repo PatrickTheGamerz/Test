@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Hyper-Realistic AI Engine</title>
+    <title>Undertale: Apex Biology Engine</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #020202; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 650px; border: 4px solid #444; position: relative; box-shadow: 0 0 80px rgba(255, 0, 100, 0.15); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
+        #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 100px rgba(150, 0, 0, 0.3); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
         
         /* Screens */
-        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #222 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a0000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
         .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 20px; letter-spacing: 2px; }
         input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #555; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
         input[type="text"]:focus { border-color: #ffea00; box-shadow: 0 0 15px rgba(255,234,0,0.5); }
-        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase; }
+        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; }
         button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
         #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
         
@@ -23,16 +23,16 @@
         #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 8px; border: 1px solid #333; }
         
         /* Live AI Chat UI */
-        #chat-ui { width: 100%; height: 250px; background: #0a0a0a; border-top: 4px solid #333; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
+        #chat-ui { width: 100%; height: 250px; background: #050505; border-top: 4px solid #222; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
         #chat-log { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 1.3; scroll-behavior: smooth; }
         .msg-player { color: #00ffff; align-self: flex-end; text-align: right; background: rgba(0, 255, 255, 0.1); padding: 5px 15px; border-radius: 15px 15px 0 15px; }
         .msg-monster { color: #ffea00; align-self: flex-start; background: rgba(255, 234, 0, 0.1); padding: 5px 15px; border-radius: 15px 15px 15px 0; }
         .msg-sys { color: #ff4444; align-self: center; font-style: italic; background: rgba(255, 0, 0, 0.1); padding: 2px 10px; border-radius: 10px; }
         .msg-info { color: #aaa; align-self: center; font-style: italic; }
-        #chat-input-area { display: flex; border-top: 2px solid #222; background: #111; }
+        #chat-input-area { display: flex; border-top: 2px solid #222; background: #000; }
         #chat-input { flex-grow: 1; border: none; padding: 15px; font-family: 'VT323', monospace; font-size: 24px; background: transparent; color: #fff; outline: none; }
-        #chat-send { border: none; width: 120px; padding: 0; text-align: center; background: #222; border-radius: 0 0 10px 0; }
-        #chat-send:hover:not(:disabled) { background: #444; color: #fff; }
+        #chat-send { border: none; width: 120px; padding: 0; text-align: center; background: #111; border-radius: 0 0 10px 0; color: #fff; font-family: inherit; font-size: 24px; cursor: pointer;}
+        #chat-send:hover:not(:disabled) { background: #333; color: #fff; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -52,10 +52,10 @@
 
     <div id="map-menu" class="hidden">
         <div class="title-text">SELECT A REGION</div>
-        <button onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 100, 0, 0.8)')" style="width: 350px;">THE RUINS (Toriel)</button>
-        <button onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.6)')" style="width: 350px;">SNOWDIN (Papyrus)</button>
-        <button onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.8)')" style="width: 350px;">WATERFALL (Undyne)</button>
-        <button onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.8)')" style="width: 350px;">HOTLAND (Muffet)</button>
+        <button onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 80, 0, 0.7)')" style="width: 350px;">THE RUINS (Toriel)</button>
+        <button onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.5)')" style="width: 350px;">SNOWDIN (Papyrus)</button>
+        <button onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.7)')" style="width: 350px;">WATERFALL (Undyne)</button>
+        <button onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.7)')" style="width: 350px;">HOTLAND (Muffet)</button>
     </div>
 
     <div id="render-area">
@@ -82,8 +82,7 @@
     let apiKey = "";
     let state = 'MENU', frame = 0, lastHurt = 0;
     
-    // Adjusted physics parameters
-    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.80, gravity: 0.5 };
+    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.85, gravity: 0.6, buoyancy: 0.8 };
     let currentRoom = null, gulletDepth = 0, currentMob = null;
     let isAiTyping = false;
     let particles = [];
@@ -92,13 +91,13 @@
     function makeAnatomy(name, bg, wall, acid) {
         return {
             Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
-            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550, h: 320, aY: 220, dmg: 1, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` } },
-            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 650, h: 180, aY: 180, dmg: 1.5, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` } },
-            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 500, h: 150, aY: 150, dmg: 2.0, exits: { up: `${name}_Abdomen_1`, down: "DIGESTED" } }
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550, h: 320, aY: 220, dmg: 0.5, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` } },
+            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450, h: 250, aY: 150, dmg: 1.0, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` } },
+            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350, h: 180, aY: 120, dmg: 2.0, exits: { up: `${name}_Abdomen_1`, down: "DIGESTED" } }
         };
     }
 
-    const worldDB = {}; // Will be populated dynamically on explore()
+    const worldDB = {};
 
     const mobVisuals = {
         "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
@@ -107,11 +106,10 @@
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
 
-    // Generate background particles for realism
     function spawnParticles(color) {
         particles = [];
-        for(let i=0; i<30; i++) {
-            particles.push({ x: Math.random()*800, y: Math.random()*400, r: Math.random()*4+1, vx: (Math.random()-0.5)*0.5, vy: -Math.random()*1 - 0.5, c: color });
+        for(let i=0; i<40; i++) {
+            particles.push({ x: Math.random()*800, y: Math.random()*400, r: Math.random()*5+2, vx: (Math.random()-0.5)*0.5, vy: -Math.random()*1.5 - 0.5, c: color });
         }
     }
 
@@ -119,9 +117,8 @@
     function saveApiKey() {
         const inputKey = document.getElementById('api-key-input').value.trim();
         const errBox = document.getElementById('api-error');
-        
         if(!inputKey) { errBox.innerText = "Please enter a key!"; return; }
-        if(!inputKey.startsWith("AIza")) { errBox.innerText = "Invalid key! Google API keys must start with 'AIza'."; return; }
+        if(!inputKey.startsWith("AIza")) { errBox.innerText = "Invalid key! Must start with 'AIza'."; return; }
         
         apiKey = inputKey;
         document.getElementById('api-screen').classList.add('hidden');
@@ -151,8 +148,7 @@
         logMsg("You", text, "msg-player");
         isAiTyping = true;
         
-        // CONTEXT UPGRADE: AI knows exactly which organ you are in!
-        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `currently digested and inside your ${currentRoom.n} (a ${currentRoom.type})`;
+        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `currently digested and stuck inside your ${currentRoom.n}`;
 
         const systemPrompt = `You are ${currentMob.n} from Undertale. The player is ${locString}.
 Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
@@ -184,7 +180,6 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
             const result = JSON.parse(jsonMatch[0]);
             logMsg(currentMob.n, result.reply, "msg-monster");
 
-            // Execute AI Actions
             if (result.action === 'gulp' && state === 'ENCOUNTER') {
                 setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
             } else if (result.action === 'spit' && state === 'INTERNAL') {
@@ -205,9 +200,7 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
         document.getElementById('chat-input').disabled = false;
         document.getElementById('chat-send').disabled = false;
         
-        // Generate world data for this specific mob when clicked
         worldDB[id] = makeAnatomy(id, bg, wall, acid);
-        
         state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid };
         document.getElementById('loc-val').innerText = id + " Encounter";
         document.getElementById('chat-log').innerHTML = ''; 
@@ -217,10 +210,7 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
-        
-        // Screen Flash Red
         ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
-        
         if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were fully digested.", "msg-sys"); }
     }
 
@@ -244,55 +234,59 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
         
         document.getElementById('loc-val').innerText = currentRoom.n;
         state = 'INTERNAL'; 
-        
-        // Reset player to top or bottom depending on flow
-        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
+        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 100; 
         player.vx = 0; player.vy = 0;
         spawnParticles(currentRoom.acid);
-        
         logMsg("System", `* You entered ${currentRoom.n}.`, "msg-info");
     }
 
-    // --- PHYSICS ENGINE: SEPARATED THROAT VS STOMACH ---
+    // --- HYPER-REALISTIC PHYSICS ENGINE ---
     function updatePhysics() {
         let spd = keys['ShiftLeft'] ? player.speed*0.6 : player.speed;
+        let inAcid = player.y > currentRoom.aY;
         
-        // Left/Right Movement (Always active)
+        // Input momentum
         if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
         if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
-        // Physics Split!
         if (currentRoom.type === 'throat') { 
-            // GRAVITY MODE (Falling down esophagus)
-            player.vy += player.gravity; 
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.0; // Struggle
+            player.vy += player.gravity; // Constant falling
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
         } else {
-            // TOP-DOWN RPG MODE (Stomach & Abdomens)
-            // No gravity pulling you down constantly. You can stand still!
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd; 
-            if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; 
+            // RPG Mode with true Gravity inside stomachs
+            player.vy += player.gravity;
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim/Jump Up
+            if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; // Dive down
         }
 
-        player.vx *= player.friction; 
-        player.vy *= player.friction;
+        // --- FLUID MECHANICS (Buoyancy & Viscosity) ---
+        if (inAcid) {
+            player.vy -= player.buoyancy; // Acid pushes you up!
+            player.vx *= 0.75; // Thick fluid drag horizontally
+            player.vy *= 0.75; // Thick fluid drag vertically
+            if (frame % 25 === 0) damage(currentRoom.dmg);
+        } else {
+            player.vx *= player.friction; // Normal air friction
+            player.vy *= player.friction;
+        }
+
         player.x += player.vx; 
         player.y += player.vy;
 
         let bL = 400 - currentRoom.w/2 + 20, bR = 400 + currentRoom.w/2 - 20;
-        let bT = 200 - currentRoom.h/2 + 20, bB = 200 + currentRoom.h/2 - 20;
+        let bT = 200 - currentRoom.h/2 + 10, bB = 200 + currentRoom.h/2 - 10;
 
-        // Transitions
-        if (player.y < bT - 10 && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
-        if (player.y > bB + 10 && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+        // --- BUG FIX: DOOR TRANSITIONS ---
+        // Checks transition *before* hard clamping, ensuring you can actually trigger the door!
+        if (player.y <= bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y >= bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        // Wall collisions
+        // Hard clamping to walls
         player.x = Math.max(bL, Math.min(bR, player.x)); 
         player.y = Math.max(bT, Math.min(bB, player.y)); 
 
-        // Acid Damage (If player walks into the bottom area in top-down mode)
-        if (player.y > currentRoom.aY && frame % 20 === 0) damage(currentRoom.dmg);
+        if (player.y >= bB || player.y <= bT) player.vy = 0; // Stop momentum on impact
         
-        // Passive Healing
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { 
             player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); 
         }
@@ -302,9 +296,9 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
     function drawParticles() {
         particles.forEach(p => {
             p.x += p.vx; p.y += p.vy;
-            if (p.y < 0) p.y = 400; // Reset bubbles
+            if (p.y < currentRoom.aY - 20) p.y = 400; // Reset below acid line
             ctx.fillStyle = p.c;
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.6;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
             ctx.globalAlpha = 1.0;
         });
@@ -317,82 +311,86 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
         }
         else if (state === 'ENCOUNTER') {
-            // Fancy Encounter Background
             let grd = ctx.createRadialGradient(400, 200, 50, 400, 200, 400);
             grd.addColorStop(0, currentMob.bg); grd.addColorStop(1, '#000');
             ctx.fillStyle = grd; ctx.fillRect(0,0,800,400);
-            
             mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
         }
         else if (state === 'GULLET') {
-            gulletDepth += 5; 
-            ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
-            
-            // Fast scrolling fleshy walls
+            gulletDepth += 6; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6; let scr = gulletDepth % 120;
             for(let i=-120; i<600; i+=120) { 
                 let w = Math.sin((i+frame)*0.08)*40; 
                 ctx.fillRect(0, i+scr, 300+w, 120); ctx.fillRect(500-w, i+scr, 300+w, 120); 
             }
             ctx.globalAlpha = 1.0; 
-            
-            // Player
             ctx.fillStyle = '#00ffff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00ffff';
             ctx.fillRect(393, 200, 14, 14); ctx.shadowBlur = 0;
-            
             if (gulletDepth >= 350) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
             
-            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.04)*10;
+            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h;
             
-            // Base background
+            // ORGANIC BREATHING: Scales the entire canvas context slightly!
+            let breath = 1 + Math.sin(frame * 0.03) * 0.02;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(breath, breath);
+            ctx.translate(-cx, -cy);
+            
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
             
-            // Fleshy Organ Render with Gradients and Shadows
-            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            let organGrad = ctx.createRadialGradient(cx, cy, rh*0.2, cx, cy, rw);
-            organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(1, '#0a0a0a');
+            // Deep fleshy gradient rendering
+            ctx.shadowBlur = 30; ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            let organGrad = ctx.createRadialGradient(cx, cy, rh*0.1, cx, cy, rw*0.8);
+            organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(1, '#050505');
             
             ctx.fillStyle = organGrad; 
             ctx.beginPath();
-            ctx.roundRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2, 30);
+            ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 40); // Soft, organic corners
             ctx.fill(); ctx.shadowBlur = 0;
 
-            // Hyper-Realistic Wavy Acid (If applicable in room)
-            ctx.fillStyle = currentRoom.acid; 
-            ctx.beginPath(); ctx.moveTo(cx - rw/2 - wob, currentRoom.aY);
-            for(let x = cx - rw/2 - wob; x <= cx + rw/2 + wob; x += 15) { 
-                ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.08 + x*0.05)*12); 
-            } 
-            ctx.lineTo(cx + rw/2 + wob, cy + rh/2 - wob); 
-            ctx.lineTo(cx - rw/2 - wob, cy + rh/2 - wob); 
-            ctx.fill();
+            // --- MULTI-LAYERED ACID WAVES ---
+            // Layer 1: Dark Back Wave
+            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.6;
+            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.06 + x*0.04)*15); } 
+            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
+
+            // Layer 2: Fast Front Wave
+            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.8;
+            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 10);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + 10 + Math.cos(frame*0.09 + x*0.06)*10); } 
+            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
+            ctx.globalAlpha = 1.0;
             
-            // Draw floating bubbles
             drawParticles();
             
-            // Exits (Sphincters)
+            // Sphincter Exits
             ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.8;
-            if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob/2, 15, 0, 0, Math.PI*2); ctx.fill(); }
-            if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob/2, 15, 0, 0, Math.PI*2); ctx.fill(); }
+            let wob = Math.sin(frame*0.05)*10;
+            if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
+            if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0;
 
-            // Player Render (Glowing Soul)
-            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0000';
+            // Player Render
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 20; ctx.shadowColor = '#ff0000';
             ctx.fillRect(player.x-8, player.y-8, 16, 16);
             ctx.shadowBlur = 0;
             
-            // Vignette overlay
+            ctx.restore(); // Undo breathing scale
+            
+            // Outer Vignette
             let vig = ctx.createRadialGradient(400, 200, 150, 400, 200, 500);
-            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.8)');
+            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.9)');
             ctx.fillStyle = vig; ctx.fillRect(0,0,800,400);
         }
         else if (state === 'GAMEOVER') {
             ctx.fillStyle = '#050000'; ctx.fillRect(0,0,800,400);
-            ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '60px VT323'; 
-            ctx.shadowBlur = 20; ctx.shadowColor = '#ff0000';
+            ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '70px VT323'; 
+            ctx.shadowBlur = 30; ctx.shadowColor = '#ff0000';
             ctx.fillText("DIGESTED", 400, 220); ctx.textAlign = 'left'; ctx.shadowBlur = 0;
         }
 
