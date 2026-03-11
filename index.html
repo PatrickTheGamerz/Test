@@ -2,35 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: AI Chat & Anatomy Engine (Gemini 2.5 Flash)</title>
+    <title>Undertale: Hyper-Realistic AI Engine</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 650px; border: 4px solid #fff; position: relative; box-shadow: 0 0 50px rgba(0, 255, 100, 0.2); background: #000; border-radius: 10px; display: flex; flex-direction: column; }
+        body { background: #020202; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
+        #game { width: 800px; height: 650px; border: 4px solid #444; position: relative; box-shadow: 0 0 80px rgba(255, 0, 100, 0.15); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
         
         /* Screens */
-        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
-        .title-text { font-size: 40px; color: #ffea00; text-shadow: 3px 3px 0 #f00; margin-bottom: 20px; }
-        input[type="text"] { width: 450px; padding: 10px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #fff; outline: none; text-align: center; }
-        button { background: #111; color: #fff; border: 2px solid #fff; font-family: inherit; font-size: 24px; padding: 10px 20px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #fff; color: #000; padding-left: 25px; box-shadow: 0 0 10px #fff; }
-        #api-error { color: #ff4444; font-size: 20px; margin-top: 10px; }
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #222 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 20px; letter-spacing: 2px; }
+        input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #555; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
+        input[type="text"]:focus { border-color: #ffea00; box-shadow: 0 0 15px rgba(255,234,0,0.5); }
+        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase; }
+        button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+        #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
         
         /* Canvas & Rendering */
-        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; }
+        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
+        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 8px; border: 1px solid #333; }
         
         /* Live AI Chat UI */
-        #chat-ui { width: 100%; height: 250px; background: #0a0a0a; border-top: 4px solid #fff; display: flex; flex-direction: column; z-index: 10; }
-        #chat-log { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 24px; line-height: 1.2; }
-        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; }
-        .msg-monster { color: #ffea00; align-self: flex-start; }
-        .msg-sys { color: #ff4444; align-self: center; font-style: italic; }
-        .msg-info { color: #888; align-self: center; font-style: italic; }
-        #chat-input-area { display: flex; border-top: 2px solid #333; }
-        #chat-input { flex-grow: 1; border: none; border-right: 2px solid #333; padding: 10px; font-family: 'VT323', monospace; font-size: 24px; background: #111; color: #fff; outline: none; text-align: left;}
-        #chat-send { border: none; width: 100px; padding: 0; text-align: center; }
+        #chat-ui { width: 100%; height: 250px; background: #0a0a0a; border-top: 4px solid #333; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
+        #chat-log { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 1.3; scroll-behavior: smooth; }
+        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; background: rgba(0, 255, 255, 0.1); padding: 5px 15px; border-radius: 15px 15px 0 15px; }
+        .msg-monster { color: #ffea00; align-self: flex-start; background: rgba(255, 234, 0, 0.1); padding: 5px 15px; border-radius: 15px 15px 15px 0; }
+        .msg-sys { color: #ff4444; align-self: center; font-style: italic; background: rgba(255, 0, 0, 0.1); padding: 2px 10px; border-radius: 10px; }
+        .msg-info { color: #aaa; align-self: center; font-style: italic; }
+        #chat-input-area { display: flex; border-top: 2px solid #222; background: #111; }
+        #chat-input { flex-grow: 1; border: none; padding: 15px; font-family: 'VT323', monospace; font-size: 24px; background: transparent; color: #fff; outline: none; }
+        #chat-send { border: none; width: 120px; padding: 0; text-align: center; background: #222; border-radius: 0 0 10px 0; }
+        #chat-send:hover:not(:disabled) { background: #444; color: #fff; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -39,9 +41,9 @@
 <div id="game">
     <div id="api-screen">
         <div class="title-text">AI KARMA ENGINE</div>
-        <div style="font-size: 24px; text-align: center; max-width: 600px;">
+        <div style="font-size: 26px; text-align: center; max-width: 650px; line-height: 1.4; color: #ddd;">
             Paste your Google AI Studio API Key below.<br>
-            Powered by Gemini 2.5 Flash
+            <span style="color: #00ffff;">Powered by Gemini 2.5 Flash</span>
         </div>
         <input type="text" id="api-key-input" placeholder="AIzaSy...">
         <button onclick="saveApiKey()">CONNECT API</button>
@@ -50,10 +52,10 @@
 
     <div id="map-menu" class="hidden">
         <div class="title-text">SELECT A REGION</div>
-        <button onclick="explore('Toriel', '#2a0015')">THE RUINS (Toriel)</button>
-        <button onclick="explore('Papyrus', '#331100')">SNOWDIN (Papyrus)</button>
-        <button onclick="explore('Undyne', '#000022')">WATERFALL (Undyne)</button>
-        <button onclick="explore('Muffet', '#1a002a')">HOTLAND (Muffet)</button>
+        <button onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 100, 0, 0.8)')" style="width: 350px;">THE RUINS (Toriel)</button>
+        <button onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.6)')" style="width: 350px;">SNOWDIN (Papyrus)</button>
+        <button onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.8)')" style="width: 350px;">WATERFALL (Undyne)</button>
+        <button onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.8)')" style="width: 350px;">HOTLAND (Muffet)</button>
     </div>
 
     <div id="render-area">
@@ -79,25 +81,24 @@
 
     let apiKey = "";
     let state = 'MENU', frame = 0, lastHurt = 0;
-    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 1.5, friction: 0.85, gravity: 0.6 };
+    
+    // Adjusted physics parameters
+    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.80, gravity: 0.5 };
     let currentRoom = null, gulletDepth = 0, currentMob = null;
     let isAiTyping = false;
+    let particles = [];
 
     // --- PROCEDURAL ANATOMY ---
     function makeAnatomy(name, bg, wall, acid) {
         return {
-            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 250, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
-            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 500, h: 300, aY: 200, dmg: 1, exits: { up: `${name}_Throat`, down: `${name}_Intestines_1` } },
-            Intestines_1: { n: `${name}'s Intestines`, type: 'intestine', bg: wall, wall: '#000', acid: acid, w: 600, h: 150, aY: 180, dmg: 1.5, exits: { up: `${name}_Stomach`, down: "DIGESTED" } }
+            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550, h: 320, aY: 220, dmg: 1, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` } },
+            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 650, h: 180, aY: 180, dmg: 1.5, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` } },
+            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 500, h: 150, aY: 150, dmg: 2.0, exits: { up: `${name}_Abdomen_1`, down: "DIGESTED" } }
         };
     }
 
-    const worldDB = {
-        "Toriel": makeAnatomy("Toriel", '#2a0015', '#4a0025', 'rgba(255, 68, 0, 0.7)'),
-        "Papyrus": makeAnatomy("Papyrus", '#331100', '#552200', 'rgba(255, 255, 0, 0.4)'),
-        "Undyne": makeAnatomy("Undyne", '#000022', '#001144', 'rgba(0, 255, 255, 0.8)'),
-        "Muffet": makeAnatomy("Muffet", '#1a002a', '#2a003a', 'rgba(150, 0, 255, 0.8)')
-    };
+    const worldDB = {}; // Will be populated dynamically on explore()
 
     const mobVisuals = {
         "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
@@ -105,6 +106,14 @@
         "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
+
+    // Generate background particles for realism
+    function spawnParticles(color) {
+        particles = [];
+        for(let i=0; i<30; i++) {
+            particles.push({ x: Math.random()*800, y: Math.random()*400, r: Math.random()*4+1, vx: (Math.random()-0.5)*0.5, vy: -Math.random()*1 - 0.5, c: color });
+        }
+    }
 
     // --- GEMINI 2.5 FLASH API INTEGRATION ---
     function saveApiKey() {
@@ -142,18 +151,15 @@
         logMsg("You", text, "msg-player");
         isAiTyping = true;
         
-        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `inside your ${currentRoom.n}`;
+        // CONTEXT UPGRADE: AI knows exactly which organ you are in!
+        let locString = state === 'ENCOUNTER' ? 'standing outside you' : `currently digested and inside your ${currentRoom.n} (a ${currentRoom.type})`;
 
-        // Strict system instructions for Gemini 2.5 Flash
         const systemPrompt = `You are ${currentMob.n} from Undertale. The player is ${locString}.
 Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
 Format: {"reply": "your dialogue here", "action": "none"}
 If the player is outside and you decide to eat them, set action to "gulp". 
-If they are inside your stomach and you decide to throw them up, set action to "spit".`;
+If they are inside your stomach/abdomen and you decide to throw them up, set action to "spit".`;
 
-        const userPrompt = text;
-
-        // TARGETING GEMINI 2.5 FLASH
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
         try {
@@ -162,32 +168,23 @@ If they are inside your stomach and you decide to throw them up, set action to "
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     systemInstruction: { parts: [{ text: systemPrompt }] },
-                    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-                    generationConfig: { 
-                        temperature: 0.8,
-                        responseMimeType: "application/json" // Forces Gemini 2.5 to output pure JSON
-                    }
+                    contents: [{ role: "user", parts: [{ text: text }] }],
+                    generationConfig: { temperature: 0.8, responseMimeType: "application/json" }
                 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || `API HTTP Error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`API HTTP Error: ${response.status}`);
 
             const data = await response.json();
             let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
             
-            if (!aiText) throw new Error("AI returned empty content.");
-
-            // Failsafe JSON extraction just in case
             const jsonMatch = aiText.match(/\{[\s\S]*\}/);
             if (!jsonMatch) throw new Error("AI did not return a valid JSON object.");
             
             const result = JSON.parse(jsonMatch[0]);
             logMsg(currentMob.n, result.reply, "msg-monster");
 
-            // Execute AI Game State Actions
+            // Execute AI Actions
             if (result.action === 'gulp' && state === 'ENCOUNTER') {
                 setTimeout(() => triggerGulp(currentMob.id, currentMob.n, currentMob.bg), 1500);
             } else if (result.action === 'spit' && state === 'INTERNAL') {
@@ -196,18 +193,22 @@ If they are inside your stomach and you decide to throw them up, set action to "
 
         } catch (err) {
             console.error("AI API Error:", err);
-            logMsg("System", "* Error: " + err.message, "msg-sys");
+            logMsg("System", "* Error connecting to AI: " + err.message, "msg-sys");
         } finally {
             isAiTyping = false;
         }
     }
 
     // --- GAME LOGIC ---
-    function explore(id, bg) {
+    function explore(id, bg, wall, acid) {
         document.getElementById('map-menu').classList.add('hidden');
         document.getElementById('chat-input').disabled = false;
         document.getElementById('chat-send').disabled = false;
-        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg };
+        
+        // Generate world data for this specific mob when clicked
+        worldDB[id] = makeAnatomy(id, bg, wall, acid);
+        
+        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid };
         document.getElementById('loc-val').innerText = id + " Encounter";
         document.getElementById('chat-log').innerHTML = ''; 
         logMsg("System", `* ${id} approaches. Type below to talk to them!`, "msg-info");
@@ -216,13 +217,17 @@ If they are inside your stomach and you decide to throw them up, set action to "
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
         document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
-        if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were digested.", "msg-sys"); }
+        
+        // Screen Flash Red
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
+        
+        if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were fully digested.", "msg-sys"); }
     }
 
     function triggerGulp(id, name, bg) {
-        state = 'GULLET'; gulletDepth = 0; currentMob = { id: id, n: name, bg: bg };
+        state = 'GULLET'; gulletDepth = 0;
         player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        logMsg("System", `* CHOMP! ${name} decided to swallow you!`, "msg-info");
+        logMsg("System", `* CHOMP! ${name} swallowed you!`, "msg-info");
     }
 
     function loadRoom(rId) {
@@ -236,26 +241,36 @@ If they are inside your stomach and you decide to throw them up, set action to "
 
         let rType = rId.replace(currentMob.id + "_", "");
         currentRoom = worldDB[currentMob.id][rType];
+        
         document.getElementById('loc-val').innerText = currentRoom.n;
         state = 'INTERNAL'; 
+        
+        // Reset player to top or bottom depending on flow
         player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
         player.vx = 0; player.vy = 0;
-        logMsg("System", `* You fell into ${currentRoom.n}. You can still talk from inside!`, "msg-info");
+        spawnParticles(currentRoom.acid);
+        
+        logMsg("System", `* You entered ${currentRoom.n}.`, "msg-info");
     }
 
-    // --- REALISTIC GRAVITY PHYSICS ---
+    // --- PHYSICS ENGINE: SEPARATED THROAT VS STOMACH ---
     function updatePhysics() {
-        let spd = keys['ShiftLeft'] ? player.speed*0.5 : player.speed;
+        let spd = keys['ShiftLeft'] ? player.speed*0.6 : player.speed;
         
+        // Left/Right Movement (Always active)
         if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
         if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
+        // Physics Split!
         if (currentRoom.type === 'throat') { 
-            player.vy += player.gravity * 2; 
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
-        } else {
+            // GRAVITY MODE (Falling down esophagus)
             player.vy += player.gravity; 
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; 
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.0; // Struggle
+        } else {
+            // TOP-DOWN RPG MODE (Stomach & Abdomens)
+            // No gravity pulling you down constantly. You can stand still!
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd; 
+            if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; 
         }
 
         player.vx *= player.friction; 
@@ -263,21 +278,38 @@ If they are inside your stomach and you decide to throw them up, set action to "
         player.x += player.vx; 
         player.y += player.vy;
 
-        let bL = 400 - currentRoom.w/2, bR = 400 + currentRoom.w/2;
-        let bT = 200 - currentRoom.h/2, bB = 200 + currentRoom.h/2;
+        let bL = 400 - currentRoom.w/2 + 20, bR = 400 + currentRoom.w/2 - 20;
+        let bT = 200 - currentRoom.h/2 + 20, bB = 200 + currentRoom.h/2 - 20;
 
-        if (player.y < bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
-        if (player.y > bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+        // Transitions
+        if (player.y < bT - 10 && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y > bB + 10 && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        player.x = Math.max(bL + 10, Math.min(bR - 10, player.x)); 
-        if (player.y > bB) { player.y = bB; player.vy = 0; }
-        if (player.y < bT) { player.y = bT; player.vy = 0; }
+        // Wall collisions
+        player.x = Math.max(bL, Math.min(bR, player.x)); 
+        player.y = Math.max(bT, Math.min(bB, player.y)); 
 
-        if (player.y > currentRoom.aY && frame % 15 === 0) damage(currentRoom.dmg);
-        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); }
+        // Acid Damage (If player walks into the bottom area in top-down mode)
+        if (player.y > currentRoom.aY && frame % 20 === 0) damage(currentRoom.dmg);
+        
+        // Passive Healing
+        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { 
+            player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); 
+        }
     }
 
-    // --- RENDER LOOP ---
+    // --- HYPER-REALISTIC RENDER LOOP ---
+    function drawParticles() {
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.y < 0) p.y = 400; // Reset bubbles
+            ctx.fillStyle = p.c;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+    }
+
     function loop() {
         frame++; ctx.clearRect(0, 0, 800, 400);
 
@@ -285,40 +317,83 @@ If they are inside your stomach and you decide to throw them up, set action to "
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
         }
         else if (state === 'ENCOUNTER') {
-            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,800,400);
+            // Fancy Encounter Background
+            let grd = ctx.createRadialGradient(400, 200, 50, 400, 200, 400);
+            grd.addColorStop(0, currentMob.bg); grd.addColorStop(1, '#000');
+            ctx.fillStyle = grd; ctx.fillRect(0,0,800,400);
+            
             mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
         }
         else if (state === 'GULLET') {
-            gulletDepth += 4; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5; let scr = gulletDepth % 100;
-            for(let i=-100; i<600; i+=100) { let w = Math.sin((i+frame)*0.05)*30; ctx.fillRect(0, i+scr, 300+w, 100); ctx.fillRect(500-w, i+scr, 300+w, 100); }
-            ctx.globalAlpha = 1.0; ctx.fillStyle = '#f00'; ctx.fillRect(393, 200, 14, 14); 
-            if (gulletDepth >= 300) loadRoom(currentMob.id + "_Throat");
+            gulletDepth += 5; 
+            ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
+            
+            // Fast scrolling fleshy walls
+            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6; let scr = gulletDepth % 120;
+            for(let i=-120; i<600; i+=120) { 
+                let w = Math.sin((i+frame)*0.08)*40; 
+                ctx.fillRect(0, i+scr, 300+w, 120); ctx.fillRect(500-w, i+scr, 300+w, 120); 
+            }
+            ctx.globalAlpha = 1.0; 
+            
+            // Player
+            ctx.fillStyle = '#00ffff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00ffff';
+            ctx.fillRect(393, 200, 14, 14); ctx.shadowBlur = 0;
+            
+            if (gulletDepth >= 350) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
+            
+            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.04)*10;
+            
+            // Base background
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
             
-            let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h, wob = Math.sin(frame*0.05)*8;
+            // Fleshy Organ Render with Gradients and Shadows
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            let organGrad = ctx.createRadialGradient(cx, cy, rh*0.2, cx, cy, rw);
+            organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(1, '#0a0a0a');
             
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.3; ctx.fillRect(cx - rw/2 - wob - 10, cy - rh/2 + wob - 10, rw + wob*2 + 20, rh - wob*2 + 20); ctx.globalAlpha = 1.0;
-            ctx.fillStyle = currentRoom.bg; ctx.fillRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2);
+            ctx.fillStyle = organGrad; 
+            ctx.beginPath();
+            ctx.roundRect(cx - rw/2 - wob, cy - rh/2 + wob, rw + wob*2, rh - wob*2, 30);
+            ctx.fill(); ctx.shadowBlur = 0;
 
+            // Hyper-Realistic Wavy Acid (If applicable in room)
             ctx.fillStyle = currentRoom.acid; 
-            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
-            for(let x = cx - rw/2; x <= cx + rw/2; x += 20) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.1 + x*0.05)*10); } 
-            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(cx - rw/2 - wob, currentRoom.aY);
+            for(let x = cx - rw/2 - wob; x <= cx + rw/2 + wob; x += 15) { 
+                ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.08 + x*0.05)*12); 
+            } 
+            ctx.lineTo(cx + rw/2 + wob, cy + rh/2 - wob); 
+            ctx.lineTo(cx - rw/2 - wob, cy + rh/2 - wob); 
+            ctx.fill();
             
-            ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6;
-            if (currentRoom.exits.up) ctx.fillRect(cx - 50, cy - rh/2, 100, 20);
-            if (currentRoom.exits.down) ctx.fillRect(cx - 50, cy + rh/2 - 20, 100, 20);
+            // Draw floating bubbles
+            drawParticles();
+            
+            // Exits (Sphincters)
+            ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.8;
+            if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob/2, 15, 0, 0, Math.PI*2); ctx.fill(); }
+            if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob/2, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0;
 
-            ctx.fillStyle = '#f00'; ctx.fillRect(player.x-7, player.y-7, 14, 14);
+            // Player Render (Glowing Soul)
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0000';
+            ctx.fillRect(player.x-8, player.y-8, 16, 16);
+            ctx.shadowBlur = 0;
+            
+            // Vignette overlay
+            let vig = ctx.createRadialGradient(400, 200, 150, 400, 200, 500);
+            vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.8)');
+            ctx.fillStyle = vig; ctx.fillRect(0,0,800,400);
         }
         else if (state === 'GAMEOVER') {
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,400);
-            ctx.fillStyle = '#f00'; ctx.textAlign = 'center'; ctx.font = '50px VT323'; ctx.fillText("GAME OVER", 400, 200); ctx.textAlign = 'left';
+            ctx.fillStyle = '#050000'; ctx.fillRect(0,0,800,400);
+            ctx.fillStyle = '#ff0000'; ctx.textAlign = 'center'; ctx.font = '60px VT323'; 
+            ctx.shadowBlur = 20; ctx.shadowColor = '#ff0000';
+            ctx.fillText("DIGESTED", 400, 220); ctx.textAlign = 'left'; ctx.shadowBlur = 0;
         }
 
         requestAnimationFrame(loop);
