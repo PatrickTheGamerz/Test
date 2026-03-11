@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: AI Chat & Anatomy Engine</title>
+    <title>Undertale: AI Chat & Anatomy Engine (Gemini 2.5 Flash)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #050505; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
@@ -41,7 +41,7 @@
         <div class="title-text">AI KARMA ENGINE</div>
         <div style="font-size: 24px; text-align: center; max-width: 600px;">
             Paste your Google AI Studio API Key below.<br>
-            (It should start with "AIza...")
+            Powered by Gemini 2.5 Flash
         </div>
         <input type="text" id="api-key-input" placeholder="AIzaSy...">
         <button onclick="saveApiKey()">CONNECT API</button>
@@ -63,7 +63,7 @@
     
     <div id="chat-ui">
         <div id="chat-log">
-            <div class="msg-info">* Awaiting connection...</div>
+            <div class="msg-info">* Awaiting connection to Gemini 2.5 Flash...</div>
         </div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
@@ -106,7 +106,7 @@
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
 
-    // --- REBUILT AI CHAT INTEGRATION ---
+    // --- GEMINI 2.5 FLASH API INTEGRATION ---
     function saveApiKey() {
         const inputKey = document.getElementById('api-key-input').value.trim();
         const errBox = document.getElementById('api-error');
@@ -144,7 +144,7 @@
         
         let locString = state === 'ENCOUNTER' ? 'standing outside you' : `inside your ${currentRoom.n}`;
 
-        // Uses the precise system format from your working example
+        // Strict system instructions for Gemini 2.5 Flash
         const systemPrompt = `You are ${currentMob.n} from Undertale. The player is ${locString}.
 Respond in character. You MUST return ONLY a raw JSON object. Do not wrap it in markdown. 
 Format: {"reply": "your dialogue here", "action": "none"}
@@ -153,8 +153,8 @@ If they are inside your stomach and you decide to throw them up, set action to "
 
         const userPrompt = text;
 
-        // Using standard gemini-1.5-flash endpoint
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // TARGETING GEMINI 2.5 FLASH
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
@@ -165,14 +165,14 @@ If they are inside your stomach and you decide to throw them up, set action to "
                     contents: [{ role: "user", parts: [{ text: userPrompt }] }],
                     generationConfig: { 
                         temperature: 0.8,
-                        responseMimeType: "application/json" // Enforces JSON strictly
+                        responseMimeType: "application/json" // Forces Gemini 2.5 to output pure JSON
                     }
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || "Google API Connection Failed.");
+                throw new Error(errorData.error?.message || `API HTTP Error: ${response.status}`);
             }
 
             const data = await response.json();
@@ -180,7 +180,7 @@ If they are inside your stomach and you decide to throw them up, set action to "
             
             if (!aiText) throw new Error("AI returned empty content.");
 
-            // Failsafe JSON extraction
+            // Failsafe JSON extraction just in case
             const jsonMatch = aiText.match(/\{[\s\S]*\}/);
             if (!jsonMatch) throw new Error("AI did not return a valid JSON object.");
             
@@ -209,7 +209,7 @@ If they are inside your stomach and you decide to throw them up, set action to "
         document.getElementById('chat-send').disabled = false;
         state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg };
         document.getElementById('loc-val').innerText = id + " Encounter";
-        document.getElementById('chat-log').innerHTML = ''; // Clear chat
+        document.getElementById('chat-log').innerHTML = ''; 
         logMsg("System", `* ${id} approaches. Type below to talk to them!`, "msg-info");
     }
 
