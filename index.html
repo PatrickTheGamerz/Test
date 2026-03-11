@@ -9,12 +9,13 @@
         #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 100px rgba(150, 0, 0, 0.3); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
         
         /* Screens */
-        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a0000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
-        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 20px; letter-spacing: 2px; }
+        #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a0000 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #800000; margin-bottom: 10px; letter-spacing: 2px; }
         input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #111; color: #fff; border: 2px solid #555; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
         input[type="text"]:focus { border-color: #ffea00; box-shadow: 0 0 15px rgba(255,234,0,0.5); }
         button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; }
         button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+        .map-btn { width: 400px; margin: 5px; background: #220000; border-color: #ff4444; }
         #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
         
         /* Canvas & Rendering */
@@ -41,7 +42,7 @@
 <div id="game">
     <div id="api-screen">
         <div class="title-text">AI KARMA ENGINE</div>
-        <div style="font-size: 26px; text-align: center; max-width: 650px; line-height: 1.4; color: #ddd;">
+        <div style="font-size: 24px; text-align: center; max-width: 650px; color: #ddd; margin-bottom: 20px;">
             Paste your Google AI Studio API Key below.<br>
             <span style="color: #00ffff;">Powered by Gemini 2.5 Flash</span>
         </div>
@@ -52,10 +53,10 @@
 
     <div id="map-menu" class="hidden">
         <div class="title-text">SELECT A REGION</div>
-        <button onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 80, 0, 0.7)')" style="width: 350px;">THE RUINS (Toriel)</button>
-        <button onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.5)')" style="width: 350px;">SNOWDIN (Papyrus)</button>
-        <button onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.7)')" style="width: 350px;">WATERFALL (Undyne)</button>
-        <button onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.7)')" style="width: 350px;">HOTLAND (Muffet)</button>
+        <button class="map-btn" onclick="explore('Toriel', '#3a0015', '#6a0025', 'rgba(255, 80, 0, 0.7)')">THE RUINS (Toriel)</button>
+        <button class="map-btn" onclick="explore('Papyrus', '#441100', '#772200', 'rgba(255, 255, 0, 0.5)')">SNOWDIN (Papyrus)</button>
+        <button class="map-btn" onclick="explore('Undyne', '#001133', '#002266', 'rgba(0, 255, 255, 0.7)')">WATERFALL (Undyne)</button>
+        <button class="map-btn" onclick="explore('Muffet', '#2a003a', '#4a005a', 'rgba(200, 0, 255, 0.7)')">HOTLAND (Muffet)</button>
     </div>
 
     <div id="render-area">
@@ -82,18 +83,20 @@
     let apiKey = "";
     let state = 'MENU', frame = 0, lastHurt = 0;
     
-    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.85, gravity: 0.6, buoyancy: 0.8 };
+    const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.85, gravity: 0.5, buoyancy: 0.8 };
     let currentRoom = null, gulletDepth = 0, currentMob = null;
     let isAiTyping = false;
     let particles = [];
+    let activeInteractable = null;
 
-    // --- PROCEDURAL ANATOMY ---
-    function makeAnatomy(name, bg, wall, acid) {
+    // --- PROCEDURAL ANATOMY WITH DAMAGE SCALING ---
+    function makeAnatomy(name, bg, wall, acid, baseDmg, isMicro = false) {
+        let wM = isMicro ? 0.6 : 1.0;
         return {
-            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` } },
-            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550, h: 320, aY: 220, dmg: 0.5, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` } },
-            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450, h: 250, aY: 150, dmg: 1.0, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` } },
-            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350, h: 180, aY: 120, dmg: 2.0, exits: { up: `${name}_Abdomen_1`, down: "DIGESTED" } }
+            Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220*wM, h: 400, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` }, entities: [] },
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550*wM, h: 320*wM, aY: 200*wM, dmg: baseDmg, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` }, entities: [] },
+            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450*wM, h: 250*wM, aY: 150*wM, dmg: baseDmg*1.2, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` }, entities: [] },
+            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350*wM, h: 180*wM, aY: 100*wM, dmg: baseDmg*1.5, exits: { up: `${name}_Abdomen_1`, down: isMicro ? "POOP_OUT" : "DIGESTED" }, entities: [] }
         };
     }
 
@@ -105,6 +108,33 @@
         "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
     };
+
+    // --- MICRO-CREATURE SYSTEM (Inception Swallowing!) ---
+    class MicroCreature {
+        constructor(type, x, y) {
+            this.type = type; this.x = x; this.y = y; 
+            this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3;
+            this.uid = type + "_" + Math.floor(Math.random()*10000);
+            
+            // EXACT DAMAGE NUMBERS REQUESTED!
+            let acidColor, dmg;
+            if (type === 'Spider') { this.c = '#111'; this.r = 12; acidColor = 'rgba(150,0,200,0.8)'; dmg = 0.15; }
+            if (type === 'Fish')   { this.c = '#0ff'; this.r = 14; acidColor = 'rgba(0,200,255,0.7)'; dmg = 0.25; }
+            if (type === 'Fly')    { this.c = '#fff'; this.r = 8;  acidColor = 'rgba(200,200,0,0.6)'; dmg = 0.01; }
+            
+            // Generate their internal anatomy
+            worldDB[this.uid] = makeAnatomy(this.type, '#1a1a1a', '#0a0a0a', acidColor, dmg, true);
+        }
+        update(bounds) {
+            this.x += this.vx; this.y += this.vy;
+            if(Math.random() < 0.05) { this.vx += (Math.random()-0.5)*2; this.vy += (Math.random()-0.5)*2; }
+            this.vx = Math.max(-3, Math.min(3, this.vx)); this.vy = Math.max(-3, Math.min(3, this.vy));
+            
+            // Soft bounce off walls
+            if(this.x < bounds.l + 20 || this.x > bounds.r - 20) this.vx *= -1;
+            if(this.y < bounds.t + 20 || this.y > bounds.b - 20) this.vy *= -1;
+        }
+    }
 
     function spawnParticles(color) {
         particles = [];
@@ -200,24 +230,40 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
         document.getElementById('chat-input').disabled = false;
         document.getElementById('chat-send').disabled = false;
         
-        worldDB[id] = makeAnatomy(id, bg, wall, acid);
-        state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid };
-        document.getElementById('loc-val').innerText = id + " Encounter";
+        // VARIANT SYSTEM: 50% chance for Gentle vs Fierce
+        let isGentle = Math.random() > 0.5;
+        let variantName = isGentle ? `Gentle ${id}` : `Fierce ${id}`;
+        let baseDmg = isGentle ? 0.1 : 0.5; // EXACT DAMAGE REQUESTED
+        let finalBg = isGentle ? '#552233' : bg; // Gentle is brighter
+        
+        worldDB[id] = makeAnatomy(variantName, finalBg, wall, acid, baseDmg);
+        
+        // Populate with Micro-Creatures!
+        if(id === 'Muffet') worldDB[id].Stomach.entities.push(new MicroCreature('Spider', 350, 250), new MicroCreature('Fly', 450, 200));
+        if(id === 'Undyne') worldDB[id].Stomach.entities.push(new MicroCreature('Fish', 400, 250));
+        
+        state = 'ENCOUNTER'; currentMob = { id: id, n: variantName, bg: finalBg, acid: acid };
+        document.getElementById('loc-val').innerText = variantName;
         document.getElementById('chat-log').innerHTML = ''; 
-        logMsg("System", `* ${id} approaches. Type below to talk to them!`, "msg-info");
+        logMsg("System", `* ${variantName} approaches. Normal damage is ${baseDmg}.`, "msg-info");
     }
 
     function damage(amt) {
         player.hp -= amt; lastHurt = frame;
-        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
+        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(2); // Show 2 decimals for tiny fly damage!
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.fillRect(0,0,800,400);
         if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were fully digested.", "msg-sys"); }
     }
 
     function triggerGulp(id, name, bg) {
         state = 'GULLET'; gulletDepth = 0;
         player.x = 400; player.y = 50; player.vx = 0; player.vy = 0;
-        logMsg("System", `* CHOMP! ${name} swallowed you!`, "msg-info");
+        
+        // If gulping from inception, override currentMob
+        if (id !== currentMob.id) {
+            currentMob = { id: id, n: name, bg: bg };
+        }
+        logMsg("System", `* CHOMP! Swallowed by ${name}!`, "msg-info");
     }
 
     function loadRoom(rId) {
@@ -228,79 +274,95 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
             return; 
         }
         if (rId === "DIGESTED") { damage(999); return; }
+        if (rId === "POOP_OUT") { 
+            state = 'ESCAPED'; 
+            logMsg("System", "* You passed through the micro-creature! (-1 HP)", "msg-info"); 
+            damage(1.0);
+            setTimeout(() => document.getElementById('map-menu').classList.remove('hidden'), 2000);
+            return; 
+        }
 
         let rType = rId.replace(currentMob.id + "_", "");
         currentRoom = worldDB[currentMob.id][rType];
         
         document.getElementById('loc-val').innerText = currentRoom.n;
         state = 'INTERNAL'; 
-        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 100; 
+        player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; 
         player.vx = 0; player.vy = 0;
         spawnParticles(currentRoom.acid);
-        logMsg("System", `* You entered ${currentRoom.n}.`, "msg-info");
+        logMsg("System", `* Entered ${currentRoom.n}.`, "msg-info");
     }
 
-    // --- HYPER-REALISTIC PHYSICS ENGINE ---
+    // --- HYPER-REALISTIC FLUID PHYSICS ---
     function updatePhysics() {
         let spd = keys['ShiftLeft'] ? player.speed*0.6 : player.speed;
         let inAcid = player.y > currentRoom.aY;
         
-        // Input momentum
         if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= spd; 
         if (keys['KeyD'] || keys['ArrowRight']) player.vx += spd;
         
         if (currentRoom.type === 'throat') { 
-            player.vy += player.gravity; // Constant falling
+            player.vy += player.gravity; 
             if (keys['KeyW'] || keys['ArrowUp']) player.vy -= player.gravity * 2.5; 
         } else {
-            // RPG Mode with true Gravity inside stomachs
             player.vy += player.gravity;
-            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; // Swim/Jump Up
-            if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; // Dive down
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= spd * 1.5; 
+            if (keys['KeyS'] || keys['ArrowDown']) player.vy += spd; 
         }
 
-        // --- FLUID MECHANICS (Buoyancy & Viscosity) ---
         if (inAcid) {
-            player.vy -= player.buoyancy; // Acid pushes you up!
-            player.vx *= 0.75; // Thick fluid drag horizontally
-            player.vy *= 0.75; // Thick fluid drag vertically
-            if (frame % 25 === 0) damage(currentRoom.dmg);
+            player.vy -= player.buoyancy; // Acid pushes up
+            player.vx *= 0.75; player.vy *= 0.75; // Fluid drag
+            if (frame % 20 === 0) damage(currentRoom.dmg);
         } else {
-            player.vx *= player.friction; // Normal air friction
-            player.vy *= player.friction;
+            player.vx *= player.friction; player.vy *= player.friction; // Air drag
         }
 
-        player.x += player.vx; 
-        player.y += player.vy;
+        player.x += player.vx; player.y += player.vy;
 
         let bL = 400 - currentRoom.w/2 + 20, bR = 400 + currentRoom.w/2 - 20;
-        let bT = 200 - currentRoom.h/2 + 10, bB = 200 + currentRoom.h/2 - 10;
+        let bT = 200 - currentRoom.h/2 + 20, bB = 200 + currentRoom.h/2 - 20;
 
-        // --- BUG FIX: DOOR TRANSITIONS ---
-        // Checks transition *before* hard clamping, ensuring you can actually trigger the door!
-        if (player.y <= bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
-        if (player.y >= bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+        if (player.y <= bT - 5 && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y >= bB + 5 && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        // Hard clamping to walls
         player.x = Math.max(bL, Math.min(bR, player.x)); 
         player.y = Math.max(bT, Math.min(bB, player.y)); 
-
-        if (player.y >= bB || player.y <= bT) player.vy = 0; // Stop momentum on impact
+        if (player.y >= bB || player.y <= bT) player.vy = 0; 
         
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { 
-            player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(1); 
+            player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(2); 
+        }
+
+        // Micro-Creature Interactions
+        let touch = null;
+        if (currentRoom.entities) {
+            currentRoom.entities.forEach(e => {
+                e.update({l: bL, r: bR, t: bT, b: bB});
+                if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 20) touch = e;
+            });
+        }
+
+        if (touch !== activeInteractable) {
+            activeInteractable = touch;
+            if (activeInteractable) {
+                logMsg("System", `* A ${activeInteractable.type} is floating here. [Press 'E' to let it swallow you]`, "msg-info");
+            }
+        }
+
+        // Swallow Input ('E')
+        if (activeInteractable && keys['KeyE']) {
+            triggerGulp(activeInteractable.uid, activeInteractable.type, '#111');
+            keys['KeyE'] = false; // Debounce
         }
     }
 
-    // --- HYPER-REALISTIC RENDER LOOP ---
     function drawParticles() {
         particles.forEach(p => {
             p.x += p.vx; p.y += p.vy;
-            if (p.y < currentRoom.aY - 20) p.y = 400; // Reset below acid line
-            ctx.fillStyle = p.c;
-            ctx.globalAlpha = 0.6;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
+            if (p.y < currentRoom.aY - 20) p.y = 400; 
+            ctx.fillStyle = p.c; ctx.globalAlpha = 0.6;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1.0;
         });
     }
 
@@ -314,75 +376,74 @@ If they are inside your stomach/abdomen and you decide to throw them up, set act
             let grd = ctx.createRadialGradient(400, 200, 50, 400, 200, 400);
             grd.addColorStop(0, currentMob.bg); grd.addColorStop(1, '#000');
             ctx.fillStyle = grd; ctx.fillRect(0,0,800,400);
-            mobVisuals[currentMob.id](Math.sin(frame * 0.05) * 5);
+            mobVisuals[currentMob.id.replace('Gentle ', '').replace('Fierce ', '')](Math.sin(frame * 0.05) * 5);
         }
         else if (state === 'GULLET') {
-            gulletDepth += 6; ctx.fillStyle = currentMob.bg; ctx.fillRect(0,0,800,400);
+            gulletDepth += 6; ctx.fillStyle = currentMob.bg || '#111'; ctx.fillRect(0,0,800,400);
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.6; let scr = gulletDepth % 120;
             for(let i=-120; i<600; i+=120) { 
                 let w = Math.sin((i+frame)*0.08)*40; 
                 ctx.fillRect(0, i+scr, 300+w, 120); ctx.fillRect(500-w, i+scr, 300+w, 120); 
             }
             ctx.globalAlpha = 1.0; 
-            ctx.fillStyle = '#00ffff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00ffff';
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000';
             ctx.fillRect(393, 200, 14, 14); ctx.shadowBlur = 0;
             if (gulletDepth >= 350) loadRoom(currentMob.id + "_Throat");
         }
         else if (state === 'INTERNAL') {
             updatePhysics();
-            
             let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h;
             
-            // ORGANIC BREATHING: Scales the entire canvas context slightly!
-            let breath = 1 + Math.sin(frame * 0.03) * 0.02;
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(breath, breath);
-            ctx.translate(-cx, -cy);
+            // Organic Breathing
+            let breath = 1 + Math.sin(frame * 0.03) * 0.015;
+            ctx.save(); ctx.translate(cx, cy); ctx.scale(breath, breath); ctx.translate(-cx, -cy);
             
             ctx.fillStyle = currentRoom.wall; ctx.fillRect(0,0,800,400);
             
-            // Deep fleshy gradient rendering
+            // Fleshy Gradients
             ctx.shadowBlur = 30; ctx.shadowColor = 'rgba(0,0,0,0.9)';
             let organGrad = ctx.createRadialGradient(cx, cy, rh*0.1, cx, cy, rw*0.8);
             organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(1, '#050505');
-            
             ctx.fillStyle = organGrad; 
-            ctx.beginPath();
-            ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 40); // Soft, organic corners
-            ctx.fill(); ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 40); ctx.fill(); ctx.shadowBlur = 0;
 
-            // --- MULTI-LAYERED ACID WAVES ---
-            // Layer 1: Dark Back Wave
+            // Multi-Layered Splashing Acid
             ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.6;
             ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
             for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.06 + x*0.04)*15); } 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
 
-            // Layer 2: Fast Front Wave
             ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.8;
             ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 10);
             for(let x = cx - rw/2; x <= cx + rw/2; x += 15) { ctx.lineTo(x, currentRoom.aY + 10 + Math.cos(frame*0.09 + x*0.06)*10); } 
-            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
-            ctx.globalAlpha = 1.0;
+            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill(); ctx.globalAlpha = 1.0;
             
             drawParticles();
             
-            // Sphincter Exits
-            ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.8;
-            let wob = Math.sin(frame*0.05)*10;
+            // Draw Micro-creatures!
+            if (currentRoom.entities) {
+                currentRoom.entities.forEach(e => {
+                    ctx.fillStyle = e.c; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+                    // Draw little wings/eyes
+                    ctx.fillStyle='#fff';
+                    if(e.type==='Fly') { ctx.globalAlpha=0.5; ctx.beginPath(); ctx.arc(e.x-5, e.y-5, 5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(e.x+5, e.y-5, 5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+                    if(e.type==='Spider') { ctx.fillRect(e.x-3, e.y-2, 2, 2); ctx.fillRect(e.x+1, e.y-2, 2, 2); }
+                });
+            }
+            
+            // Exits
+            ctx.fillStyle = '#050505'; ctx.globalAlpha = 0.8; let wob = Math.sin(frame*0.05)*10;
             if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0;
 
-            // Player Render
+            // Player Soul
             ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 20; ctx.shadowColor = '#ff0000';
-            ctx.fillRect(player.x-8, player.y-8, 16, 16);
-            ctx.shadowBlur = 0;
+            ctx.fillRect(player.x-8, player.y-8, 16, 16); ctx.shadowBlur = 0;
             
-            ctx.restore(); // Undo breathing scale
+            ctx.restore();
             
-            // Outer Vignette
+            // Vignette
             let vig = ctx.createRadialGradient(400, 200, 150, 400, 200, 500);
             vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.9)');
             ctx.fillStyle = vig; ctx.fillRect(0,0,800,400);
