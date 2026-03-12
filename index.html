@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Biology Engine v6 (Scanner Update)</title>
+    <title>Undertale: Apex Biology Engine v7 (UI & Physics Patch)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         
@@ -28,7 +28,11 @@
         #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; background: #000; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
         
-        #stats { position: absolute; top: 15px; left: 15px; font-size: 26px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.85); padding: 8px 20px; border-radius: 8px; border: 1px solid #444; color: #ddd;}
+        /* NEW UPGRADED HEALTH BAR UI */
+        #stats { position: absolute; top: 15px; left: 15px; z-index: 10; background: rgba(0,0,0,0.85); padding: 10px 20px; border-radius: 8px; border: 2px solid #444; display: flex; flex-direction: column; gap: 8px; width: 250px;}
+        #hp-bar-bg { width: 100%; height: 15px; background: #330000; border-radius: 5px; overflow: hidden; border: 1px solid #000; box-shadow: inset 0 0 5px #000;}
+        #hp-bar-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffaa00); width: 100%; transition: width 0.2s ease-out; box-shadow: 0 0 10px rgba(255,0,0,0.8);}
+        #stats-text { font-size: 22px; color: #ddd; display: flex; justify-content: space-between; text-shadow: 2px 2px 0 #000;}
         #hp-val { color: #ff4444; font-weight: bold; }
         #loc-val { color: #00ffff; }
         
@@ -68,7 +72,10 @@
     </div>
 
     <div id="render-area">
-        <div id="stats">HP: <span id="hp-val">20.00</span> | <span id="loc-val">Menu</span></div>
+        <div id="stats">
+            <div id="hp-bar-bg"><div id="hp-bar-fill"></div></div>
+            <div id="stats-text"><span>HP: <span id="hp-val">20.0</span></span> <span id="loc-val">Menu</span></div>
+        </div>
         <canvas id="c" width="800" height="400"></canvas>
     </div>
     
@@ -85,7 +92,7 @@
     const ctx = document.getElementById('c').getContext('2d');
     const keys = {}; window.addEventListener('keydown', e => keys[e.code] = true); window.addEventListener('keyup', e => keys[e.code] = false);
 
-    let apiKey = ""; let state = 'MENU'; let frame = 0; let lastHurt = 0;
+    let apiKey = ""; let state = 'MENU'; let frame = 0; let lastHurt = 0; let frameEntered = 0;
     const player = { x: 400, y: 200, vx: 0, vy: 0, hp: 20, maxHp: 20, speed: 2.0, friction: 0.85, gravity: 0.5, buoyancy: 0.8 };
     let currentRoom = null, gulletDepth = 0, currentMob = null, activeInteractable = null;
     let isAiTyping = false, particles = [];
@@ -100,11 +107,17 @@
     function makeAnatomy(name, bg, wall, acid, baseDmg, isMicro = false) {
         let wM = isMicro ? 0.45 : 1.0; 
         let hM = isMicro ? 0.6 : 1.0;  
+        
+        // FIXED MATH: Dynamically calculate room tops so acid never renders above the ceiling
+        let bT_Stom = 200 - (320*hM)/2;
+        let bT_Abd1 = 200 - (250*hM)/2;
+        let bT_Abd2 = 200 - (180*hM)/2;
+
         return {
             Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220*wM, h: 400*hM, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` }, entities: [] },
-            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550*wM, h: 320*hM, aY: 180*hM, dmg: baseDmg, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` }, entities: [] },
-            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450*wM, h: 250*hM, aY: 100*hM, dmg: baseDmg*1.2, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` }, entities: [] },
-            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350*wM, h: 180*hM, aY: 80*hM, dmg: baseDmg*1.5, exits: { up: `${name}_Abdomen_1`, down: isMicro ? "POOP_OUT" : "DIGESTED" }, entities: [] }
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550*wM, h: 320*hM, aY: bT_Stom + (320*hM)*0.5, dmg: baseDmg, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` }, entities: [] },
+            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450*wM, h: 250*hM, aY: bT_Abd1 + (250*hM)*0.3, dmg: baseDmg*1.2, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` }, entities: [] },
+            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350*wM, h: 180*hM, aY: bT_Abd2 + (180*hM)*0.1, dmg: baseDmg*1.5, exits: { up: `${name}_Abdomen_1`, down: isMicro ? "POOP_OUT" : "DIGESTED" }, entities: [] }
         };
     }
 
@@ -234,10 +247,16 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         logMsg("System", `* You encountered a [${variant}] ${id}. Normal acid damage is ${baseDmg}.`, "msg-info");
     }
 
+    function updateHealthUI() {
+        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(1);
+        let pct = (Math.max(0, player.hp) / player.maxHp) * 100;
+        document.getElementById('hp-bar-fill').style.width = pct + "%";
+    }
+
     function damage(amt) {
         if(amt <= 0) return;
         player.hp -= amt; lastHurt = frame;
-        document.getElementById('hp-val').innerText = Math.max(0, player.hp).toFixed(2);
+        updateHealthUI();
         ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0,0,800,400);
         if (player.hp <= 0) { state = 'GAMEOVER'; logMsg("System", "* You were fully digested.", "msg-sys"); }
     }
@@ -258,11 +277,12 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         document.getElementById('loc-val').innerText = currentRoom.n;
         state = 'INTERNAL'; 
         
-        // FIXED: Dynamic spawn coordinates so you never spawn out of bounds!
         player.x = 400; 
         let bT = 200 - currentRoom.h/2 + 20;
-        player.y = bT + 25; // Spawn safely near the ceiling of the room
+        player.y = bT + 25; 
         player.vx = 0; player.vy = 0;
+        
+        frameEntered = frame; // SET THE COOLDOWN TIMER
         
         spawnParticles(currentRoom.acid);
         logMsg("System", `* Entered ${currentRoom.n}.`, "msg-info");
@@ -290,13 +310,16 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         let bL = 400 - currentRoom.w/2 + 20, bR = 400 + currentRoom.w/2 - 20;
         let bT = 200 - currentRoom.h/2 + 20, bB = 200 + currentRoom.h/2 - 20;
 
-        if (player.y <= bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        // FIXED: Added a 45-frame (less than 1 sec) safety cooldown so you can't be instantly spat out when spawning near the ceiling
+        if (frame - frameEntered > 45) {
+            if (player.y <= bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        }
         if (player.y >= bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
         player.x = Math.max(bL, Math.min(bR, player.x)); player.y = Math.max(bT, Math.min(bB, player.y)); 
         if (player.y >= bB || player.y <= bT) player.vy = 0; 
         
-        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(2); }
+        if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; updateHealthUI(); }
 
         let touch = null;
         if (currentRoom.entities) { currentRoom.entities.forEach(e => { e.update({l: bL, r: bR, t: bT, b: bB}); if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 20) touch = e; }); }
@@ -304,7 +327,6 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         if (activeInteractable && keys['KeyE']) { triggerGulp(activeInteractable.uid, `${activeInteractable.variant} ${activeInteractable.type}`, activeInteractable.bg); keys['KeyE'] = false; }
     }
 
-    // NEW VISUAL UPGRADE: Scanner overlay grid
     function drawScannerGrid() {
         ctx.strokeStyle = 'rgba(0, 255, 120, 0.05)';
         ctx.lineWidth = 1;
@@ -361,7 +383,6 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
             if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0; ctx.restore();
             
-            // Scanner overlay layer
             drawScannerGrid();
             
             let light = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 250);
