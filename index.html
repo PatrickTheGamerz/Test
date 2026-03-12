@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Biology Engine v5 (Micro-Internals Update)</title>
+    <title>Undertale: Apex Biology Engine v6 (Scanner Update)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         
         body { background: #010101; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
         
-        #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 150px rgba(0, 255, 120, 0.1); background: #000; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 150px rgba(0, 255, 120, 0.15); background: #000; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         
         #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a110a 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
         
@@ -98,13 +98,13 @@
     };
 
     function makeAnatomy(name, bg, wall, acid, baseDmg, isMicro = false) {
-        let wM = isMicro ? 0.45 : 1.0; // Scaled down tighter for bugs
-        let hM = isMicro ? 0.6 : 1.0;  // Squatter rooms for bugs
+        let wM = isMicro ? 0.45 : 1.0; 
+        let hM = isMicro ? 0.6 : 1.0;  
         return {
             Throat: { n: `${name}'s Throat`, type: 'throat', bg: bg, wall: wall, acid: acid, w: 220*wM, h: 400*hM, aY: 999, dmg: 0, exits: { up: "ESCAPE", down: `${name}_Stomach` }, entities: [] },
-            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550*wM, h: 320*hM, aY: 200*hM, dmg: baseDmg, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` }, entities: [] },
-            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450*wM, h: 250*hM, aY: 150*hM, dmg: baseDmg*1.2, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` }, entities: [] },
-            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350*wM, h: 180*hM, aY: 100*hM, dmg: baseDmg*1.5, exits: { up: `${name}_Abdomen_1`, down: isMicro ? "POOP_OUT" : "DIGESTED" }, entities: [] }
+            Stomach: { n: `${name}'s Stomach`, type: 'stomach', bg: bg, wall: wall, acid: acid, w: 550*wM, h: 320*hM, aY: 180*hM, dmg: baseDmg, exits: { up: `${name}_Throat`, down: `${name}_Abdomen_1` }, entities: [] },
+            Abdomen_1: { n: `${name}'s Upper Abdomen`, type: 'abdomen', bg: wall, wall: '#050505', acid: acid, w: 450*wM, h: 250*hM, aY: 100*hM, dmg: baseDmg*1.2, exits: { up: `${name}_Stomach`, down: `${name}_Abdomen_2` }, entities: [] },
+            Abdomen_2: { n: `${name}'s Lower Abdomen`, type: 'abdomen', bg: wall, wall: '#020202', acid: acid, w: 350*wM, h: 180*hM, aY: 80*hM, dmg: baseDmg*1.5, exits: { up: `${name}_Abdomen_1`, down: isMicro ? "POOP_OUT" : "DIGESTED" }, entities: [] }
         };
     }
 
@@ -256,7 +256,14 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         let rType = rId.replace(currentMob.id + "_", "");
         currentRoom = worldDB[currentMob.id][rType];
         document.getElementById('loc-val').innerText = currentRoom.n;
-        state = 'INTERNAL'; player.x = 400; player.y = currentRoom.type === 'throat' ? 50 : 150; player.vx = 0; player.vy = 0;
+        state = 'INTERNAL'; 
+        
+        // FIXED: Dynamic spawn coordinates so you never spawn out of bounds!
+        player.x = 400; 
+        let bT = 200 - currentRoom.h/2 + 20;
+        player.y = bT + 25; // Spawn safely near the ceiling of the room
+        player.vx = 0; player.vy = 0;
+        
         spawnParticles(currentRoom.acid);
         logMsg("System", `* Entered ${currentRoom.n}.`, "msg-info");
     }
@@ -295,6 +302,15 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
         if (currentRoom.entities) { currentRoom.entities.forEach(e => { e.update({l: bL, r: bR, t: bT, b: bB}); if (Math.hypot(player.x - e.x, player.y - e.y) < e.r + 20) touch = e; }); }
         if (touch !== activeInteractable) { activeInteractable = touch; if (activeInteractable) logMsg("System", `* A [${activeInteractable.variant}] ${activeInteractable.type} is floating here. [Type to chat, or Press 'E' to force it to swallow you]`, "msg-info"); }
         if (activeInteractable && keys['KeyE']) { triggerGulp(activeInteractable.uid, `${activeInteractable.variant} ${activeInteractable.type}`, activeInteractable.bg); keys['KeyE'] = false; }
+    }
+
+    // NEW VISUAL UPGRADE: Scanner overlay grid
+    function drawScannerGrid() {
+        ctx.strokeStyle = 'rgba(0, 255, 120, 0.05)';
+        ctx.lineWidth = 1;
+        let offset = (frame * 0.5) % 40;
+        for(let i = 0; i < 800; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke(); }
+        for(let i = -40; i < 400; i += 40) { ctx.beginPath(); ctx.moveTo(0, i + offset); ctx.lineTo(800, i + offset); ctx.stroke(); }
     }
 
     function loop() {
@@ -344,6 +360,9 @@ If you are a micro-creature and decide to eat them, set action to "micro_gulp". 
             if (currentRoom.exits.up) { ctx.beginPath(); ctx.ellipse(cx, cy - rh/2 + 10, 60 + wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             if (currentRoom.exits.down) { ctx.beginPath(); ctx.ellipse(cx, cy + rh/2 - 10, 60 - wob, 15, 0, 0, Math.PI*2); ctx.fill(); }
             ctx.globalAlpha = 1.0; ctx.restore();
+            
+            // Scanner overlay layer
+            drawScannerGrid();
             
             let light = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 250);
             light.addColorStop(0, 'rgba(0,0,0,0)'); light.addColorStop(1, 'rgba(0,0,0,0.95)'); 
