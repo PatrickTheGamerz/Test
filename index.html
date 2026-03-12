@@ -2,35 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Apex Biology Engine v3</title>
+    <title>Undertale: Apex Biology Engine v3 (Updated)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
         body { background: #010101; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; user-select: none; overflow: hidden; }
-        #game { width: 800px; height: 650px; border: 4px solid #222; position: relative; box-shadow: 0 0 120px rgba(0, 255, 100, 0.15); background: #000; border-radius: 12px; display: flex; flex-direction: column; }
+        
+        #game { width: 800px; height: 650px; border: 4px solid #333; position: relative; box-shadow: 0 0 150px rgba(0, 255, 120, 0.1); background: #000; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         
         #api-screen, #map-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a110a 0%, #000 100%); z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
-        .title-text { font-size: 46px; color: #ffea00; text-shadow: 4px 4px 0 #005500; margin-bottom: 20px; letter-spacing: 2px; }
+        
+        .title-text { font-size: 52px; color: #ffea00; text-shadow: 4px 4px 0 #005500; margin-bottom: 20px; letter-spacing: 3px; }
+        
         input[type="text"] { width: 450px; padding: 12px; font-family: inherit; font-size: 24px; background: #0a0a0a; color: #fff; border: 2px solid #444; outline: none; text-align: center; border-radius: 8px; transition: 0.3s; }
         input[type="text"]:focus { border-color: #00ffff; box-shadow: 0 0 15px rgba(0,255,255,0.4); }
-        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 24px; padding: 12px 25px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase;}
-        button:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
-        .map-btn { width: 400px; margin: 5px; background: #0a1a0a; border-color: #44ff44; }
-        #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; }
         
-        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; }
+        button { background: #111; color: #fff; border: 2px solid #555; font-family: inherit; font-size: 26px; padding: 12px 30px; cursor: pointer; transition: 0.3s; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px;}
+        button:hover { background: #fff; color: #000; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,255,255,0.4); }
+        
+        .map-btn { width: 400px; margin: 8px; background: #0a1a0a; border-color: #44ff44; }
+        .map-btn:hover { background: #44ff44; color: #000; box-shadow: 0 0 20px rgba(68, 255, 68, 0.6); }
+        
+        #api-error { color: #ff4444; font-size: 22px; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
+        
+        #render-area { position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px 10px 0 0; background: #000; }
         canvas { display: block; image-rendering: pixelated; position: absolute; z-index: 1; }
-        #stats { position: absolute; top: 10px; left: 10px; font-size: 24px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 8px; border: 1px solid #444; }
+        
+        #stats { position: absolute; top: 15px; left: 15px; font-size: 26px; z-index: 10; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.85); padding: 8px 20px; border-radius: 8px; border: 1px solid #444; color: #ddd;}
+        #hp-val { color: #ff4444; font-weight: bold; }
+        #loc-val { color: #00ffff; }
         
         #chat-ui { width: 100%; height: 250px; background: #050505; border-top: 4px solid #222; display: flex; flex-direction: column; z-index: 10; border-radius: 0 0 10px 10px; }
-        #chat-log { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 24px; line-height: 1.3; scroll-behavior: smooth; }
-        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; background: rgba(0, 255, 255, 0.1); padding: 5px 15px; border-radius: 15px 15px 0 15px; }
-        .msg-monster { color: #ffea00; align-self: flex-start; background: rgba(255, 234, 0, 0.1); padding: 5px 15px; border-radius: 15px 15px 15px 0; }
-        .msg-sys { color: #ff4444; align-self: center; font-style: italic; background: rgba(255, 0, 0, 0.1); padding: 2px 10px; border-radius: 10px; }
-        .msg-info { color: #888; align-self: center; font-style: italic; }
+        #chat-log { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 24px; line-height: 1.4; scroll-behavior: smooth; }
+        
+        .msg-player { color: #00ffff; align-self: flex-end; text-align: right; background: rgba(0, 255, 255, 0.1); padding: 8px 18px; border-radius: 15px 15px 0 15px; max-width: 80%; border: 1px solid rgba(0, 255, 255, 0.2); }
+        .msg-monster { color: #ffea00; align-self: flex-start; background: rgba(255, 234, 0, 0.1); padding: 8px 18px; border-radius: 15px 15px 15px 0; max-width: 80%; border: 1px solid rgba(255, 234, 0, 0.2); }
+        .msg-sys { color: #ff4444; align-self: center; font-style: italic; background: rgba(255, 0, 0, 0.1); padding: 4px 15px; border-radius: 10px; border: 1px solid rgba(255, 0, 0, 0.2); }
+        .msg-info { color: #aaa; align-self: center; font-style: italic; }
+        
         #chat-input-area { display: flex; border-top: 2px solid #222; background: #000; }
-        #chat-input { flex-grow: 1; border: none; padding: 15px; font-family: inherit; font-size: 24px; background: transparent; color: #fff; outline: none; }
-        #chat-send { border: none; width: 120px; padding: 0; text-align: center; background: #111; border-radius: 0 0 10px 0; color: #fff; font-family: inherit; font-size: 24px; cursor: pointer;}
-        #chat-send:hover:not(:disabled) { background: #333; color: #fff; }
+        #chat-input { flex-grow: 1; border: none; padding: 15px 20px; font-family: inherit; font-size: 26px; background: transparent; color: #fff; outline: none; }
+        #chat-send { border: none; width: 140px; padding: 0; text-align: center; background: #111; border-radius: 0 0 10px 0; color: #fff; font-family: inherit; font-size: 26px; cursor: pointer; transition: 0.2s;}
+        #chat-send:hover:not(:disabled) { background: #44ff44; color: #000; }
+        #chat-send:disabled { color: #555; cursor: not-allowed; }
+        
         .hidden { display: none !important; }
     </style>
 </head>
@@ -39,7 +54,7 @@
 <div id="game">
     <div id="api-screen">
         <div class="title-text">AI KARMA ENGINE</div>
-        <input type="text" id="api-key-input" placeholder="AIzaSy...">
+        <input type="text" id="api-key-input" placeholder="Enter Gemini API Key (AIzaSy...)">
         <button onclick="saveApiKey()">CONNECT API</button>
         <div id="api-error"></div>
     </div>
@@ -58,7 +73,7 @@
     </div>
     
     <div id="chat-ui">
-        <div id="chat-log"><div class="msg-info">* Awaiting connection to Gemini 2.5 Flash...</div></div>
+        <div id="chat-log"><div class="msg-info">* Awaiting connection to Gemini...</div></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Type here to talk..." disabled>
             <button id="chat-send" onclick="sendChat()" disabled>SEND</button>
@@ -97,10 +112,10 @@
     const mobVisuals = {
         "Toriel": (w) => { ctx.fillStyle='#fff'; ctx.fillRect(360, 150+w, 80, 120); ctx.beginPath(); ctx.arc(400, 130+w, 40, 0, Math.PI*2); ctx.fill(); },
         "Chara": (w) => { 
-            ctx.fillStyle='#33aa33'; ctx.fillRect(360, 150+w, 80, 100); // Green Hoodie
-            ctx.fillStyle='#ffeebb'; ctx.fillRect(375, 110+w, 50, 45); // Face
-            ctx.fillStyle='#663300'; ctx.fillRect(370, 100+w, 60, 20); // Brown hair
-            ctx.fillStyle='#ffffaa'; ctx.fillRect(350, 160+w, 100, 20); // Yellow stripe
+            ctx.fillStyle='#33aa33'; ctx.fillRect(360, 150+w, 80, 100); 
+            ctx.fillStyle='#ffeebb'; ctx.fillRect(375, 110+w, 50, 45); 
+            ctx.fillStyle='#663300'; ctx.fillRect(370, 100+w, 60, 20); 
+            ctx.fillStyle='#ffffaa'; ctx.fillRect(350, 160+w, 100, 20); 
         },
         "Undyne": (w) => { ctx.fillStyle='#00aaff'; ctx.beginPath(); ctx.arc(400, 120+w, 35, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillRect(370, 160+w, 60, 120); },
         "Muffet": (w) => { ctx.fillStyle='#b366ff'; ctx.beginPath(); ctx.arc(400, 150+w, 40, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(400, 230+w, 50, 0, Math.PI*2); ctx.fill(); }
@@ -119,7 +134,6 @@
             if (type === 'Fish')   { this.c = '#0ff'; this.r = 14; acidColor = 'rgba(0,200,255,0.7)'; dmg = 0.25; spdMult = 1.2; }
             if (type === 'Fly')    { this.c = '#fff'; this.r = 8;  acidColor = 'rgba(200,200,0,0.6)'; dmg = 0.01; spdMult = 1.5; }
             
-            // Apply Variant Effects
             if(this.variant === 'Friendly') { dmg = 0.00; spdMult *= 0.5; }
             if(this.variant === 'Aggressive') { dmg *= 2.0; spdMult *= 1.5; }
             if(this.variant === 'Sleepy') { spdMult *= 0.2; }
@@ -146,7 +160,7 @@
     // --- API & CHAT ---
     function saveApiKey() {
         apiKey = document.getElementById('api-key-input').value.trim();
-        if(!apiKey.startsWith("AIza")) { document.getElementById('api-error').innerText = "Invalid key!"; return; }
+        if(!apiKey.startsWith("AIza")) { document.getElementById('api-error').innerText = "Invalid key format!"; return; }
         document.getElementById('api-screen').classList.add('hidden'); document.getElementById('map-menu').classList.remove('hidden');
     }
 
@@ -214,7 +228,7 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
         
         if(id === 'Muffet') worldDB[id].Stomach.entities.push(new MicroCreature('Spider', 350, 250), new MicroCreature('Fly', 450, 200));
         if(id === 'Undyne') worldDB[id].Stomach.entities.push(new MicroCreature('Fish', 400, 250));
-        if(id === 'Chara') worldDB[id].Stomach.entities.push(new MicroCreature('Fly', 400, 200)); // Even Chara accidentally swallowed a fly
+        if(id === 'Chara') worldDB[id].Stomach.entities.push(new MicroCreature('Fly', 400, 200)); 
         
         state = 'ENCOUNTER'; currentMob = { id: id, n: id, bg: bg, acid: acid, variant: variant };
         document.getElementById('loc-val').innerText = `${variant} ${id}`;
@@ -272,10 +286,15 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
         let bL = 400 - currentRoom.w/2 + 20, bR = 400 + currentRoom.w/2 - 20;
         let bT = 200 - currentRoom.h/2 + 20, bB = 200 + currentRoom.h/2 - 20;
 
-        if (player.y <= bT - 5 && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
-        if (player.y >= bB + 5 && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
+        // FIXED: Check transitions exactly at the boundary limits
+        if (player.y <= bT && currentRoom.exits.up) { loadRoom(currentRoom.exits.up); return; }
+        if (player.y >= bB && currentRoom.exits.down) { loadRoom(currentRoom.exits.down); return; }
 
-        player.x = Math.max(bL, Math.min(bR, player.x)); player.y = Math.max(bT, Math.min(bB, player.y)); 
+        // Clamp the player to the room
+        player.x = Math.max(bL, Math.min(bR, player.x)); 
+        player.y = Math.max(bT, Math.min(bB, player.y)); 
+
+        // Reset vertical velocity if they hit the floor/ceiling
         if (player.y >= bB || player.y <= bT) player.vy = 0; 
         
         if (frame - lastHurt > 180 && player.hp < player.maxHp && frame % 10 === 0) { player.hp += 0.1; document.getElementById('hp-val').innerText = player.hp.toFixed(2); }
@@ -312,23 +331,28 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
             let cx = 400, cy = 200, rw = currentRoom.w, rh = currentRoom.h;
             let breath = 1 + Math.sin(frame * 0.03) * 0.015;
             
-            // DYNAMIC LIGHTING: Draw pitch black first, then punch a hole with radial gradient
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,800,400);
 
             ctx.save(); ctx.translate(cx, cy); ctx.scale(breath, breath); ctx.translate(-cx, -cy);
             
-            // Draw Organ Layout
             let organGrad = ctx.createRadialGradient(cx, cy, rh*0.1, cx, cy, rw*0.8);
             organGrad.addColorStop(0, currentRoom.bg); organGrad.addColorStop(0.8, '#110000'); organGrad.addColorStop(1, '#000');
             ctx.fillStyle = organGrad; ctx.beginPath(); ctx.roundRect(cx - rw/2, cy - rh/2, rw, rh, 50); ctx.fill();
 
-            // Fluid Rendering
-            ctx.fillStyle = currentRoom.acid; ctx.globalAlpha = 0.5;
-            ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY);
-            for(let x = cx - rw/2; x <= cx + rw/2; x += 15) ctx.lineTo(x, currentRoom.aY + Math.sin(frame*0.05 + x*0.03)*18); 
-            ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill();
+            // FIXED: Upgraded Double-Sine Wave Fluid Rendering
+            ctx.fillStyle = currentRoom.acid; 
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath(); 
+            ctx.moveTo(cx - rw/2, currentRoom.aY);
+            for(let x = cx - rw/2; x <= cx + rw/2; x += 10) {
+                let wave = Math.sin(frame*0.04 + x*0.02)*12 + Math.sin(frame*0.06 + x*0.05)*6;
+                ctx.lineTo(x, currentRoom.aY + wave); 
+            }
+            ctx.lineTo(cx + rw/2, cy + rh/2); 
+            ctx.lineTo(cx - rw/2, cy + rh/2); 
+            ctx.fill();
 
-            ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 15);
+            ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(cx - rw/2, currentRoom.aY + 15);
             for(let x = cx - rw/2; x <= cx + rw/2; x += 15) ctx.lineTo(x, currentRoom.aY + 15 + Math.cos(frame*0.08 + x*0.05)*12); 
             ctx.lineTo(cx + rw/2, cy + rh/2); ctx.lineTo(cx - rw/2, cy + rh/2); ctx.fill(); ctx.globalAlpha = 1.0;
             
@@ -353,15 +377,25 @@ If outside and you decide to eat them, set action to "gulp". If inside and you d
 
             ctx.restore();
             
-            // OVERLAY DYNAMIC LIGHTING FROM PLAYER SOUL
+            // FIXED: DYNAMIC LIGHTING & PULSING SOUL
             let light = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 250);
-            light.addColorStop(0, 'rgba(0,0,0,0)'); // Transparent near player
-            light.addColorStop(1, 'rgba(0,0,0,0.95)'); // Pitch black at edges
+            light.addColorStop(0, 'rgba(0,0,0,0)'); 
+            light.addColorStop(1, 'rgba(0,0,0,0.95)'); 
             ctx.fillStyle = light; ctx.fillRect(0,0,800,400);
 
-            // Draw player soul on top of lighting
-            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 25; ctx.shadowColor = '#ff0000';
-            ctx.fillRect(player.x-8, player.y-8, 16, 16); ctx.shadowBlur = 0;
+            let soulPulse = 20 + Math.sin(frame * 0.1) * 5; 
+            ctx.fillStyle = '#ff0000'; 
+            ctx.shadowBlur = soulPulse; 
+            ctx.shadowColor = '#ff0000';
+            
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 3);
+            ctx.bezierCurveTo(player.x, player.y - 8, player.x - 8, player.y - 8, player.x - 8, player.y - 3);
+            ctx.bezierCurveTo(player.x - 8, player.y + 4, player.x, player.y + 7, player.x, player.y + 10);
+            ctx.bezierCurveTo(player.x, player.y + 7, player.x + 8, player.y + 4, player.x + 8, player.y - 3);
+            ctx.bezierCurveTo(player.x + 8, player.y - 8, player.x, player.y - 8, player.x, player.y - 3);
+            ctx.fill(); 
+            ctx.shadowBlur = 0;
 
         }
         else if (state === 'GAMEOVER') {
