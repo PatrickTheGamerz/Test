@@ -2,58 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V17</title>
+    <title>Undertale: Determination Protocol V18</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000; }
         body { background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
-        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; }
+        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.5); }
 
-        /* Persistence Screen */
-        #setup-overlay { position: absolute; inset: 0; background: #000; z-index: 6000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* Screens */
+        #api-overlay, #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .slot { width: 450px; padding: 15px; border: 3px solid #fff; margin: 10px; cursor: pointer; background: #111; text-align: center; font-size: 24px; }
         .slot:hover { border-color: var(--red); color: var(--red); }
 
         /* Battle UI */
-        #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        #monster-sprite { height: 220px; font-size: 140px; display: flex; align-items: center; justify-content: center; position: relative; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        #monster-sprite { height: 200px; font-size: 120px; display: flex; align-items: center; justify-content: center; position: relative; }
         #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
+        #box-text { position: absolute; top: 20px; left: 20px; font-size: 28px; line-height: 1.4; color: white; width: 400px; }
         #soul { width: 18px; height: 18px; position: absolute; z-index: 100; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
-        .bullet { position: absolute; pointer-events: none; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        
+        /* Fight Bar */
+        #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 200; }
+        #target-area { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
+        #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 15px #fff; }
 
         /* Stats */
-        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; padding: 0 10px; }
-        #hp-bar { width: 140px; height: 22px; background: var(--red); position: relative; }
-        #hp-fill { height: 100%; background: var(--yellow); width: 100%; }
+        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
+        #hp-bar { width: 140px; height: 22px; background: var(--red); position: relative; border: 2px solid #000; }
+        #hp-fill { height: 100%; background: var(--yellow); width: 100%; transition: width 0.2s; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 28px; padding: 10px; cursor: pointer; }
+        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
         .chara-lock { border-color: var(--red) !important; color: var(--red) !important; box-shadow: 0 0 15px var(--red); }
 
-        #chat-side { width: 480px; background: #050505; display: flex; flex-direction: column; border-left: 2px solid #222; }
-        #log { flex-grow: 1; padding: 20px; overflow-y: auto; font-size: 22px; }
-        .msg-chara { color: var(--red); margin-bottom: 15px; border-left: 3px solid var(--red); padding-left: 10px; }
-        #chat-input { background: #000; border: none; border-top: 1px solid #333; color: #fff; padding: 15px; font-family: inherit; font-size: 22px; }
+        #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
+        #log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 24px; }
+        .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 10px; margin-bottom: 15px; }
+        #chat-input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
 
+        .bullet { position: absolute; font-size: 30px; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="game">
-    <div id="setup-overlay" class="hidden">
-        <h1 style="color:var(--yellow)">TIMELINE CORE STABILIZER</h1>
-        <p>Enter Gemini API Key to enable Chara's Sentience:</p>
-        <input type="password" id="api-input" placeholder="AIza..." style="padding:10px; width:300px; font-family:inherit;">
-        <button class="game-btn" onclick="saveKeyAndReturn()" style="margin-top:20px;">LINK TO SOUL</button>
+    <div id="api-overlay" class="hidden">
+        <h1 style="color:var(--red)">CONNECTION REQUIRED</h1>
+        <input type="text" id="api-input" placeholder="Paste Gemini API Key here..." style="width:350px; padding:10px; font-family:inherit; font-size:20px;">
+        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px;">LINK CORE</button>
     </div>
 
-    <div id="menu-overlay">
-        <h1 style="color:var(--red); font-size: 50px;">DETERMINATION PROTOCOL V17</h1>
+    <div id="menu-overlay" class="hidden">
+        <h1 style="color:var(--red); font-size: 50px;">DETERMINATION PROTOCOL V18</h1>
         <div id="slot-container"></div>
-        <button class="game-btn" onclick="showKeySetup()" style="margin-top:30px; font-size: 18px;">UPDATE API KEY</button>
     </div>
 
     <div id="battle-side">
@@ -65,109 +67,125 @@
                 <span id="hp-txt">20/20</span>
             </div>
         </div>
+        <div style="font-size:18px; color:#555; margin:5px;">CONTROL: <span id="sync-txt" style="color:red">0</span>% | EXP: <span id="learn-txt">0</span></div>
         
         <div id="monster-sprite"></div>
 
         <div id="box">
+            <div id="box-text"></div>
             <div id="soul"></div>
+            <div id="fight-ui">
+                <div id="target-area"><div id="slider"></div></div>
+            </div>
         </div>
 
         <div class="btn-grid">
-            <button class="game-btn" onclick="handleBtn('FIGHT')">FIGHT</button>
-            <button class="game-btn" onclick="handleBtn('ACT')">ACT</button>
-            <button class="game-btn" onclick="handleBtn('ITEM')">ITEM</button>
-            <button class="game-btn" onclick="handleBtn('MERCY')">MERCY</button>
+            <button class="game-btn" id="b-FIGHT" onclick="handleBtn('FIGHT')">FIGHT</button>
+            <button class="game-btn" id="b-ACT" onclick="handleBtn('ACT')">ACT</button>
+            <button class="game-btn" id="b-ITEM" onclick="handleBtn('ITEM')">ITEM</button>
+            <button class="game-btn" id="b-MERCY" onclick="handleBtn('MERCY')">MERCY</button>
         </div>
-        <div style="font-size:16px; color:#444; margin-top:10px;">NEURAL MIRROR: <span id="sync-val">0</span>%</div>
     </div>
 
     <div id="chat-side">
         <div id="log"></div>
-        <input type="text" id="chat-input" placeholder="Say something..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Type to Chara..." autocomplete="off">
     </div>
 </div>
 
 <script>
-    const KEY = 'UT_PROTOCOL_V17';
-    let storage = JSON.parse(localStorage.getItem(KEY)) || { slots: [null,null,null], apiKey: "" };
+    const STORAGE_KEY = 'UT_DATA_V18';
+    let storage = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { slots: [null,null,null], apiKey: "" };
+    let curSlot = null;
 
     // --- STATE ---
-    let lv=1, hp=20, maxHp=20, exp=0, sync=10, defeated=[], region='RUINS';
+    let lv=1, hp=20, maxHp=20, exp=0, sync=10, battleExp=0, region='RUINS', defeated=[], items=["Pie", "Steak", "Bun"];
     let turn='MENU', enemy=null, bullets=[], frame=0, turnFrames=0;
-    let soulX=211, soulY=121, soulVY=0, isBlue=false, onGround=false;
+    let soulX=211, soulY=121, soulVY=0, isBlue=false, onGround=true;
+    let sliderX=0, sliderDir=8, playerMoveHistory = [];
     const keys = {};
 
-    // --- NEURAL MIRROR (AI Learning) ---
-    let playerMoveLog = []; // Records every (dx, dy) and button choice
-    let playerAggression = 0.5; // Do they FIGHT or ACT?
-    let playerHealPoint = 0.3; // At what % HP do they heal?
-
-    function saveKeyAndReturn() {
-        const val = document.getElementById('api-input').value;
-        if(val) { storage.apiKey = val; localStorage.setItem(KEY, JSON.stringify(storage)); }
-        document.getElementById('setup-overlay').classList.add('hidden');
+    // --- INITIALIZATION ---
+    function saveApiKey() {
+        const val = document.getElementById('api-input').value.trim();
+        if(val.startsWith("AIza")) { storage.apiKey = val; localStorage.setItem(STORAGE_KEY, JSON.stringify(storage)); location.reload(); }
     }
 
-    function showKeySetup() { document.getElementById('setup-overlay').classList.remove('hidden'); }
+    if(!storage.apiKey) { document.getElementById('api-overlay').classList.remove('hidden'); }
+    else { document.getElementById('menu-overlay').classList.remove('hidden'); initSlots(); }
 
     function initSlots() {
         const container = document.getElementById('slot-container'); container.innerHTML = '';
         storage.slots.forEach((s, i) => {
-            const div = document.createElement('div'); div.className = 'slot';
-            div.innerHTML = s ? `[${s.name}] LV ${s.lv} | ${s.region}` : `-- NEW TIMELINE --`;
-            div.onclick = () => {
-                if(!storage.apiKey) return showKeySetup();
-                s ? loadSlot(i) : createSlot(i);
-            };
+            const div = document.createElement('div'); div.className = `slot`;
+            div.innerHTML = s ? `[${s.name}] LV ${s.lv} | ${s.region} | SYNC ${Math.floor(s.sync)}%` : `-- CREATE TIMELINE --`;
+            div.onclick = () => s ? loadSlot(i) : createSlot(i);
             container.appendChild(div);
         });
     }
 
     function createSlot(i) {
         let n = prompt("Name:"); if(!n) return;
-        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 10, defeated: [], region: 'RUINS' };
-        localStorage.setItem(KEY, JSON.stringify(storage)); initSlots();
+        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 10, battleExp: 0, region: 'RUINS', defeated: [], items: ["Pie", "Steak", "Bun"] };
+        saveAll(); initSlots();
     }
 
     function loadSlot(i) {
-        const s = storage.slots[i];
-        lv=s.lv; exp=s.exp; sync=s.sync; defeated=s.defeated; region=s.region;
+        curSlot = i; const s = storage.slots[i];
+        lv=s.lv; exp=s.exp; sync=s.sync; battleExp=s.battleExp; region=s.region; defeated=s.defeated; items=s.items;
         hp=20+(lv-1)*4; maxHp=hp;
         document.getElementById('menu-overlay').classList.add('hidden');
-        updateStats(); spawnEnemy(); requestAnimationFrame(loop);
+        updateStatsUI(); spawnEnemy(); requestAnimationFrame(mainLoop);
     }
 
-    window.onkeydown = e => keys[e.code] = true;
+    function saveAll() {
+        if(curSlot !== null) {
+            storage.slots[curSlot] = { lv, exp, sync, battleExp, region, defeated, items, name: storage.slots[curSlot].name };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
+        }
+    }
+
+    // --- INPUT ---
+    window.onkeydown = e => {
+        keys[e.code] = true;
+        if ((e.code === 'Enter' || e.code === 'KeyZ') && turn === 'FIGHTING') triggerHit();
+    };
     window.onkeyup = e => keys[e.code] = false;
 
-    // --- GAME LOOP ---
-    function loop() {
+    // --- ENGINE ---
+    function mainLoop() {
         if(turn === 'SURVIVAL') runSurvival();
-        frame++; requestAnimationFrame(loop);
+        if(turn === 'FIGHTING') runFightBar();
+        frame++; requestAnimationFrame(mainLoop);
     }
 
     function spawnEnemy() {
-        if (lv >= 7) enemy = { n: "Papyrus", hp: 680, art: "💀", p: ['BONE_JUMP', 'BLUE_MIX'] };
-        else if (lv >= 4) enemy = { n: "Toriel", hp: 440, art: "🐐", p: ['FIRE_RAIN', 'CURVE_FIRE'] };
-        else enemy = { n: "Froggit", hp: 30, art: "🐸", p: ['FROG_JUMP', 'FLY_RAIN'] };
-        
+        if (lv >= 7 && !defeated.includes("PAPYRUS")) {
+            enemy = { n: "Papyrus", hp: 680, art: "💀", p: ['BONE_JUMP', 'BLUE_MIX'] };
+        } else if (region === 'RUINS' && !defeated.includes("TORIEL") && lv >= 4) {
+            enemy = { n: "Toriel", hp: 440, art: "🐐", p: ['FIRE_RAIN', 'CURVE_FIRE'] };
+        } else {
+            const pool = (region === 'RUINS') ? 
+                [{n:"Froggit", hp:30, art:"🐸", p:['FLY_RAIN', 'FROG_JUMP']}, {n:"Napstablook", hp:88, art:"👻", p:['TEAR_RAIN', 'TEAR_WAVE']}] :
+                [{n:"Snowdrake", hp:50, art:"🐦", p:['ICE_SHARD']}];
+            enemy = { ...pool[Math.floor(Math.random()*pool.length)] };
+        }
         document.getElementById('monster-sprite').innerText = enemy.art;
-        logMsg("System", `* ${enemy.n} attacks!`);
+        setBoxText(`* ${enemy.n} appeared.`);
         decideTurn();
     }
+
+    function setBoxText(t) { document.getElementById('box-text').innerText = t; }
 
     function decideTurn() {
         if(Math.random()*100 < sync) {
             turn = 'CHARA_TURN';
             document.getElementById('soul').style.background = "#fff";
             document.querySelectorAll('.game-btn').forEach(b => b.classList.add('chara-lock'));
-            
-            // AI Behavioral Logic (Mirroring Player)
             setTimeout(() => {
-                if (hp < maxHp * playerHealPoint) handleBtn('ITEM');
-                else if (Math.random() < playerAggression) handleBtn('FIGHT');
-                else handleBtn('ACT');
-            }, 1000);
+                if (hp < maxHp * 0.5 && items.length > 0) handleBtn('ITEM');
+                else handleBtn('FIGHT');
+            }, 800);
         } else {
             turn = 'PLAYER_TURN';
             document.getElementById('soul').style.background = "var(--red)";
@@ -175,146 +193,170 @@
         }
     }
 
-    function handleBtn(type) {
-        if(turn !== 'PLAYER_TURN' && turn !== 'CHARA_TURN') return;
-        if(turn === 'PLAYER_TURN') {
-            if(type === 'FIGHT') playerAggression = Math.min(1, playerAggression + 0.1);
-            if(type === 'ACT') playerAggression = Math.max(0, playerAggression - 0.1);
+    function handleBtn(a) {
+        if (turn !== 'PLAYER_TURN' && turn !== 'CHARA_TURN') return;
+        if (a === 'FIGHT') {
+            turn = 'FIGHTING';
+            sliderX = 0;
+            document.getElementById('fight-ui').style.display = 'flex';
+            setBoxText("");
         }
-
-        if(type === 'FIGHT') {
-            enemy.hp -= (lv * 5);
-            logMsg(turn==='CHARA_TURN'?'Chara':'You', `* Hit for ${lv*5} DMG.`);
-            if(enemy.hp <= 0) { 
-                logMsg("System", "* Victory."); 
-                if(enemy.n === "Papyrus") lv++;
-                exp += 50; if(exp > lv*100) lv++;
-                spawnEnemy(); 
-            } else startSurvival();
+        if (a === 'ITEM') {
+            if (items.length > 0) {
+                let item = items.pop();
+                hp = Math.min(maxHp, hp + 20);
+                logMsg(turn === 'CHARA_TURN' ? "Chara" : "You", `* Used ${item}. Restored 20 HP.`);
+                updateStatsUI();
+                startSurvival();
+            }
         }
-        if(type === 'ITEM') { 
-            hp = Math.min(maxHp, hp+10); updateStats(); 
-            logMsg("System", "* Healed."); startSurvival(); 
+        if (a === 'ACT') {
+            logMsg("System", `* You checked ${enemy.n}.`);
+            startSurvival();
         }
     }
 
+    function runFightBar() {
+        sliderX += sliderDir;
+        if (sliderX > 370 || sliderX < 0) sliderDir *= -1;
+        document.getElementById('slider').style.left = sliderX + 'px';
+        
+        // Chara Auto-Hit Logic (Better as she learns)
+        if (turn === 'CHARA_TURN') {
+            if (Math.abs(190 - sliderX) < (10 + battleExp / 100)) triggerHit();
+        }
+    }
+
+    function triggerHit() {
+        const attacker = (turn === 'CHARA_TURN') ? "Chara" : "You";
+        let dist = Math.abs(190 - sliderX);
+        let dmg = Math.floor(Math.max(1, (20 - dist / 10) + lv));
+        enemy.hp -= dmg;
+        document.getElementById('fight-ui').style.display = 'none';
+        logMsg(attacker, `* Dealt ${dmg} damage.`);
+        if (enemy.hp <= 0) handleVictory();
+        else startSurvival();
+    }
+
     function startSurvival() {
-        turn = 'SURVIVAL'; turnFrames = 300; bullets = [];
+        turn = 'SURVIVAL'; turnFrames = 350; bullets = [];
         isBlue = (enemy.n === "Papyrus");
         document.getElementById('soul').style.filter = isBlue ? "hue-rotate(200deg)" : "none";
+        setBoxText("");
     }
 
     function runSurvival() {
         let isChara = (turn === 'CHARA_TURN') || (Math.random()*100 < sync);
-        let dx=0, dy=0;
+        let dx=0, dy=0, moving = false;
 
-        if(!isChara) {
-            // Player Movement
-            if(keys['ArrowLeft']) dx = -4;
-            if(keys['ArrowRight']) dx = 4;
+        if (!isChara) {
+            if(keys['ArrowLeft']) { dx = -4; moving = true; }
+            if(keys['ArrowRight']) { dx = 4; moving = true; }
             if(!isBlue) {
-                if(keys['ArrowUp']) dy = -4;
-                if(keys['ArrowDown']) dy = 4;
+                if(keys['ArrowUp']) { dy = -4; moving = true; }
+                if(keys['ArrowDown']) { dy = 4; moving = true; }
             } else {
-                if(keys['ArrowUp'] && onGround) { soulVY = -12; onGround = false; }
+                if(keys['ArrowUp'] && onGround) { soulVY = -13; onGround = false; }
                 soulVY += 0.7; dy = soulVY;
+                if (soulY + dy >= 242) { soulY = 242; dy = 0; onGround = true; soulVY = 0; }
             }
             // Record behavior
-            playerMoveLog.push({dx, dy});
-            if(playerMoveLog.length > 200) playerMoveLog.shift();
+            playerMoveHistory.push({dx, dy, moving});
+            if(playerMoveHistory.length > 300) playerMoveHistory.shift();
         } else {
-            // CHARA MIRROR LOGIC
-            // She picks a random successful movement from your recent history
-            let historicalMove = playerMoveLog[Math.floor(Math.random()*playerMoveLog.length)] || {dx:0, dy:0};
-            dx = historicalMove.dx;
-            dy = historicalMove.dy;
+            // Neural Mirroring: Chara mimics your pattern logic
+            let move = playerMoveHistory[Math.floor(Math.random()*playerMoveHistory.length)] || {dx:0, dy:0, moving:false};
+            dx = move.dx; dy = move.dy; moving = move.moving;
             
-            // Intelligence: Chase Green / Avoid White
+            // Learning adjustment: Chara starts to actively dodge bullets she's "seen" before
             bullets.forEach(b => {
                 let d = Math.hypot(b.x-soulX, b.y-soulY);
-                if(b.isGreen && d < 100) { dx = (b.x > soulX ? 3 : -3); dy = (b.y > soulY ? 3 : -3); }
-                if(!b.isGreen && d < 40) { dx = (b.x > soulX ? -5 : 5); dy = (b.y > soulY ? -5 : 5); }
+                if (d < 50) { 
+                    if (b.isBlue && battleExp > 500) { dx = 0; dy = 0; moving = false; } // Learned blue stop
+                    else { dx = (b.x > soulX ? -4 : 4); dy = (b.y > soulY ? -4 : 4); moving = true; } 
+                }
             });
         }
 
-        soulX += dx; soulY += dy;
-        if(soulY >= 242) { soulY = 242; onGround = true; soulVY = 0; }
-        soulX = Math.max(0, Math.min(422, soulX));
-        document.getElementById('soul').style.left = soulX + 'px';
-        document.getElementById('soul').style.top = soulY + 'px';
+        soulX = Math.max(0, Math.min(422, soulX + dx));
+        soulY = Math.max(0, Math.min(242, soulY + dy));
+        document.getElementById('soul').style.left = soulX+'px';
+        document.getElementById('soul').style.top = soulY+'px';
 
-        if(frame % 20 === 0) spawnBullet();
+        if(frame % 25 === 0) spawnBullet();
 
         bullets.forEach((b, i) => {
-            // Toriel's "Mercy" logic: bullets curve away at low HP
-            if(enemy.n === "Toriel" && hp < 5) {
-                let angle = Math.atan2(soulY - b.y, soulX - b.x);
-                b.vx -= Math.cos(angle) * 0.5;
-                b.vy -= Math.sin(angle) * 0.5;
-            }
-
             b.x += b.vx; b.y += b.vy;
-            b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
+            if(b.isWavy) b.x += Math.sin(frame/10)*3;
+            b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
 
             if(Math.hypot(b.x-soulX, b.y-soulY) < 15) {
-                if(b.isGreen) hp = Math.min(maxHp, hp+2);
-                else hp -= 1;
-                b.el.remove(); bullets.splice(i, 1);
-                updateStats();
-                if(hp <= 0) { 
-                    if(enemy.n === "Papyrus") { alert("CAPTURED!"); hp=maxHp; startSurvival(); }
-                    else location.reload(); 
+                if(b.isBlue && !moving) {} 
+                else {
+                    hp -= 1; b.el.remove(); bullets.splice(i, 1); updateStatsUI();
+                    if(hp <= 0) handleDeath();
                 }
-            }
+            } else if(b.y > 300 || b.x > 500 || b.x < -100) { b.el.remove(); bullets.splice(i, 1); }
         });
 
+        battleExp++;
         turnFrames--;
         if(turnFrames <= 0) { bullets.forEach(b=>b.el.remove()); decideTurn(); }
     }
 
     function spawnBullet() {
         const p = enemy.p[Math.floor(Math.random()*enemy.p.length)];
-        let x=Math.random()*400, y=-20, vx=0, vy=4, art="•", color="white", isG=false;
+        let x=Math.random()*400, y=-20, vx=0, vy=4, art="•", col="white", blue=false, wavy=false;
 
+        if(p === 'TEAR_RAIN') { art="💧"; vy=5; wavy=true; }
         if(p === 'BONE_JUMP') { x=440; y=240; vx=-6; vy=0; art="🦴"; }
-        if(p === 'FIRE_RAIN') { art="🔥"; vy=5; }
-        if(p === 'FROG_JUMP') { y=260; vy=-5; vx=(Math.random()-0.5)*4; art="🐸"; }
-        
+        if(p === 'FIRE_RAIN') { art="🔥"; vy=6; if(hp < 5) vy=2; } // Toriel Mercy
+        if(p === 'BLUE_MIX') { x=440; y=Math.random()*200; vx=-5; vy=0; art="🦴"; blue=true; col="var(--blue)"; }
+
         const el = document.createElement('div');
-        el.className = 'bullet'; el.innerText = art; el.style.color = color; el.style.fontSize = "24px";
+        el.className = 'bullet'; el.innerText = art; el.style.color = col;
         document.getElementById('box').appendChild(el);
-        bullets.push({x, y, vx, vy, el, isGreen: isG});
+        bullets.push({x, y, vx, vy, el, isBlue: blue, isWavy: wavy});
     }
 
-    function updateStats() {
+    function handleVictory() {
+        if(enemy.boss) defeated.push(enemy.n.toUpperCase());
+        if(enemy.n === "Toriel") region = 'SNOWDIN';
+        exp += 50; if(exp >= lv*100) lv++;
+        saveAll(); updateStatsUI(); spawnEnemy();
+    }
+
+    function handleDeath() {
+        if(enemy.n === "Papyrus") {
+            alert("CAPTURED! You're in the doghouse."); hp=maxHp; updateStatsUI(); startSurvival();
+        } else {
+            alert("STAY DETERMINED..."); location.reload();
+        }
+    }
+
+    function updateStatsUI() {
         document.getElementById('lv-txt').innerText = `LV ${lv}`;
         document.getElementById('hp-txt').innerText = `${hp}/${maxHp}`;
-        document.getElementById('hp-fill').style.width = (hp/maxHp)*100 + "%";
-        document.getElementById('sync-val').innerText = Math.floor(sync);
+        document.getElementById('hp-fill').style.width = (hp/maxHp)*100+"%";
+        document.getElementById('sync-txt').innerText = Math.floor(sync);
+        document.getElementById('learn-txt').innerText = battleExp;
     }
 
     async function talk(txt) {
         if(!storage.apiKey) return;
         try {
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${storage.apiKey}`, {
-                method: 'POST', body: JSON.stringify({ contents: [{parts:[{text: `You are Chara. Speak cryptically. User says: ${txt}`}]}]})
+                method: 'POST', body: JSON.stringify({ contents: [{parts:[{text: `You are Chara from Undertale. LV ${lv}. Mirroring Player. Reply cryptically in JSON: {"reply": "text", "syncAdd": number}`}]}]})
             });
-            const d = await r.json();
-            logMsg("Chara", d.candidates[0].content.parts[0].text);
-            sync = Math.min(100, sync + 2); updateStats();
+            const d = await r.json(); const res = JSON.parse(d.candidates[0].content.parts[0].text);
+            logMsg("Chara", res.reply, "msg-chara");
+            sync = Math.min(100, sync + (res.syncAdd || 1)); updateStatsUI();
         } catch(e) {}
     }
 
-    document.getElementById('chat-input').onkeypress = e => { if(e.key==='Enter'){ logMsg("You", e.target.value); talk(e.target.value); e.target.value=''; }};
-    function logMsg(s, m) { 
-        const d = document.createElement('div'); 
-        d.className = s === 'Chara' ? 'msg-chara' : '';
-        d.innerHTML = `<b>${s}:</b> ${m}`; 
-        document.getElementById('log').appendChild(d);
-        document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
-    }
+    function logMsg(s, t, c) { const l = document.getElementById('log'); const d = document.createElement('div'); d.className = c; d.innerHTML = `<b>${s}:</b> ${t}`; l.appendChild(d); l.scrollTop = l.scrollHeight; }
 
-    initSlots();
+    document.getElementById('chat-input').onkeypress = e => { if(e.key==='Enter'){ logMsg("You", e.target.value); talk(e.target.value); e.target.value=''; }};
 </script>
 </body>
 </html>
