@@ -2,366 +2,350 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V14</title>
+    <title>Undertale: Determination Protocol V15</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000; }
         body { background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
-        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 40px rgba(255,0,0,0.3); }
+        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.5); }
 
-        /* Overlays */
-        #menu, #api-screen { position: absolute; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .slot { width: 450px; padding: 15px; border: 3px solid #fff; margin: 10px; cursor: pointer; transition: 0.2s; }
+        /* Screens */
+        #api-overlay, #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .slot { width: 450px; padding: 15px; border: 3px solid #fff; margin: 10px; cursor: pointer; background: #111; }
         .slot:hover { border-color: var(--red); color: var(--red); }
 
-        /* Battle Area */
+        /* Battle */
         #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
-        #sprite-container { height: 180px; width: 100%; display: flex; align-items: center; justify-content: center; font-size: 100px; position: relative; }
+        #monster-sprite { height: 160px; font-size: 100px; display: flex; align-items: center; justify-content: center; position: relative; }
         #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
         #soul { width: 18px; height: 18px; position: absolute; z-index: 100; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
         .bullet { position: absolute; border-radius: 50%; }
 
         /* Fight Bar */
         #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 500; }
-        #target { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
-        #slider { width: 12px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 15px #fff; }
+        #target-area { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
+        #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 15px #fff; }
 
-        /* Stats & Buttons */
-        #stats { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
-        #hp-bg { width: 140px; height: 22px; background: var(--red); border: 2px solid #000; }
-        #hp-fill { height: 100%; background: var(--yellow); transition: width 0.2s; }
-        #btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
-        .btn:disabled { opacity: 0.3; border-color: #444; color: #444; }
-        .btn.chara-active { border-color: var(--red) !important; color: var(--red) !important; }
+        /* Stats */
+        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
+        #hp-bar { width: 140px; height: 22px; background: var(--red); border: 2px solid #000; position: relative; }
+        #hp-fill { height: 100%; background: var(--yellow); width: 100%; transition: width 0.2s; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
+        .game-btn:disabled { opacity: 0.2; cursor: default; }
+        .chara-lock { border-color: var(--red) !important; color: var(--red) !important; }
 
         /* Chat */
         #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
         #log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 24px; color: var(--orange); }
-        .m-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
-        .m-player { color: #fff; align-self: flex-end; opacity: 0.6; margin-bottom: 15px; }
-        #input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
+        .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
+        .msg-player { color: #fff; align-self: flex-end; opacity: 0.6; margin-bottom: 15px; }
+        #chat-input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
 
-        .vfx-slash { position: absolute; width: 120px; height: 20px; background: #fff; z-index: 600; transform: rotate(-45deg); animation: slash 0.2s linear forwards; }
-        @keyframes slash { 0% { transform: scaleX(0) rotate(-45deg); opacity: 1; } 100% { transform: scaleX(5) rotate(-45deg); opacity: 0; } }
+        .slash-vfx { position: absolute; width: 100px; height: 100px; background: #fff; clip-path: polygon(10% 45%, 90% 45%, 90% 55%, 10% 55%); animation: slash 0.2s linear forwards; z-index: 600; }
+        @keyframes slash { 0% { transform: scaleY(0); } 50% { transform: scaleY(6); } 100% { transform: scaleY(0); opacity:0; } }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="game">
-    <div id="api-screen">
-        <h1 style="color:var(--red)">AI LINK REQUIRED</h1>
-        <input type="text" id="api-key" placeholder="AIza..." style="width:300px; padding:10px; font-family:inherit; font-size:20px;">
-        <button class="btn" onclick="saveKey()" style="margin-top:20px;">INITIALIZE</button>
+    <div id="api-overlay">
+        <h1 style="color:var(--red)">CONNECTION REQUIRED</h1>
+        <input type="text" id="api-input" placeholder="Enter Gemini API Key..." style="width:350px; padding:10px; font-family:inherit; font-size:20px;">
+        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px;">LINK CORE</button>
     </div>
 
-    <div id="menu" class="hidden">
-        <h1 style="color:var(--red); font-size: 50px;">CHOOSE TIMELINE</h1>
-        <div id="slot-list"></div>
+    <div id="menu-overlay" class="hidden">
+        <h1 style="color:var(--red); font-size: 60px;">PROTOCOL V15</h1>
+        <div id="slot-container"></div>
     </div>
 
     <div id="battle-side">
-        <div id="stats">
-            <span id="lv-ui">LV 1</span>
+        <div id="stat-ui">
+            <span id="lv-txt">LV 1</span>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span>HP</span>
-                <div id="hp-bg"><div id="hp-fill"></div></div>
-                <span id="hp-ui">20/20</span>
+                <div id="hp-bar"><div id="hp-fill"></div></div>
+                <span id="hp-txt">20/20</span>
             </div>
         </div>
-        <div style="font-size:18px; color:#777; margin:5px;">SYNC: <span id="sync-ui" style="color:var(--red)">0</span>% | REGION: <span id="region-ui">RUINS</span></div>
-        <div id="sprite-container"></div>
+        <div style="font-size:18px; color:#555; margin:5px;">SYNC: <span id="sync-txt" style="color:red">0</span>% | REGION: <span id="region-txt">RUINS</span></div>
+        
+        <div id="monster-sprite"></div>
+
         <div id="box">
             <div id="soul"></div>
             <div id="fight-ui">
-                <div id="target"><div id="slider"></div></div>
+                <div id="target-area"><div id="slider"></div></div>
             </div>
         </div>
-        <div id="btns">
-            <button class="btn" id="b-FIGHT" onclick="act('FIGHT')">FIGHT</button>
-            <button class="btn" id="b-ACT" onclick="act('ACT')">ACT</button>
-            <button class="btn" id="b-ITEM" onclick="act('ITEM')">ITEM</button>
-            <button class="btn" id="b-MERCY" onclick="act('MERCY')">MERCY</button>
+
+        <div class="btn-grid">
+            <button class="game-btn" id="b-FIGHT" onclick="handleBtn('FIGHT')">FIGHT</button>
+            <button class="game-btn" id="b-ACT" onclick="handleBtn('ACT')">ACT</button>
+            <button class="game-btn" id="b-ITEM" onclick="handleBtn('ITEM')">ITEM</button>
+            <button class="game-btn" id="b-MERCY" onclick="handleBtn('MERCY')">MERCY</button>
         </div>
     </div>
 
     <div id="chat-side">
         <div id="log"></div>
-        <input type="text" id="input" placeholder="Initiate thought..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Initiate thought..." autocomplete="off">
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'UT_PROTOCOL_V14';
-    let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { slots: [null,null,null], apiKey: "" };
+    const KEY = 'UT_DATA_V15';
+    let storage = JSON.parse(localStorage.getItem(KEY)) || { slots: [null,null,null], apiKey: "" };
     let curSlot = null;
 
-    // --- GAME STATE ---
-    let lv=1, hp=20, maxHp=20, exp=0, sync=0, region='RUINS', defeated=[];
-    let turn='MENU', enemy=null, bullets=[], frame=0, turnTimer=0;
-    let soulX=211, soulY=121, isSoulMoving=false;
-    let sliderX=0, sliderDir=8, sliderStartFrame=0;
-    let knowledge = { green: 0, blue: 0, fight: 10 }; 
+    // --- STATE ---
+    let lv=1, hp=20, maxHp=20, exp=0, sync=0, learning=0, region='RUINS', defeated=[];
+    let turn='MENU', enemy=null, bullets=[], frame=0, turnFrames=0;
+    let soulX=211, soulY=121, moving=false;
+    let sliderX=0, sliderDir=8, sliderFrames=0;
     const keys = {};
 
-    const Monsters = {
-        RUINS: [
-            { n: "Froggit", hp: 20, def: 4, exp: 20, art: "🐸", patterns: ['FROG_FLY', 'FROG_CURVE'] },
-            { n: "Whimsun", hp: 10, def: 0, exp: 10, art: "🦋", patterns: ['BUTTERFLY'] },
-            { n: "Moldsmal", hp: 12, def: 0, exp: 3, art: "🍮", patterns: ['SINE_WAVE'] },
-            { n: "Vegetoid", hp: 20, def: 6, exp: 6, art: "🥕", patterns: ['VEGGIE_FALL'] }
-        ],
-        SNOWDIN: [
-            { n: "Lesser Dog", hp: 60, def: 0, exp: 18, art: "🐕", patterns: ['BONE_RAIN', 'BONE_SWING'] },
-            { n: "Ice Cap", hp: 48, def: 2, exp: 17, art: "👒", patterns: ['SNOWFLAKE', 'HAT_ARC'] },
-            { n: "Snowdrake", hp: 48, def: 2, exp: 22, art: "🐦", patterns: ['ICE_SPIKE', 'SHARD'] },
-            { n: "Gyftrot", hp: 100, def: 2, exp: 50, art: "🦌", patterns: ['SNOWFLAKE_LARGE'] }
-        ]
-    };
-
-    const Bosses = {
-        NAPSTABLOOK: { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", patterns: ['TEAR_RAIN', 'SIDE_TEARS', 'WAVY_TEARS'], boss: true },
-        TORIEL: { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", patterns: ['FIRE_SPIRAL', 'FIRE_RAIN'], boss: true },
-        DOGGO: { n: "Doggo", hp: 30, def: 1, exp: 30, art: "🗡️", patterns: ['BLUE_SLASH'], boss: true },
-        DOGAMY: { n: "Dogamy & Dogaressa", hp: 108, def: 5, exp: 40, art: "🪓", patterns: ['BLUE_WHITE_BONE'], boss: true },
-        GREATER_DOG: { n: "Greater Dog", hp: 350, def: 8, exp: 80, art: "🛡️", patterns: ['BARK_BULLET', 'SPEAR_THRUST'], boss: true }
-    };
-
-    // --- CORE ---
-    function saveKey() {
-        const k = document.getElementById('api-key').value;
-        if(k.startsWith("AIza")) { appData.apiKey = k; localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); location.reload(); }
+    // --- PERSISTENCE ---
+    function saveApiKey() {
+        const val = document.getElementById('api-input').value;
+        if(val.startsWith("AIza")) { storage.apiKey = val; localStorage.setItem(KEY, JSON.stringify(storage)); location.reload(); }
     }
 
-    if(!appData.apiKey) { document.getElementById('api-screen').classList.remove('hidden'); }
-    else { document.getElementById('api-screen').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); initMenu(); }
+    if(!storage.apiKey) { document.getElementById('api-overlay').classList.remove('hidden'); }
+    else { document.getElementById('api-overlay').classList.add('hidden'); document.getElementById('menu-overlay').classList.remove('hidden'); initSlots(); }
 
-    function initMenu() {
-        const list = document.getElementById('slot-list'); list.innerHTML = '';
-        appData.slots.forEach((s, i) => {
-            const d = document.createElement('div'); d.className = `slot ${s?'':'empty'}`;
-            d.innerHTML = s ? `${s.name} - LV ${s.lv} [${s.region}]` : `-- EMPTY --`;
-            d.onclick = () => s ? loadSlot(i) : createSlot(i);
-            list.appendChild(d);
+    function initSlots() {
+        const container = document.getElementById('slot-container'); container.innerHTML = '';
+        storage.slots.forEach((s, i) => {
+            const div = document.createElement('div'); div.className = `slot ${s?'':'empty'}`;
+            div.innerHTML = s ? `[${s.name}] LV ${s.lv} | ${s.region} | SYNC ${Math.floor(s.sync)}%` : `-- CREATE NEW TIMELINE --`;
+            div.onclick = () => s ? loadSlot(i) : createSlot(i);
+            container.appendChild(div);
         });
     }
 
     function createSlot(i) {
         let n = prompt("Name:"); if(!n) return;
-        appData.slots[i] = { name: n, lv: 1, exp: 0, sync: 0, region: 'RUINS', defeated: [], knowledge: {green:0, blue:0, fight:10} };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); initMenu();
+        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 0, learning: 0, region: 'RUINS', defeated: [] };
+        saveAll(); initSlots();
     }
 
     function loadSlot(i) {
-        curSlot = i; const s = appData.slots[i];
-        lv = s.lv; exp = s.exp; sync = s.sync; region = s.region; defeated = s.defeated; knowledge = s.knowledge || {green:0, blue:0, fight:10};
-        hp = 20 + (lv-1)*4; maxHp = hp;
-        document.getElementById('menu').classList.add('hidden');
-        updateUI(); spawnNext(); requestAnimationFrame(loop);
+        curSlot = i; const s = storage.slots[i];
+        lv=s.lv; exp=s.exp; sync=s.sync; learning=s.learning||0; region=s.region; defeated=s.defeated;
+        hp=20+(lv-1)*4; maxHp=hp;
+        document.getElementById('menu-overlay').classList.add('hidden');
+        updateStatsUI(); spawnEnemy(); requestAnimationFrame(mainLoop);
     }
 
-    // --- LOOP ---
+    function saveAll() {
+        if(curSlot !== null) storage.slots[curSlot] = { lv, exp, sync, learning, region, defeated, name: storage.slots[curSlot].name };
+        localStorage.setItem(KEY, JSON.stringify(storage));
+    }
+
+    // --- INPUT ---
     window.onkeydown = e => { 
         keys[e.code] = true; 
-        if((e.code === 'KeyZ' || e.code === 'Enter') && turn === 'FIGHT_BAR') finalizeHit(); 
+        if((e.code==='KeyZ'||e.code==='Enter') && turn==='FIGHT_PLAYER') triggerHit();
     };
     window.onkeyup = e => keys[e.code] = false;
 
-    function loop() {
+    // --- ENGINE ---
+    function mainLoop() {
         if(turn === 'SURVIVAL') runSurvival();
-        if(turn === 'FIGHT_BAR') runFightBar();
-        frame++; requestAnimationFrame(loop);
+        if(turn === 'FIGHT_PLAYER' || turn === 'FIGHT_CHARA') runFightBar();
+        frame++; requestAnimationFrame(mainLoop);
     }
 
-    function spawnNext() {
-        if(lv === 2 && !defeated.includes("NAPSTABLOOK")) enemy = {...Bosses.NAPSTABLOOK};
-        else if(lv === 3 && !defeated.includes("TORIEL")) enemy = {...Bosses.TORIEL};
-        else if(lv === 4 && !defeated.includes("DOGGO")) enemy = {...Bosses.DOGGO};
-        else if(lv === 5 && !defeated.includes("DOGAMY")) enemy = {...Bosses.DOGAMY};
-        else if(lv === 6 && !defeated.includes("GREATER_DOG")) enemy = {...Bosses.GREATER_DOG};
-        else enemy = {...Monsters[region][Math.floor(Math.random()*Monsters[region].length)]};
-
-        document.getElementById('sprite-container').innerText = enemy.art;
-        logMsg("System", `* ${enemy.n} appears.`, "");
-        checkTurnType();
+    function spawnEnemy() {
+        if(lv === 2 && !defeated.includes("NAPSTABLOOK")) enemy = { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", boss: true, p: ['TEARS'] };
+        else if(lv === 3 && !defeated.includes("TORIEL")) enemy = { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", boss: true, p: ['FIRE'] };
+        else if(lv === 4 && !defeated.includes("DOGGO")) enemy = { n: "Doggo", hp: 30, def: 1, exp: 30, art: "🗡️", boss: true, p: ['BLUE'] };
+        else {
+            const ruins = [
+                {n:"Froggit", hp:20, def:4, exp:20, art:"🐸", p:['FROG','FLY']},
+                {n:"Whimsun", hp:10, def:0, exp:10, art:"🦋", p:['DRIFT']},
+                {n:"Vegetoid", hp:20, def:6, exp:6, art:"🥕", p:['VEG']}
+            ];
+            const snow = [
+                {n:"Snowdrake", hp:48, def:2, exp:22, art:"🐦", p:['ICE']},
+                {n:"Ice Cap", hp:48, def:2, exp:17, art:"👒", p:['ICE']}
+            ];
+            const pool = (region === 'SNOWDIN') ? snow : ruins;
+            enemy = { ...pool[Math.floor(Math.random()*pool.length)] };
+        }
+        document.getElementById('monster-sprite').innerText = enemy.art;
+        logMsg("System", `* ${enemy.n} appeared.`, "");
+        decideTurn();
     }
 
-    function checkTurnType() {
+    function decideTurn() {
         if(Math.random()*100 < sync) {
-            turn = 'CHARA';
+            turn = 'CHARA_TURN';
             document.getElementById('soul').style.background = "#fff";
-            document.querySelectorAll('.btn').forEach(b => b.classList.add('chara-active'));
-            setTimeout(() => { if(hp < maxHp/2) act('ITEM'); else act('FIGHT'); }, 1000);
+            document.querySelectorAll('.game-btn').forEach(b => b.classList.add('chara-lock'));
+            setTimeout(() => { if(hp < 8) handleBtn('ITEM'); else handleBtn('FIGHT'); }, 800);
         } else {
-            turn = 'PLAYER';
+            turn = 'PLAYER_TURN';
             document.getElementById('soul').style.background = "var(--red)";
-            document.querySelectorAll('.btn').forEach(b => { b.disabled = false; b.classList.remove('chara-active'); });
+            document.querySelectorAll('.game-btn').forEach(b => { b.disabled = false; b.classList.remove('chara-lock'); });
         }
     }
 
-    function act(type) {
-        if(turn === 'PLAYER' || turn === 'CHARA') {
-            if(type === 'FIGHT') startFightUI();
-            if(type === 'ITEM') { hp = Math.min(maxHp, hp+15); logMsg(turn==='CHARA'?'Chara':'You', "* Healed.", ""); startDodge(); }
-            if(type === 'MERCY') { logMsg("You", "* Spare.", ""); sync = Math.max(0, sync-5); spawnNext(); }
-            if(type === 'ACT') { logMsg("You", "* Check.", ""); startDodge(); }
-        }
+    function handleBtn(a) {
+        if(turn !== 'PLAYER_TURN' && turn !== 'CHARA_TURN') return;
+        const actingAsChara = (turn === 'CHARA_TURN');
+        if(a === 'FIGHT') startFightBar(actingAsChara);
+        if(a === 'ITEM') { hp = Math.min(maxHp, hp+15); logMsg(actingAsChara?"Chara":"You", "* Healed.", ""); startSurvivalPhase(); }
+        if(a === 'MERCY') { logMsg("You", "* Spare.", ""); sync = Math.max(0, sync-5); spawnEnemy(); }
+        if(a === 'ACT') { logMsg("You", "* Check.", ""); startSurvivalPhase(); }
     }
 
     // --- FIGHT BAR ---
-    function startFightUI() {
-        turn = 'FIGHT_BAR'; sliderX = 0; sliderStartFrame = frame;
+    function startFightBar(isChara) {
+        turn = isChara ? 'FIGHT_CHARA' : 'FIGHT_PLAYER';
+        sliderX = 0; sliderFrames = 0;
         document.getElementById('fight-ui').style.display = 'flex';
+        document.querySelectorAll('.game-btn').forEach(b => b.disabled = true);
     }
 
     function runFightBar() {
         sliderX += sliderDir;
+        sliderFrames++;
         if(sliderX > 370 || sliderX < 0) sliderDir *= -1;
         document.getElementById('slider').style.left = sliderX + 'px';
 
-        if(turn === 'CHARA') {
+        // CHARA LOGIC: If Chara is fighting, she triggers the hit herself
+        if(turn === 'FIGHT_CHARA') {
             let dist = Math.abs(190 - sliderX);
-            // Chara hits better as LV/Sync goes up
-            if(dist < (20 - knowledge.fight/10) || (frame - sliderStartFrame > 300)) finalizeHit();
+            // 6-second deadline (360 frames) OR center hit
+            if(dist < (15 + learning/5) || sliderFrames > 360) {
+                triggerHit();
+            }
         }
     }
 
-    function finalizeHit() {
-        const attacker = (turn === 'CHARA') ? 'Chara' : 'You';
+    function triggerHit() {
+        const attacker = (turn === 'FIGHT_CHARA') ? 'Chara' : 'You';
         turn = 'ANIMATING';
         document.getElementById('fight-ui').style.display = 'none';
         
         let dist = Math.abs(190 - sliderX);
-        let precision = Math.max(0.1, (1 - (dist/190)));
-        let baseAtk = 10 + (lv-1)*2;
+        let precision = Math.max(0.1, (1 - (dist / 190)));
+        
+        // DAMAGE: LV 1 Stick (1 to 10)
+        let base = 10 + (lv-1)*2;
         let dmg = 1;
-        if(precision > 0.8) dmg = Math.floor(Math.max(1, baseAtk - enemy.def) * (precision * 1.5));
+        if(precision > 0.85) dmg = Math.floor(Math.max(1, base - enemy.def) * (precision * 1.5));
         let cap = 10 + (lv-1)*2;
         dmg = Math.min(cap, dmg);
 
         enemy.hp -= dmg;
-        logMsg(attacker, `* Dealt ${dmg} damage.`, attacker === 'Chara' ? 'm-chara' : 'm-player');
+        const vfx = document.createElement('div'); vfx.className = 'slash-vfx';
+        document.getElementById('monster-sprite').appendChild(vfx);
         
-        const slash = document.createElement('div'); slash.className = 'vfx-slash';
-        document.getElementById('sprite-container').appendChild(slash);
+        logMsg(attacker, `* Dealt ${dmg} damage.`, attacker==='Chara'?'msg-chara':'msg-player');
+
         setTimeout(() => {
-            slash.remove();
-            if(enemy.hp <= 0) handleWin(); else startDodge();
-        }, 500);
+            vfx.remove();
+            if(enemy.hp <= 0) handleVictory();
+            else startSurvivalPhase();
+        }, 600);
     }
 
-    function handleWin() {
+    function handleVictory() {
         if(enemy.boss) {
             defeated.push(enemy.n.toUpperCase());
-            if(enemy.n === "Toriel") { region = "SNOWDIN"; lv = 4; }
+            if(enemy.n === "Toriel") { region = 'SNOWDIN'; lv = 4; }
         }
-        exp += enemy.exp; sync = Math.min(100, sync+2); knowledge.fight = Math.min(100, knowledge.fight + 2);
-        if(exp >= lv*150) { lv++; logMsg("Chara", "* Level up.", "m-chara"); }
-        updateUI(); saveProgress(); spawnNext();
+        exp += enemy.exp; sync = Math.min(100, sync+2); learning = Math.min(100, learning+1);
+        if(exp >= lv*150) { lv++; logMsg("Chara", "* LV UP.", "msg-chara"); }
+        saveAll(); updateStatsUI(); spawnEnemy();
     }
 
-    // --- SURVIVAL ---
-    function startDodge() { turn = 'SURVIVAL'; turnTimer = 380; bullets = []; }
+    // --- DODGE ---
+    function startSurvivalPhase() { turn = 'SURVIVAL'; turnFrames = 380; bullets = []; }
 
     function runSurvival() {
-        let isHijacked = (sync >= 100) || (Math.random()*100 < sync);
-        const sEl = document.getElementById('soul');
-        sEl.style.background = isHijacked ? "#fff" : "var(--red)";
+        let isSynced = (sync >= 100) || (Math.random()*100 < sync);
+        document.getElementById('soul').style.background = isSynced ? "#fff" : "var(--red)";
 
-        isSoulMoving = false;
-        if(isHijacked) {
+        moving = false;
+        if(isSynced) {
             let near = null, d = 70;
-            bullets.forEach(b => { let dst = Math.hypot(b.x-soulX, b.y-soulY); if(dst < d){d=dst; near=b;} });
+            bullets.forEach(b => { let dst = Math.hypot(b.x-soulX, b.y-soulY); if(dst < d){ d=dst; near=b; }});
             if(near) {
-                if(near.isBlue && knowledge.blue > 50) isSoulMoving = false;
-                else if(near.isGreen && knowledge.green > 40) { isSoulMoving = true; soulX += (near.x > soulX ? 2 : -2); soulY += (near.y > soulY ? 2 : -2); }
-                else { isSoulMoving = true; soulX += (near.x > soulX ? -3.5 : 3.5); soulY += (near.y > soulY ? -3.5 : 3.5); }
+                if(near.isBlue && learning > 50) moving = false;
+                else { moving = true; soulX += (near.x > soulX ? -3.5 : 3.5); soulY += (near.y > soulY ? -3.5 : 3.5); }
             }
         } else {
             let s = keys['ShiftLeft'] ? 1.5 : 4;
-            if(keys['ArrowUp'] || keys['KeyW']) { soulY -= s; isSoulMoving = true; }
-            if(keys['ArrowDown'] || keys['KeyS']) { soulY += s; isSoulMoving = true; }
-            if(keys['ArrowLeft'] || keys['KeyA']) { soulX -= s; isSoulMoving = true; }
-            if(keys['ArrowRight'] || keys['KeyD']) { soulX += s; isSoulMoving = true; }
+            if(keys['ArrowUp'] || keys['KeyW']) { soulY -= s; moving = true; }
+            if(keys['ArrowDown'] || keys['KeyS']) { soulY += s; moving = true; }
+            if(keys['ArrowLeft'] || keys['KeyA']) { soulX -= s; moving = true; }
+            if(keys['ArrowRight'] || keys['KeyD']) { soulX += s; moving = true; }
         }
 
         soulX = Math.max(0, Math.min(422, soulX)); soulY = Math.max(0, Math.min(242, soulY));
-        sEl.style.left = soulX + 'px'; sEl.style.top = soulY + 'px';
+        document.getElementById('soul').style.left = soulX+'px'; document.getElementById('soul').style.top = soulY+'px';
 
-        if(frame % 25 === 0) spawnBullet();
+        if(frame % 25 === 0) spawnProj();
 
         for(let i=bullets.length-1; i>=0; i--) {
             let b = bullets[i]; b.x += b.vx; b.y += b.vy;
-            if(b.type === 'SINE') b.y += Math.sin(frame*0.1)*5;
-            if(b.type === 'CURVE') { b.vx += (220-b.x)*0.01; b.vy += 0.1; }
-            b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
-            
+            b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
             if(Math.hypot(b.x-soulX, b.y-soulY) < 14) {
-                if(b.isBlue && !isSoulMoving) { /* safe */ }
-                else if(b.isGreen) { 
-                    hp = Math.min(maxHp, hp+2); b.el.remove(); bullets.splice(i,1); 
-                    if(!isHijacked) knowledge.green++;
-                } else {
+                if(b.isBlue && !moving) {} 
+                else if(b.isGreen) { hp = Math.min(maxHp, hp+2); b.el.remove(); bullets.splice(i,1); }
+                else {
                     if(enemy.n === "Toriel" && hp < 10) { b.vx = (b.x > soulX ? 6 : -6); }
-                    else { hp -= 1; b.el.remove(); bullets.splice(i,1); }
+                    else { hp -= 1; b.el.remove(); bullets.splice(i,1); updateStatsUI(); }
                 }
-            } else if(b.y > 280 || b.x > 450 || b.x < -20) { b.el.remove(); bullets.splice(i,1); }
+                if(hp <= 0) { alert("ERASED."); location.reload(); }
+            } else if(b.y > 280 || b.x > 460) { b.el.remove(); bullets.splice(i,1); }
         }
-
-        if(!isHijacked && !isSoulMoving && bullets.some(b => b.isBlue && Math.hypot(b.x-soulX, b.y-soulY) < 30)) knowledge.blue++;
-
-        turnTimer--; if(turnTimer <= 0) { bullets.forEach(b => b.el.remove()); checkTurnType(); }
-        updateUI();
+        turnFrames--; if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); decideTurn(); }
     }
 
-    function spawnBullet() {
-        const p = enemy.patterns[Math.floor(Math.random()*enemy.patterns.length)];
-        let x = Math.random()*440, y = -10, vx = 0, vy = 4, type = 'STILL', isG = false, isB = false;
-
-        if(p === 'FROG_CURVE') type = 'CURVE';
-        if(p === 'SINE_WAVE') { x = -10; y = 50+Math.random()*150; vx = 4; vy = 0; type = 'SINE'; }
-        if(p === 'VEGGIE_FALL') isG = Math.random() < 0.2;
-        if(p === 'BLUE_SLASH') { x = -10; y = soulY; vx = 6; vy = 0; isB = true; }
-        if(p === 'WAVY_TEARS') { type = 'SINE'; vy = 3; }
-
-        const b = { x, y, vx, vy, type, isGreen: isG, isBlue: isB, el: document.createElement('div') };
+    function spawnProj() {
+        const p = enemy.p[Math.floor(Math.random()*enemy.p.length)];
+        let x = Math.random()*440, y = -10, vx = 0, vy = 4.5, isG = false, isB = false;
+        if(p === 'BLUE') { x = -10; y = soulY; vx = 6.5; vy = 0; isB = true; }
+        if(p === 'FROG') { y = 260; vy = -5; vx = (Math.random()-0.5)*3; }
+        if(p === 'VEG') isG = Math.random() < 0.2;
+        
+        const b = { x, y, vx, vy, isGreen: isG, isBlue: isB, el: document.createElement('div') };
         b.el.className = 'bullet'; b.el.style.width = '16px'; b.el.style.height = '16px';
         b.el.style.background = isG ? "var(--green)" : (isB ? "var(--blue)" : "#fff");
         document.getElementById('box').appendChild(b.el); bullets.push(b);
     }
 
-    // --- UTILS ---
-    function updateUI() {
+    // --- UI ---
+    function updateStatsUI() {
         maxHp = 20 + (lv-1)*4;
-        document.getElementById('lv-ui').innerText = `LV ${lv}`;
-        document.getElementById('hp-ui').innerText = `${Math.ceil(hp)}/${maxHp}`;
+        document.getElementById('lv-txt').innerText = `LV ${lv}`;
+        document.getElementById('hp-txt').innerText = `${Math.ceil(hp)}/${maxHp}`;
         document.getElementById('hp-fill').style.width = (hp/maxHp)*100+"%";
-        document.getElementById('sync-ui').innerText = Math.floor(sync);
-        document.getElementById('region-ui').innerText = region;
-        document.getElementById('exp-val').innerText = exp;
-    }
-
-    function saveProgress() {
-        if(curSlot !== null) {
-            appData.slots[curIdx] = { name: appData.slots[curIdx].name, lv, exp, sync, region, defeated, knowledge };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-        }
+        document.getElementById('sync-txt').innerText = Math.floor(sync);
+        document.getElementById('region-txt').innerText = region;
     }
 
     async function talk(txt) {
-        if(!appData.apiKey) return;
+        if(!storage.apiKey) return;
         const p = `You are Chara. LV ${lv}, Region ${region}. JSON: {"reply": "...", "controlMod": number}`;
         try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${appData.apiKey}`, {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${storage.apiKey}`, {
                 method: 'POST', body: JSON.stringify({ contents: [{role: "user", parts: [{text: txt}]}], generationConfig: {responseMimeType: "application/json"} })
             });
             const d = await r.json(); const res = JSON.parse(d.candidates[0].content.parts[0].text);
-            logMsg("Chara", res.reply, "m-chara"); sync = Math.min(100, Math.max(0, sync + res.controlMod)); updateUI();
+            logMsg("Chara", res.reply, "msg-chara"); sync = Math.min(100, Math.max(0, sync + res.controlMod)); updateStatsUI();
         } catch(e) {}
     }
 
-    document.getElementById('input').onkeypress = e => { if(e.key === 'Enter'){ logMsg("You", e.target.value, "m-player"); talk(e.target.value); e.target.value = ''; }};
+    document.getElementById('chat-input').onkeypress = e => { if(e.key === 'Enter'){ logMsg("You", e.target.value, "msg-player"); talk(e.target.value); e.target.value = ''; }};
     function logMsg(s, t, c) { const l = document.getElementById('log'); const d = document.createElement('div'); d.className = c; d.innerText = t; l.appendChild(d); l.scrollTop = l.scrollHeight; }
 </script>
 </body>
