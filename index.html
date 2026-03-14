@@ -2,276 +2,253 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V6</title>
+    <title>Undertale: Determination Protocol V7</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --bg: #000000; --chara-red: #8b0000; }
+        :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --bg: #000000; }
         body { background: var(--bg); color: var(--white); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
         
-        #game-container { display: flex; width: 1150px; height: 750px; border: 4px solid #333; background: var(--bg); position: relative; box-shadow: 0 0 60px rgba(255,0,0,0.2); }
+        #game-container { display: flex; width: 1100px; height: 720px; border: 4px solid #333; background: var(--bg); position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.1); }
 
         /* Save Menu */
         #menu-overlay { position: absolute; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .save-slot { width: 500px; padding: 20px; border: 4px solid var(--white); margin: 10px; cursor: pointer; background: #080808; position: relative; transition: 0.2s; }
-        .save-slot:hover { border-color: var(--red); transform: translateX(10px); }
-        .del-btn { position: absolute; right: 15px; top: 15px; color: var(--red); border: 1px solid var(--red); padding: 2px 8px; }
+        .save-slot { width: 450px; padding: 20px; border: 3px solid var(--white); margin: 10px; cursor: pointer; background: #080808; transition: 0.2s; }
+        .save-slot:hover { border-color: var(--red); transform: scale(1.02); }
 
-        /* Left Side: Combat */
-        #battle-side { width: 650px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        /* Battle Side */
+        #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        #monster-sprite { height: 150px; font-size: 100px; display: flex; align-items: center; }
         
-        /* Monster Textures */
-        #monster-area { height: 180px; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
-        .froggit { width: 80px; height: 60px; background: #fff; clip-path: polygon(20% 0%, 80% 0%, 100% 40%, 80% 100%, 20% 100%, 0% 40%); position: relative; }
-        .froggit::after { content: '..'; color: #000; font-size: 40px; position: absolute; top: -10px; left: 25px; }
-        .whimsun { width: 60px; height: 60px; background: #fff; clip-path: path('M30 0 L60 30 L30 60 L0 30 Z'); animation: fly 0.5s infinite alternate; }
-        @keyframes fly { from { transform: scale(1); } to { transform: scale(1.2) translateY(-10px); } }
-
-        /* Battle UI */
-        #battle-box { width: 450px; height: 260px; border: 6px solid var(--white); background: var(--bg); position: relative; overflow: hidden; margin: 20px 0; }
-        #soul { width: 18px; height: 18px; position: absolute; background: var(--red); z-index: 100; transition: background 0.3s; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
+        #battle-box { width: 420px; height: 260px; border: 6px solid var(--white); background: var(--bg); position: relative; overflow: hidden; margin: 15px 0; }
+        #soul { width: 18px; height: 18px; position: absolute; background: var(--red); z-index: 100; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
         .bullet { position: absolute; background: var(--white); border-radius: 50%; }
 
-        /* HP & Progress */
-        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; margin-bottom: 10px; }
-        #hp-bar-outer { width: 150px; height: 25px; background: var(--red); border: 3px solid #000; }
-        #hp-bar-inner { height: 100%; background: var(--yellow); transition: width 0.3s; }
-        
-        #control-container { width: 100%; text-align: center; margin-bottom: 15px; }
-        #control-bar { width: 100%; height: 10px; background: #1a1a1a; border: 1px solid #333; margin-top: 5px; }
-        #control-fill { height: 100%; background: var(--red); box-shadow: 0 0 15px var(--red); transition: width 0.5s; }
+        /* Fight Bar Minigame */
+        #fight-bar-container { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 150; }
+        #fight-target { width: 380px; height: 100px; border: 4px solid var(--white); position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
+        #fight-slider { width: 10px; height: 100%; background: #00ffff; position: absolute; left: 0; box-shadow: 0 0 10px #00ffff; }
 
-        /* Action Buttons */
-        #action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
-        .act-btn { background: #000; border: 4px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 12px; cursor: pointer; text-align: center; outline: none; transition: 0.1s; }
+        /* Stats */
+        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 30px; }
+        #hp-bar-outer { width: 140px; height: 22px; background: var(--red); border: 2px solid #000; }
+        #hp-bar-inner { height: 100%; background: var(--yellow); transition: width 0.2s; }
+
+        #action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .act-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
         .act-btn:hover:not(:disabled) { background: var(--orange); color: #000; }
-        .act-btn:disabled { border-color: #333; color: #333; cursor: default; }
-        .hijacked-btn { border-color: var(--red) !important; color: var(--red) !important; opacity: 0.5; }
+        .act-btn:disabled { border-color: #333; color: #333; }
+        .hijacked { border-color: var(--red) !important; color: var(--red) !important; }
 
-        /* Right Side: Narrative */
-        #chat-side { width: 500px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
-        #chat-log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 26px; color: var(--orange); }
-        .msg-chara { color: var(--red); border-left: 4px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
-        .msg-player { color: var(--white); align-self: flex-end; opacity: 0.6; margin-bottom: 20px; }
-        #chat-input { background: #000; border: none; border-top: 2px solid #333; color: var(--white); font-family: inherit; font-size: 26px; padding: 18px; outline: none; }
-
+        /* Chat */
+        #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
+        #chat-log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 24px; color: var(--orange); }
+        .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
+        .msg-player { color: var(--white); align-self: flex-end; opacity: 0.6; margin-bottom: 15px; }
+        #chat-input { background: #000; border: none; border-top: 2px solid #333; color: var(--white); font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
+        
         .hidden { display: none !important; }
-        .shake { animation: shakeBtn 0.1s infinite; }
-        @keyframes shakeBtn { 0% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, -1px); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="menu-overlay">
-        <h1 style="color: var(--red); font-size: 60px; letter-spacing: 10px;">PERSISTENCE</h1>
-        <div id="slot-list"></div>
-        <button class="act-btn" onclick="setAPI()" style="font-size: 20px; margin-top: 30px;">LINK AI CORE</button>
+        <h1 style="color: var(--red); font-size: 55px;">DETERMINATION PROTOCOL V7</h1>
+        <div id="slots"></div>
+        <button class="act-btn" onclick="setAPI()" style="font-size: 18px; margin-top: 20px;">LINK GEMINI API</button>
     </div>
 
     <div id="battle-side">
         <div id="stat-ui">
-            <span id="lv-val">LV 1</span>
+            <span id="lv-disp">LV 1</span>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 22px;">HP</span>
+                <span>HP</span>
                 <div id="hp-bar-outer"><div id="hp-bar-inner"></div></div>
-                <span id="hp-txt" style="width: 80px;">20/20</span>
+                <span id="hp-txt">20/20</span>
+            </div>
+        </div>
+        
+        <div style="width:100%; text-align:center; color: var(--red); margin: 5px 0;">
+            SYNC: <span id="sync-val">0</span>% | WEAPON: STICK | ARMOR: BANDAGE
+        </div>
+
+        <div id="monster-sprite"></div>
+
+        <div id="battle-box">
+            <div id="soul"></div>
+            <div id="fight-bar-container">
+                <div id="fight-target"><div id="fight-slider"></div></div>
             </div>
         </div>
 
-        <div id="control-container">
-            <div style="color: var(--red); font-size: 20px;">SYNCHRONIZATION: <span id="ctrl-pct">0</span>%</div>
-            <div id="control-bar"><div id="control-fill"></div></div>
-        </div>
-
-        <div id="monster-area"></div>
-        
-        <div id="battle-box">
-            <div id="soul"></div>
-        </div>
-
         <div id="action-grid">
-            <button class="act-btn" id="btn-FIGHT" onclick="playerDecision('FIGHT')">FIGHT</button>
-            <button class="act-btn" id="btn-ACT" onclick="playerDecision('ACT')">ACT</button>
-            <button class="act-btn" id="btn-ITEM" onclick="playerDecision('ITEM')">ITEM</button>
-            <button class="act-btn" id="btn-MERCY" onclick="playerDecision('MERCY')">MERCY</button>
+            <button class="act-btn" id="btn-FIGHT" onclick="handleBtn('FIGHT')">FIGHT</button>
+            <button class="act-btn" id="btn-ACT" onclick="handleBtn('ACT')">ACT</button>
+            <button class="act-btn" id="btn-ITEM" onclick="handleBtn('ITEM')">ITEM</button>
+            <button class="act-btn" id="btn-MERCY" onclick="handleBtn('MERCY')">MERCY</button>
         </div>
     </div>
 
     <div id="chat-side">
         <div id="chat-log"></div>
-        <input type="text" id="chat-input" placeholder="Initiate contact..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Initiate thought..." autocomplete="off">
     </div>
 </div>
 
 <script>
     // --- PERSISTENCE ---
-    const DB_KEY = 'UT_PROTOCOL_V6_STABLE';
-    let appData = JSON.parse(localStorage.getItem(DB_KEY)) || { slots: [null, null, null], apiKey: "" };
+    const DB_KEY = 'UT_PROTOCOL_V7';
+    let appData = JSON.parse(localStorage.getItem(DB_KEY)) || { slots: [null,null,null], apiKey: "" };
     let curSlot = null;
 
-    // --- GAME VARS ---
-    let pLV = 1, pHP = 20, pMaxHP = 20, pEXP = 0, pControl = 0, pInv = ["Pie", "Noodles"];
-    let curEnemy = null;
-    let turnState = 'MENU'; // MENU, PLAYER, CHARA, SURVIVAL
-    let bullets = [], frame = 0, turnTimer = 0;
-    const soulPos = { x: 216, y: 121 };
+    // --- GAME STATE ---
+    let lv = 1, hp = 20, maxHp = 20, exp = 0, sync = 0, inv = ["Pie"];
+    let turn = 'MENU'; // MENU, PLAYER, FIGHT_MINI, SURVIVAL
+    let enemy = null, bullets = [], frame = 0, turnFrames = 0;
+    const soulPos = { x: 201, y: 121 };
     const keys = {};
 
     const Monsters = [
-        { n: "Froggit", hp: 30, exp: 10, type: 'froggit' },
-        { n: "Whimsun", hp: 15, exp: 5, type: 'whimsun' },
-        { n: "Vegetoid", hp: 50, exp: 15, type: 'whimsun' } // Reusing whim for now
+        { n: "Froggit", hp: 30, exp: 10, art: "🐸" },
+        { n: "Whimsun", hp: 15, exp: 5, art: "🦋" },
+        { n: "Moldsmal", hp: 50, exp: 8, art: "🍮" }
     ];
 
-    // --- INITIALIZE ---
-    function setAPI() { let k = prompt("API Key:"); if(k) { appData.apiKey = k; save(); } }
+    // --- ENGINE ---
+    function setAPI() { let k = prompt("Gemini API Key:"); if(k) { appData.apiKey = k; save(); } }
     function save() {
-        if (curSlot !== null) {
-            appData.slots[curSlot] = { lv: pLV, hp: pHP, exp: pEXP, control: pControl, inv: pInv, name: appData.slots[curSlot].name };
-        }
+        if(curSlot !== null) appData.slots[curSlot] = { lv, hp, exp, sync, inv, name: appData.slots[curSlot].name };
         localStorage.setItem(DB_KEY, JSON.stringify(appData));
     }
 
     function initMenu() {
-        const list = document.getElementById('slot-list'); list.innerHTML = '';
+        const slots = document.getElementById('slots'); slots.innerHTML = '';
         appData.slots.forEach((s, i) => {
             const d = document.createElement('div');
             d.className = `save-slot ${s ? '' : 'empty'}`;
-            d.innerHTML = s ? `NAME: ${s.name} | LV: ${s.lv} | SYNC: ${Math.floor(s.control)}% <span class="del-btn" onclick="event.stopPropagation(); deleteSlot(${i})">[ERASE]</span>` : `[ EMPTY TIMELINE ]`;
+            d.innerHTML = s ? `[ ${s.name} ] - LV ${s.lv} - SYNC ${Math.floor(s.sync)}%` : `-- EMPTY --`;
             d.onclick = () => s ? startSlot(i) : createSlot(i);
-            list.appendChild(d);
+            slots.appendChild(d);
         });
     }
 
     function createSlot(i) {
-        let n = prompt("Name the fallen:"); if (!n) return;
-        appData.slots[i] = { name: n, lv: 1, hp: 20, exp: 0, control: 0, inv: ["Pie", "Noodles"] };
+        let n = prompt("Name:"); if(!n) return;
+        appData.slots[i] = { name: n, lv: 1, hp: 20, exp: 0, sync: 0, inv: ["Pie"] };
         save(); initMenu();
     }
-    function deleteSlot(i) { if(confirm("Confirm Reset?")) { appData.slots[i] = null; save(); initMenu(); } }
 
     function startSlot(i) {
         curSlot = i; const s = appData.slots[i];
-        pLV = s.lv; pHP = s.hp; pEXP = s.exp; pControl = s.control; pInv = s.inv || ["Pie"];
+        lv = s.lv; hp = s.hp; exp = s.exp; sync = s.sync; inv = s.inv || ["Pie"];
         document.getElementById('menu-overlay').classList.add('hidden');
-        refreshStats(); spawnEnemy();
+        refreshUI(); spawnEnemy();
         requestAnimationFrame(mainLoop);
     }
 
-    // --- GAME ENGINE ---
-    window.onkeydown = e => keys[e.code] = true;
+    // --- BATTLE LOGIC ---
+    window.onkeydown = e => { 
+        keys[e.code] = true; 
+        if((e.code === 'KeyZ' || e.code === 'Enter') && turn === 'FIGHT_MINI') stopFightBar();
+    };
     window.onkeyup = e => keys[e.code] = false;
 
     function mainLoop() {
-        if (turnState === 'SURVIVAL') {
-            updateSurvival();
-        }
-        frame++;
-        requestAnimationFrame(mainLoop);
+        if(turn === 'SURVIVAL') updateSurvival();
+        if(turn === 'FIGHT_MINI') updateFightBar();
+        frame++; requestAnimationFrame(mainLoop);
     }
 
     function spawnEnemy() {
-        curEnemy = { ...Monsters[Math.floor(Math.random()*Monsters.length)] };
-        document.getElementById('monster-area').innerHTML = `<div class="${curEnemy.type}"></div>`;
-        logMsg("System", `* ${curEnemy.n} draws near.`, "");
-        beginPlayerTurn();
+        enemy = { ...Monsters[Math.floor(Math.random()*Monsters.length)] };
+        document.getElementById('monster-sprite').innerText = enemy.art;
+        logMsg("System", `* ${enemy.n} drew near.`, "");
+        startPlayerTurn();
     }
 
-    function beginPlayerTurn() {
-        // CHARA USURPATION LOGIC
-        // Every turn, check if Chara hijacks the turn based on Control %
-        if (Math.random() * 100 < pControl) {
+    function startPlayerTurn() {
+        if(Math.random()*100 < sync) {
             hijackTurn();
         } else {
-            turnState = 'PLAYER';
-            document.querySelectorAll('.act-btn').forEach(b => {
-                b.disabled = false;
-                b.classList.remove('hijacked-btn');
-            });
+            turn = 'PLAYER';
+            document.querySelectorAll('.act-btn').forEach(b => { b.disabled = false; b.classList.remove('hijacked'); });
             document.getElementById('soul').style.background = "var(--red)";
         }
     }
 
     function hijackTurn() {
-        turnState = 'CHARA';
-        document.querySelectorAll('.act-btn').forEach(b => {
-            b.disabled = true;
-            b.classList.add('hijacked-btn');
-        });
+        turn = 'CHARA';
+        document.querySelectorAll('.act-btn').forEach(b => { b.disabled = true; b.classList.add('hijacked'); });
         document.getElementById('soul').style.background = "var(--white)";
-        
-        logMsg("Chara", "...", "msg-chara");
-
         setTimeout(() => {
-            // Chara's automated logic
-            if (pHP < 10 && pInv.length > 0) {
-                useItem();
-            } else {
-                executeFight();
-            }
-        }, 1500);
+            if(hp < 8) useItem(); else startFightMini();
+        }, 1000);
     }
 
-    function playerDecision(act) {
-        if (turnState !== 'PLAYER') return;
-        if (act === 'FIGHT') executeFight();
-        if (act === 'MERCY') executeMercy();
-        if (act === 'ITEM') useItem();
-        if (act === 'ACT') { logMsg("You", "* You checked the enemy.", "msg-player"); startSurvival(); }
+    function handleBtn(act) {
+        if(turn !== 'PLAYER') return;
+        if(act === 'FIGHT') startFightMini();
+        if(act === 'MERCY') { logMsg("You", "* You chose mercy.", "msg-player"); sync -= 4; save(); spawnEnemy(); }
+        if(act === 'ITEM') useItem();
+        if(act === 'ACT') { logMsg("You", "* You studied the enemy.", "msg-player"); startSurvival(); }
     }
 
-    function executeFight() {
-        let dmg = pLV * 12;
-        curEnemy.hp -= dmg;
-        logMsg(turnState === 'CHARA' ? "Chara" : "You", `* Dealt ${dmg} damage.`, turnState === 'CHARA' ? "msg-chara" : "msg-player");
+    // --- FIGHT MINIGAME ---
+    let sliderPos = 0, sliderDir = 5;
+    function startFightMini() {
+        turn = 'FIGHT_MINI';
+        sliderPos = 0;
+        document.getElementById('fight-bar-container').style.display = 'flex';
+        // If Chara is in control, she stops the bar automatically
+        if(turn === 'CHARA' || sync >= 100) {
+            setTimeout(() => stopFightBar(), 400 + Math.random()*200);
+        }
+    }
+
+    function updateFightBar() {
+        sliderPos += sliderDir;
+        if(sliderPos > 370 || sliderPos < 0) sliderDir *= -1;
+        document.getElementById('fight-slider').style.left = sliderPos + 'px';
+    }
+
+    function stopFightBar() {
+        document.getElementById('fight-bar-container').style.display = 'none';
+        // Center is 190. Calculate precision.
+        let dist = Math.abs(190 - sliderPos);
+        let multiplier = Math.max(0.1, (1 - (dist / 190)) * 4);
         
-        if (curEnemy.hp <= 0) {
-            pEXP += curEnemy.exp;
-            pControl = Math.min(100, pControl + 12); // KILLS INCREASE CONTROL
-            if (pEXP >= pLV * 25) { pLV++; pHP = pMaxHP = 20 + (pLV-1)*4; }
-            save(); refreshStats(); spawnEnemy();
+        let baseAt = 10 + (lv-1) * 2;
+        let dmg = Math.floor(baseAt * multiplier);
+        
+        enemy.hp -= dmg;
+        logMsg(turn === 'CHARA' ? "Chara" : "You", `* Dealt ${dmg} damage with the Stick.`, turn === 'CHARA' ? "msg-chara" : "msg-player");
+        
+        if(enemy.hp <= 0) {
+            exp += enemy.exp; sync = Math.min(100, sync + 10);
+            if(exp >= lv*20) { lv++; hp = maxHp = 20 + (lv-1)*4; }
+            save(); refreshUI(); spawnEnemy();
         } else {
             startSurvival();
         }
     }
 
-    function executeMercy() {
-        logMsg("You", "* You spared the enemy.", "msg-player");
-        pControl = Math.max(0, pControl - 5); // MERCY DECREASES CONTROL
-        save(); refreshStats(); spawnEnemy();
-    }
-
-    function useItem() {
-        if (pInv.length > 0) {
-            pInv.pop(); pHP = Math.min(pMaxHP, pHP + 20);
-            logMsg(turnState === 'CHARA' ? "Chara" : "You", "* Used an item.", turnState === 'CHARA' ? "msg-chara" : "msg-player");
-            refreshStats(); startSurvival();
-        }
-    }
-
     function startSurvival() {
-        turnState = 'SURVIVAL';
-        turnTimer = 400; bullets = [];
+        turn = 'SURVIVAL'; turnFrames = 400; bullets = [];
         document.querySelectorAll('.act-btn').forEach(b => b.disabled = true);
     }
 
     function updateSurvival() {
-        // SOUL MOVEMENT
-        let charaTakingWheel = (pControl >= 100) || (Math.random() * 100 < pControl);
-        const soulEl = document.getElementById('soul');
-        soulEl.style.background = charaTakingWheel ? "var(--white)" : "var(--red)";
+        let charaTakingWheel = (sync >= 100) || (Math.random()*100 < sync);
+        const sEl = document.getElementById('soul');
+        sEl.style.background = charaTakingWheel ? "var(--white)" : "var(--red)";
 
-        if (charaTakingWheel) {
-            // Chara dodge AI: Spatial awareness
-            let target = { x: 216, y: 121 };
-            let danger = null, dDist = 70;
-            bullets.forEach(b => {
-                let d = Math.hypot(b.x - soulPos.x, b.y - soulPos.y);
-                if (d < dDist) { dDist = d; danger = b; }
-            });
-            if (danger) {
-                if (danger.x > soulPos.x) soulPos.x -= 3; else soulPos.x += 3;
-                if (danger.y > soulPos.y) soulPos.y -= 3; else soulPos.y += 3;
+        if(charaTakingWheel) {
+            // Chara AI Dodge
+            let near = null, d = 60;
+            bullets.forEach(b => { let dist = Math.hypot(b.x-soulPos.x, b.y-soulPos.y); if(dist < d){ d = dist; near = b; }});
+            if(near) {
+                if(near.x > soulPos.x) soulPos.x -= 3; else soulPos.x += 3;
+                if(near.y > soulPos.y) soulPos.y -= 3; else soulPos.y += 3;
             }
         } else {
             let s = keys['ShiftLeft'] ? 1.5 : 3.5;
@@ -280,73 +257,60 @@
             if(keys['ArrowLeft'] || keys['KeyA']) soulPos.x -= s;
             if(keys['ArrowRight'] || keys['KeyD']) soulPos.x += s;
         }
-        
-        soulPos.x = Math.max(0, Math.min(426, soulPos.x));
-        soulPos.y = Math.max(0, Math.min(236, soulPos.y));
-        soulEl.style.left = soulPos.x + 'px'; soulEl.style.top = soulPos.y + 'px';
 
-        // SPAWN BULLETS BASED ON ENEMY
-        if (frame % 20 === 0) {
-            if (curEnemy.type === 'froggit') spawnBullet(Math.random()*450, -10, 0, 4);
-            if (curEnemy.type === 'whimsun') {
-                let a = frame * 0.1;
-                spawnBullet(225 + Math.cos(a)*150, 130 + Math.sin(a)*150, -Math.cos(a)*3, -Math.sin(a)*3);
-            }
-        }
+        soulPos.x = Math.max(0, Math.min(402, soulPos.x));
+        soulPos.y = Math.max(0, Math.min(242, soulPos.y));
+        sEl.style.left = soulPos.x + 'px'; sEl.style.top = soulPos.y + 'px';
 
-        // UPDATE BULLETS
+        if(frame % 25 === 0) spawnBullet(Math.random()*400, -10, (Math.random()-0.5)*2, 4);
+
         for(let i=bullets.length-1; i>=0; i--) {
             let b = bullets[i]; b.x += b.vx; b.y += b.vy;
             b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
-            if (Math.hypot(b.x - soulPos.x, b.y - soulPos.y) < 15) {
-                pHP -= 1; b.el.remove(); bullets.splice(i, 1); refreshStats();
-                if (pHP <= 0) { alert("Timeline Erased."); pHP = 20; save(); location.reload(); }
-            } else if (b.x < -20 || b.x > 470 || b.y < -20 || b.y > 280) {
-                b.el.remove(); bullets.splice(i, 1);
-            }
+            if(Math.hypot(b.x-soulPos.x, b.y-soulPos.y) < 14) {
+                hp -= 1; b.el.remove(); bullets.splice(i,1); refreshUI();
+                if(hp <= 0) { alert("Game Over."); location.reload(); }
+            } else if(b.y > 280) { b.el.remove(); bullets.splice(i,1); }
         }
 
-        turnTimer--;
-        if (turnTimer <= 0) {
-            bullets.forEach(b => b.el.remove());
-            beginPlayerTurn();
-        }
+        turnFrames--;
+        if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); startPlayerTurn(); }
     }
 
     function spawnBullet(x, y, vx, vy) {
         let b = { x, y, vx, vy, el: document.createElement('div') };
-        b.el.className = 'bullet'; b.el.style.width = '14px'; b.el.style.height = '14px';
+        b.el.className = 'bullet'; b.el.style.width = '12px'; b.el.style.height = '12px';
         document.getElementById('battle-box').appendChild(b.el); bullets.push(b);
     }
 
-    function refreshStats() {
-        pMaxHP = 20 + (pLV-1)*4;
-        document.getElementById('lv-val').innerText = `LV ${pLV}`;
-        document.getElementById('hp-txt').innerText = `${Math.ceil(pHP)}/${pMaxHP}`;
-        document.getElementById('hp-bar-inner').style.width = (pHP / pMaxHP) * 100 + "%";
-        document.getElementById('ctrl-pct').innerText = Math.floor(pControl);
-        document.getElementById('control-fill').style.width = pControl + "%";
+    function useItem() {
+        if(inv.length > 0) { inv.pop(); hp = Math.min(maxHp, hp + 20); refreshUI(); startSurvival(); }
+    }
+
+    function refreshUI() {
+        document.getElementById('lv-disp').innerText = `LV ${lv}`;
+        document.getElementById('hp-txt').innerText = `${Math.ceil(hp)}/${maxHp}`;
+        document.getElementById('hp-bar-inner').style.width = (hp/maxHp)*100 + "%";
+        document.getElementById('sync-val').innerText = Math.floor(sync);
+        document.getElementById('control-fill'); // Placeholder
     }
 
     // --- AI ---
     async function talkAI(txt) {
-        if (!appData.apiKey) return;
-        const sys = `You are Chara. LV: ${pLV}, Sync: ${pControl}%. JSON ONLY: {"reply": "...", "controlMod": number}`;
+        if(!appData.apiKey) return;
+        const prompt = `You are Chara from Undertale. You are the Narrator and the voice of the player's choices. You are cold, logical, and observant. 
+        Stats: LV ${lv}, Weapon: Stick. Current Player Message: "${txt}". JSON ONLY: {"reply": "...", "controlMod": number}`;
         try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${appData.apiKey}`, {
-                method: 'POST', body: JSON.stringify({ contents: [{role: "user", parts: [{text: txt}]}], systemInstruction: {parts: [{text: sys}]}, generationConfig: {responseMimeType: "application/json"} })
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${appData.apiKey}`, {
+                method: 'POST', body: JSON.stringify({ contents: [{role: "user", parts: [{text: prompt}]}], generationConfig: {responseMimeType: "application/json"} })
             });
             const d = await r.json(); const res = JSON.parse(d.candidates[0].content.parts[0].text);
-            logMsg("Chara", res.reply, "msg-chara"); pControl = Math.min(100, Math.max(0, pControl + res.controlMod)); refreshStats();
+            logMsg("Chara", res.reply, "msg-chara"); sync = Math.min(100, Math.max(0, sync + res.controlMod)); refreshUI();
         } catch(e) {}
     }
 
-    document.getElementById('chat-input').onkeypress = e => { if(e.key === 'Enter') { let v = e.target.value; logMsg("You", v, "msg-player"); e.target.value = ''; talkAI(v); } }
-
-    function logMsg(s, t, c) {
-        const l = document.getElementById('chat-log'); const d = document.createElement('div');
-        d.className = c; d.innerText = t; l.appendChild(d); l.scrollTop = l.scrollHeight;
-    }
+    document.getElementById('chat-input').onkeypress = e => { if(e.key === 'Enter'){ logMsg("You", e.target.value, "msg-player"); talkAI(e.target.value); e.target.value = ''; }};
+    function logMsg(s, t, c) { const l = document.getElementById('chat-log'); const d = document.createElement('div'); d.className = c; d.innerText = t; l.appendChild(d); l.scrollTop = l.scrollHeight; }
 
     initMenu();
 </script>
