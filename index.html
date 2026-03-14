@@ -2,31 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V11</title>
+    <title>Undertale: Determination Protocol V12</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000000; }
         body { background: var(--bg); color: var(--white); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
-        #game-container { display: flex; width: 1100px; height: 750px; border: 4px solid #333; background: var(--bg); position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.3); }
+        
+        #game-container { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.3); }
 
-        /* Save Overlay */
+        /* Save Menu */
         #menu-overlay { position: absolute; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .save-slot { width: 480px; padding: 15px; border: 3px solid var(--white); margin: 10px; cursor: pointer; background: #080808; transition: 0.1s; }
-        .save-slot:hover { border-color: var(--red); color: var(--red); transform: scale(1.02); }
+        .save-slot { width: 450px; padding: 15px; border: 3px solid var(--white); margin: 10px; cursor: pointer; background: #080808; }
+        .save-slot:hover { border-color: var(--red); color: var(--red); }
 
         /* Combat Side */
         #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
-        #monster-sprite { height: 160px; font-size: 100px; display: flex; align-items: center; justify-content: center; }
+        #monster-sprite { height: 160px; font-size: 100px; display: flex; align-items: center; justify-content: center; position: relative; }
         
         #battle-box { width: 440px; height: 260px; border: 6px solid var(--white); background: var(--bg); position: relative; overflow: hidden; margin: 15px 0; }
         #soul { width: 18px; height: 18px; position: absolute; background: var(--red); z-index: 100; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
         .bullet { position: absolute; border-radius: 50%; }
 
-        /* Interaction */
+        /* Fight UI */
         #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 500; }
         #target-area { width: 380px; height: 120px; border: 4px solid var(--white); position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
         #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 15px #fff; }
 
+        /* Stats */
         #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
         #hp-bar-bg { width: 140px; height: 22px; background: var(--red); border: 2px solid #000; }
         #hp-bar-fill { height: 100%; background: var(--yellow); transition: width 0.2s; }
@@ -35,13 +37,15 @@
         .act-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
         .act-btn:disabled { opacity: 0.3; cursor: default; }
 
-        /* Narrative Side */
+        /* Chat */
         #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
         #chat-log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 24px; color: var(--orange); }
         .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
         .msg-player { color: var(--white); align-self: flex-end; opacity: 0.6; margin-bottom: 15px; }
         #chat-input { background: #000; border: none; border-top: 2px solid #333; color: var(--white); font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
         
+        .slash-anim { position: absolute; width: 100px; height: 100px; background: var(--white); clip-path: polygon(10% 40%, 90% 40%, 90% 60%, 10% 60%); z-index: 200; animation: slash 0.2s linear forwards; }
+        @keyframes slash { 0% { transform: scaleY(0); opacity: 1; } 50% { transform: scaleY(5); opacity: 1; } 100% { transform: scaleY(0); opacity: 0; } }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -49,9 +53,9 @@
 
 <div id="game-container">
     <div id="menu-overlay">
-        <h1 style="color: var(--red); font-size: 60px;">PROTOCOL V11</h1>
+        <h1 style="color: var(--red); font-size: 60px;">PROTOCOL V12</h1>
         <div id="save-slots"></div>
-        <button class="act-btn" onclick="setKey()" style="font-size: 20px; margin-top: 20px;">LINK API CORE</button>
+        <button class="act-btn" onclick="configureAPI()" style="font-size: 20px; margin-top: 20px;">LINK AI CORE</button>
     </div>
 
     <div id="battle-side">
@@ -78,56 +82,55 @@
         </div>
 
         <div id="action-grid">
-            <button class="act-btn" id="btn-FIGHT" onclick="tryAct('FIGHT')">FIGHT</button>
-            <button class="act-btn" id="btn-ACT" onclick="tryAct('ACT')">ACT</button>
-            <button class="act-btn" id="btn-ITEM" onclick="tryAct('ITEM')">ITEM</button>
-            <button class="act-btn" id="btn-MERCY" onclick="tryAct('MERCY')">MERCY</button>
+            <button class="act-btn" id="btn-FIGHT" onclick="triggerAction('FIGHT')">FIGHT</button>
+            <button class="act-btn" id="btn-ACT" onclick="triggerAction('ACT')">ACT</button>
+            <button class="act-btn" id="btn-ITEM" onclick="triggerAction('ITEM')">ITEM</button>
+            <button class="act-btn" id="btn-MERCY" onclick="triggerAction('MERCY')">MERCY</button>
         </div>
     </div>
 
     <div id="chat-side">
         <div id="chat-log"></div>
-        <input type="text" id="chat-input" placeholder="Initiate thought..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Type to Chara..." autocomplete="off">
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'CHARA_V11_STABLE';
-    let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { slots: [null,null,null], apiKey: "" };
+    const DB_KEY = 'CHARA_V12_ENGINE';
+    let appData = JSON.parse(localStorage.getItem(DB_KEY)) || { slots: [null,null,null], apiKey: "" };
     let curIdx = null;
 
-    // --- GAME DATA ---
+    // --- GAME STATE ---
     let lv = 1, hp = 20, maxHp = 20, exp = 0, sync = 0, learning = 0;
     let turn = 'MENU', region = 'RUINS', defeated = [];
     let enemy = null, bullets = [], frame = 0, turnFrames = 0;
     let soulPos = { x: 211, y: 121 };
+    let isMoving = false;
     const keys = {};
 
-    const MonsterTable = {
+    const Monsters = {
         RUINS: [
-            { n: "Froggit", hp: 20, def: 4, exp: 20, art: "🐸", patterns: ['FLY', 'CURVE'] },
-            { n: "Whimsun", hp: 10, def: 0, exp: 10, art: "🦋", patterns: ['DRIFT'] },
-            { n: "Moldsmal", hp: 12, def: 0, exp: 3, art: "🍮", patterns: ['SINE'] },
-            { n: "Vegetoid", hp: 20, def: 6, exp: 6, art: "🥕", patterns: ['VEGGIE', 'MORNING'] }
+            { n: "Froggit", hp: 20, def: 4, exp: 20, art: "🐸", patterns: ['FROG_FLY', 'FROG_JUMP'] },
+            { n: "Whimsun", hp: 10, def: 0, exp: 10, art: "🦋", patterns: ['WHIM_DRIFT'] },
+            { n: "Moldsmal", hp: 12, def: 0, exp: 3, art: "🍮", patterns: ['MOLD_SINE'] },
+            { n: "Vegetoid", hp: 20, def: 6, exp: 6, art: "🥕", patterns: ['VEG_FALL'] }
         ],
         SNOWDIN: [
-            { n: "Snowdrake", hp: 48, def: 2, exp: 22, art: "🐦", patterns: ['ICE_SPIKE', 'SHARD'] },
-            { n: "Ice Cap", hp: 48, def: 2, exp: 17, art: "👒", patterns: ['SNOWFLAKE', 'BOOMERANG'] },
-            { n: "Lesser Dog", hp: 60, def: 0, exp: 18, art: "🐕", patterns: ['BONE_SWING', 'BONE_RAIN'] },
-            { n: "Gyftrot", hp: 100, def: 2, exp: 50, art: "🦌", patterns: ['SNOWFLAKE'] }
+            { n: "Snowdrake", hp: 48, def: 2, exp: 22, art: "🐦", patterns: ['SNOW_SPIKE'] },
+            { n: "Ice Cap", hp: 48, def: 2, exp: 17, art: "👒", patterns: ['ICE_ARC'] },
+            { n: "Lesser Dog", hp: 60, def: 0, exp: 18, art: "🐕", patterns: ['BONE_RAIN'] }
         ]
     };
 
-    const BossTable = {
-        NAPSTABLOOK: { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", patterns: ['TEAR_RAIN', 'SIDE_TEARS', 'WAVY_TEARS'], boss: true },
-        TORIEL: { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", patterns: ['FIRE_BALL', 'FIRE_WAVE', 'FIRE_SPIRAL'], boss: true },
-        DOGGO: { n: "Doggo", hp: 30, def: 1, exp: 30, art: "🗡️", patterns: ['BLUE_SLASH'], boss: true },
-        DOGAMY: { n: "Dogamy & Dogaressa", hp: 108, def: 5, exp: 40, art: "🪓", patterns: ['BLUE_WHITE_BONE'], boss: true }
+    const Bosses = {
+        NAPSTABLOOK: { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", patterns: ['BLOOK_TEARS', 'BLOOK_WAVY'], boss: true },
+        TORIEL: { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", patterns: ['TORIEL_SPIRAL', 'TORIEL_RAIN'], boss: true },
+        DOGGO: { n: "Doggo", hp: 30, def: 1, exp: 30, art: "🗡️", patterns: ['BLUE_SLASH'], boss: true }
     };
 
     function save() {
         if(curIdx !== null) appData.slots[curIdx] = { lv, hp, exp, sync, learning, region, defeated, name: appData.slots[curIdx].name };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        localStorage.setItem(DB_KEY, JSON.stringify(appData));
     }
 
     function initMenu() {
@@ -135,7 +138,7 @@
         appData.slots.forEach((s, i) => {
             const d = document.createElement('div');
             d.className = `save-slot ${s ? '' : 'empty'}`;
-            d.innerHTML = s ? `[${s.name}] LV ${s.lv} | SYNC ${Math.floor(s.sync)}% | ${s.region}` : `-- NEW DATA --`;
+            d.innerHTML = s ? `[${s.name}] LV ${s.lv} | ${s.region} | ${Math.floor(s.sync)}%` : `-- EMPTY --`;
             d.onclick = () => s ? loadSlot(i) : createSlot(i);
             slots.appendChild(d);
         });
@@ -156,41 +159,41 @@
         requestAnimationFrame(coreLoop);
     }
 
-    function setKey() { let k = prompt("Gemini Key:"); if(k) { appData.apiKey = k; save(); } }
+    function configureAPI() { let k = prompt("API Key:"); if(k) { appData.apiKey = k; save(); } }
 
     window.onkeydown = e => {
         keys[e.code] = true;
         if((e.code === 'KeyZ' || e.code === 'Enter') && turn === 'FIGHT_MINI' && !document.getElementById('btn-FIGHT').disabled) {
-            finalizeHit();
+            stopSlider();
         }
     };
     window.onkeyup = e => keys[e.code] = false;
 
     function coreLoop() {
-        if(turn === 'SURVIVAL') runDodge();
-        if(turn === 'FIGHT_MINI') runFightBar();
+        if(turn === 'SURVIVAL') runSurvival();
+        if(turn === 'FIGHT_MINI') runSlider();
         frame++; requestAnimationFrame(coreLoop);
     }
 
     function spawnEnemy() {
-        if (lv === 2 && !defeated.includes("NAPSTABLOOK")) enemy = { ...BossTable.NAPSTABLOOK };
-        else if (lv === 3 && !defeated.includes("TORIEL")) enemy = { ...BossTable.TORIEL };
-        else if (lv === 4 && region === 'SNOWDIN' && !defeated.includes("DOGGO")) enemy = { ...BossTable.DOGGO };
+        if (lv === 2 && !defeated.includes("NAPSTABLOOK")) enemy = { ...Bosses.NAPSTABLOOK };
+        else if (lv === 3 && !defeated.includes("TORIEL")) enemy = { ...Bosses.TORIEL };
+        else if (lv === 4 && !defeated.includes("DOGGO")) enemy = { ...Bosses.DOGGO };
         else {
-            const pool = MonsterTable[region];
-            enemy = { ...pool[Math.floor(Math.random()*pool.length)] };
+            const list = Monsters[region];
+            enemy = { ...list[Math.floor(Math.random()*list.length)] };
         }
         document.getElementById('monster-sprite').innerText = enemy.art;
-        logMsg("System", `* ${enemy.n} appeared.`, "");
-        startTurnSelection();
+        logMsg("System", `* ${enemy.n} draw near.`, "");
+        evaluateTurn();
     }
 
-    function startTurnSelection() {
+    function evaluateTurn() {
         if(Math.random()*100 < sync) {
             turn = 'CHARA';
             document.getElementById('soul').style.background = "var(--white)";
             document.querySelectorAll('.act-btn').forEach(b => b.disabled = true);
-            setTimeout(() => { if(hp < 8) useHeal(); else startFightMini(); }, 1000);
+            setTimeout(() => { if(hp < 8) useItem(); else startFightMini(); }, 1000);
         } else {
             turn = 'PLAYER';
             document.getElementById('soul').style.background = "var(--red)";
@@ -198,142 +201,160 @@
         }
     }
 
-    function tryAct(a) {
+    function triggerAction(act) {
         if(turn !== 'PLAYER') return;
-        if(a === 'FIGHT') startFightMini();
-        if(a === 'ITEM') useHeal();
-        if(a === 'MERCY') { logMsg("You", "* Spare.", "msg-player"); sync -= 2; save(); spawnEnemy(); }
-        if(a === 'ACT') { logMsg("You", "* Check.", "msg-player"); beginSurvival(); }
+        if(act === 'FIGHT') startFightMini();
+        if(act === 'ITEM') useItem();
+        if(act === 'MERCY') { logMsg("You", "* Spare.", "msg-player"); sync -= 2; save(); spawnEnemy(); }
+        if(act === 'ACT') { logMsg("You", `* Check.`, "msg-player"); startSurvival(); }
     }
 
-    let sPos = 0, sDir = 7.5;
+    let sPos = 0, sDir = 8;
     function startFightMini() {
         turn = 'FIGHT_MINI'; sPos = 0;
         document.getElementById('fight-ui').style.display = 'flex';
+        
         if(turn === 'CHARA') {
-            // Chara's learning affects timing. Low learning = jittery.
-            let jitter = 190 * (1 - (learning/100));
+            // Chara's automated hit. Precision improves with learning.
+            let jitter = 180 * (1 - (learning/100));
             let target = 190 + (Math.random() - 0.5) * jitter;
-            setTimeout(() => { if(turn === 'FIGHT_MINI') { sPos = target; finalizeHit(); } }, 600);
+            // Delay before Chara "presses Z"
+            setTimeout(() => { if(turn === 'FIGHT_MINI') { sPos = target; stopSlider(); } }, 600);
         }
     }
 
-    function runFightBar() {
-        sPos += sDir; if(sPos > 365 || sPos < 0) sDir *= -1;
+    function runSlider() {
+        sPos += sDir;
+        if(sPos > 365 || sPos < 0) sDir *= -1;
         document.getElementById('slider').style.left = sPos + 'px';
     }
 
-    function finalizeHit() {
+    function stopSlider() {
         document.getElementById('fight-ui').style.display = 'none';
         let dist = Math.abs(190 - sPos);
-        let precision = Math.max(0.1, (1 - (dist / 190)));
+        let multiplier = Math.max(0.1, (1 - (dist / 190)) * 2);
         
-        let baseAtk = 10 + (lv-1)*2;
+        // --- STICK DAMAGE MATH (LV 1 Cap: 10) ---
+        let baseAt = 10 + (lv-1) * 2;
         let finalDmg = 1;
-        // LV 1 Cap Logic
-        if(precision > 0.8) finalDmg = Math.floor(Math.max(1, (baseAtk - enemy.def)) * (precision * 1.5));
-        let cap = 10 + (lv-1)*2;
+        if (dist < 30) { // High precision hit
+            finalDmg = Math.floor(baseAt * 1.0);
+        } else {
+            finalDmg = 1; // "Normal" hit
+        }
+        
+        let cap = 10 + (lv-1) * 2;
         finalDmg = Math.min(cap, finalDmg);
 
         enemy.hp -= finalDmg;
-        logMsg(turn==='CHARA'?'Chara':'You', `* Dealt ${finalDmg} damage.`, turn==='CHARA'?'msg-chara':'msg-player');
         
+        // Show Slash Animation
+        let slash = document.createElement('div');
+        slash.className = 'slash-anim';
+        document.getElementById('monster-sprite').appendChild(slash);
+        setTimeout(() => slash.remove(), 200);
+
+        logMsg(turn === 'CHARA' ? "Chara" : "You", `* Hit for ${finalDmg}.`, turn === 'CHARA' ? "msg-chara" : "msg-player");
+
         if(enemy.hp <= 0) handleWin();
-        else beginSurvival();
+        else startSurvival();
     }
 
     function handleWin() {
         if(enemy.boss) {
             defeated.push(enemy.n.toUpperCase());
-            if(enemy.n === "Toriel") { lv = 4; region = "SNOWDIN"; logMsg("Chara", "* Snowing.", "msg-chara"); }
+            if(enemy.n === "Toriel") { lv = 4; region = "SNOWDIN"; }
         }
-        exp += enemy.exp; sync = Math.min(100, sync + 2); learning = Math.min(100, learning + 2);
-        if(exp >= lv*150) { lv++; hp = maxHp = 20 + (lv-1)*4; logMsg("Chara", "* LV up.", "msg-chara"); }
+        exp += enemy.exp;
+        sync = Math.min(100, sync + 2);
+        learning = Math.min(100, learning + 1);
+        if(exp >= lv*150) { lv++; hp = maxHp = 20 + (lv-1)*4; logMsg("Chara", "* LV UP.", "msg-chara"); }
         save(); updateStats(); spawnEnemy();
     }
 
-    function beginSurvival() { turn = 'SURVIVAL'; turnFrames = 380; bullets = []; }
+    function startSurvival() {
+        turn = 'SURVIVAL'; turnFrames = 380; bullets = [];
+    }
 
-    function runDodge() {
-        let isSynced = (sync >= 100) || (Math.random()*100 < sync);
+    function runSurvival() {
+        let hijacked = (sync >= 100) || (Math.random()*100 < sync);
         const sEl = document.getElementById('soul');
-        sEl.style.background = isSynced ? "var(--white)" : "var(--red)";
+        sEl.style.background = hijacked ? "var(--white)" : "var(--red)";
 
-        let moving = false;
-        if(isSynced) {
-            // CHARA AI Dodge Navigation
-            let danger = null, d = 70 + (learning/2);
-            bullets.forEach(b => { 
-                let dist = Math.hypot(b.x-soulPos.x, b.y-soulPos.y); 
-                if(dist < d){ d = dist; danger = b; }
-            });
-            if(danger) {
-                if(danger.isBlue && learning > 50) { moving = false; } 
-                else if(danger.isGreen && learning > 30 && hp < maxHp) { moving = true; soulPos.x += (danger.x > soulPos.x ? 2.5 : -2.5); soulPos.y += (danger.y > soulPos.y ? 2.5 : -2.5); }
-                else { moving = true; soulPos.x += (danger.x > soulPos.x ? -3.5 : 3.5); soulPos.y += (danger.y > soulPos.y ? -3.5 : 3.5); }
+        isMoving = false;
+        if(hijacked) {
+            // Chara AI Dodge
+            let near = null, d = 65 + (learning/2);
+            bullets.forEach(b => { let dist = Math.hypot(b.x-soulPos.x, b.y-soulPos.y); if(dist < d){ d = dist; near = b; }});
+            if(near) {
+                if(near.isBlue && learning > 40) { isMoving = false; } 
+                else if(near.isGreen && learning > 30) { isMoving = true; soulPos.x += (near.x > soulPos.x ? 2.5 : -2.5); soulPos.y += (near.y > soulPos.y ? 2.5 : -2.5); }
+                else { isMoving = true; soulPos.x += (near.x > soulPos.x ? -3.5 : 3.5); soulPos.y += (near.y > soulPos.y ? -3.5 : 3.5); }
             }
         } else {
             let s = keys['ShiftLeft'] ? 1.5 : 4;
-            if(keys['ArrowUp'] || keys['KeyW']) { soulPos.y -= s; moving = true; }
-            if(keys['ArrowDown'] || keys['KeyS']) { soulPos.y += s; moving = true; }
-            if(keys['ArrowLeft'] || keys['KeyA']) { soulPos.x -= s; moving = true; }
-            if(keys['ArrowRight'] || keys['KeyD']) { soulPos.x += s; moving = true; }
+            if(keys['ArrowUp'] || keys['KeyW']) { soulPos.y -= s; isMoving = true; }
+            if(keys['ArrowDown'] || keys['KeyS']) { soulPos.y += s; isMoving = true; }
+            if(keys['ArrowLeft'] || keys['KeyA']) { soulPos.x -= s; isMoving = true; }
+            if(keys['ArrowRight'] || keys['KeyD']) { soulPos.x += s; isMoving = true; }
         }
 
         soulPos.x = Math.max(0, Math.min(422, soulPos.x));
         soulPos.y = Math.max(0, Math.min(242, soulPos.y));
         sEl.style.left = soulPos.x + 'px'; sEl.style.top = soulPos.y + 'px';
 
-        // Attack Logic based on provided Monster Patterns
+        // Pattern Logic
         if(frame % 20 === 0) {
             let p = enemy.patterns[Math.floor(Math.random()*enemy.patterns.length)];
-            spawnPattern(p);
+            spawnBullet(p);
         }
 
         for(let i=bullets.length-1; i>=0; i--) {
             let b = bullets[i]; b.x += b.vx; b.y += b.vy;
-            if(b.type === 'SINE') b.y += Math.sin(frame*0.1)*5;
-            if(b.type === 'CURVE') { b.vx += (220 - b.x)*0.01; b.vy += 0.1; }
-
+            if(b.type === 'SINE') b.y += Math.sin(frame*0.1)*6;
+            
             b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
             
-            if(Math.hypot(b.x-soulPos.x, b.y-soulPos.y) < 15) {
-                if(b.isBlue && !moving) { /* safe */ }
+            if(Math.hypot(b.x-soulPos.x, b.y-soulPos.y) < 14) {
+                if(b.isBlue && !isMoving) { /* safe */ }
                 else if(b.isGreen) { hp = Math.min(maxHp, hp + 2); b.el.remove(); bullets.splice(i,1); }
                 else {
                     // Toriel Mercy Check
-                    if(enemy.n === "Toriel" && hp < 10) { b.vx = (b.x > soulPos.x ? 5 : -5); }
+                    if(enemy.n === "Toriel" && hp < 10) { b.vx = (b.x > soulPos.x ? 6 : -6); }
                     else {
                         hp -= 1; b.el.remove(); bullets.splice(i,1);
                         if(hp <= 0) { alert("ERASED."); location.reload(); }
                     }
                 }
-            } else if(b.y > 280 || b.y < -30 || b.x > 460 || b.x < -30) { b.el.remove(); bullets.splice(i,1); }
+            } else if(b.y > 280 || b.y < -30 || b.x > 460) { b.el.remove(); bullets.splice(i,1); }
         }
 
-        turnFrames--; if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); startTurnSelection(); }
+        turnFrames--;
+        if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); evaluateTurn(); }
     }
 
-    function spawnPattern(p) {
-        if(p === 'FLY') spawnProj(Math.random()*440, -10, 0, 4.5, 'STRAIGHT');
-        if(p === 'CURVE') spawnProj(Math.random()*440, -10, (Math.random()-0.5)*2, 2, 'CURVE');
-        if(p === 'SINE') spawnProj(-10, 50+Math.random()*150, 4, 0, 'SINE');
-        if(p === 'VEGGIE') spawnProj(Math.random()*440, -10, 0, 4+Math.random()*3, 'STRAIGHT', Math.random()<0.2);
-        if(p === 'BLUE_SLASH') spawnProj(-10, soulPos.y, 7, 0, 'STRAIGHT', false, true);
-        if(p === 'TEAR_RAIN') spawnProj(Math.random()*440, -10, 0, 3.5, 'STRAIGHT');
-        if(p === 'FIRE_SPIRAL') { let a = frame*0.1; spawnProj(220+Math.cos(a)*150, 130+Math.sin(a)*150, -Math.cos(a)*3, -Math.sin(a)*3, 'STRAIGHT'); }
-    }
+    function spawnBullet(p) {
+        let x = 0, y = 0, vx = 0, vy = 0, type = 'STILL', isG = false, isB = false;
+        if(p === 'FROG_FLY') { x = Math.random()*440; y = -10; vy = 4; }
+        if(p === 'FROG_JUMP') { x = Math.random()*440; y = 260; vy = -5; vx = (Math.random()-0.5)*2; }
+        if(p === 'MOLD_SINE') { x = -10; y = 50+Math.random()*150; vx = 4; type = 'SINE'; }
+        if(p === 'VEG_FALL') { x = Math.random()*440; y = -10; vy = 3+Math.random()*3; isG = Math.random()<0.2; }
+        if(p === 'BLUE_SLASH') { x = -10; y = soulPos.y; vx = 6; isB = true; }
+        if(p === 'BLOOK_TEARS') { x = Math.random()*440; y = -10; vy = 3.5; }
+        if(p === 'TORIEL_RAIN') { x = Math.random()*440; y = -10; vy = 5; }
 
-    function spawnProj(x, y, vx, vy, type, isGreen=false, isBlue=false) {
-        let b = { x, y, vx, vy, type, isGreen, isBlue, el: document.createElement('div') };
+        let b = { x, y, vx, vy, type, isGreen: isG, isBlue: isB, el: document.createElement('div') };
         b.el.className = 'bullet'; b.el.style.width = '16px'; b.el.style.height = '16px';
-        if(isGreen) b.el.style.background = "var(--green)";
-        else if(isBlue) b.el.style.background = "var(--blue)";
+        if(isG) b.el.style.background = "var(--green)";
+        else if(isB) b.el.style.background = "var(--blue)";
         else b.el.style.background = "var(--white)";
         document.getElementById('battle-box').appendChild(b.el); bullets.push(b);
     }
 
-    function useHeal() { hp = Math.min(maxHp, hp + 15); logMsg("System", "* Heal.", "msg-player"); updateStats(); beginSurvival(); }
+    function useItem() {
+        hp = Math.min(maxHp, hp + 15); logMsg("System", "* Heal.", "msg-player");
+        updateStats(); startSurvival();
+    }
 
     function updateStats() {
         maxHp = 20 + (lv-1)*4;
