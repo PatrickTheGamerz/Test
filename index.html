@@ -2,37 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V18</title>
+    <title>Undertale: Determination Protocol V19</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000; }
         body { background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
         #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 50px rgba(255,0,0,0.5); }
 
-        /* Screens */
+        /* Overlays */
         #api-overlay, #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .slot { width: 450px; padding: 15px; border: 3px solid #fff; margin: 10px; cursor: pointer; background: #111; text-align: center; font-size: 24px; }
-        .slot:hover { border-color: var(--red); color: var(--red); }
+        .slot { width: 450px; padding: 15px; border: 3px solid #fff; margin: 10px; cursor: pointer; background: #111; text-align: center; font-size: 24px; transition: 0.2s; }
+        .slot:hover { border-color: var(--red); color: var(--red); transform: scale(1.02); }
 
-        /* Battle UI */
+        /* Game Sides */
         #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
-        #monster-sprite { height: 200px; font-size: 120px; display: flex; align-items: center; justify-content: center; position: relative; }
-        #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
-        #box-text { position: absolute; top: 20px; left: 20px; font-size: 28px; line-height: 1.4; color: white; width: 400px; }
+        #monster-sprite { height: 200px; font-size: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
+        #box { width: 440px; height: 240px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
+        #box-text { position: absolute; top: 20px; left: 20px; font-size: 26px; line-height: 1.3; color: white; width: 400px; white-space: pre-wrap; }
         #soul { width: 18px; height: 18px; position: absolute; z-index: 100; clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); }
         
-        /* Fight Bar */
+        /* Combat UI */
         #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 200; }
         #target-area { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
         #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 15px #fff; }
 
-        /* Stats */
-        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
+        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; padding: 0 10px; }
         #hp-bar { width: 140px; height: 22px; background: var(--red); position: relative; border: 2px solid #000; }
         #hp-fill { height: 100%; background: var(--yellow); width: 100%; transition: width 0.2s; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
         .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
+        .game-btn:hover { background: #331a00; }
         .chara-lock { border-color: var(--red) !important; color: var(--red) !important; box-shadow: 0 0 15px var(--red); }
 
         #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
@@ -40,7 +40,7 @@
         .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 10px; margin-bottom: 15px; }
         #chat-input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 26px; padding: 15px; outline: none; }
 
-        .bullet { position: absolute; font-size: 30px; }
+        .bullet { position: absolute; font-size: 30px; line-height: 1; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -48,18 +48,19 @@
 
 <div id="game">
     <div id="api-overlay" class="hidden">
-        <h1 style="color:var(--red)">CONNECTION REQUIRED</h1>
-        <input type="text" id="api-input" placeholder="Paste Gemini API Key here..." style="width:350px; padding:10px; font-family:inherit; font-size:20px;">
-        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px;">LINK CORE</button>
+        <h1 style="color:var(--red)">GEMINI CORE OFFLINE</h1>
+        <input type="password" id="api-input" placeholder="Enter API Key..." style="width:350px; padding:10px; font-family:inherit; font-size:20px;">
+        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px;">SYNC SOUL</button>
     </div>
 
     <div id="menu-overlay" class="hidden">
-        <h1 style="color:var(--red); font-size: 50px;">DETERMINATION PROTOCOL V18</h1>
+        <h1 style="color:var(--white); font-size: 50px;">- SELECT TIMELINE -</h1>
         <div id="slot-container"></div>
     </div>
 
     <div id="battle-side">
         <div id="stat-ui">
+            <span id="name-txt">FRISK</span>
             <span id="lv-txt">LV 1</span>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span>HP</span>
@@ -67,7 +68,6 @@
                 <span id="hp-txt">20/20</span>
             </div>
         </div>
-        <div style="font-size:18px; color:#555; margin:5px;">CONTROL: <span id="sync-txt" style="color:red">0</span>% | EXP: <span id="learn-txt">0</span></div>
         
         <div id="monster-sprite"></div>
 
@@ -89,23 +89,22 @@
 
     <div id="chat-side">
         <div id="log"></div>
-        <input type="text" id="chat-input" placeholder="Type to Chara..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Say something to them..." autocomplete="off">
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'UT_DATA_V18';
+    const STORAGE_KEY = 'UT_DATA_V19';
     let storage = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { slots: [null,null,null], apiKey: "" };
     let curSlot = null;
 
     // --- STATE ---
-    let lv=1, hp=20, maxHp=20, exp=0, sync=10, battleExp=0, region='RUINS', defeated=[], items=["Pie", "Steak", "Bun"];
+    let lv=1, hp=20, maxHp=20, exp=0, sync=15, battleExp=0, defeated=[];
     let turn='MENU', enemy=null, bullets=[], frame=0, turnFrames=0;
     let soulX=211, soulY=121, soulVY=0, isBlue=false, onGround=true;
-    let sliderX=0, sliderDir=8, playerMoveHistory = [];
+    let sliderX=0, sliderDir=9, playerMoveHistory = [];
     const keys = {};
 
-    // --- INITIALIZATION ---
     function saveApiKey() {
         const val = document.getElementById('api-input').value.trim();
         if(val.startsWith("AIza")) { storage.apiKey = val; localStorage.setItem(STORAGE_KEY, JSON.stringify(storage)); location.reload(); }
@@ -118,7 +117,7 @@
         const container = document.getElementById('slot-container'); container.innerHTML = '';
         storage.slots.forEach((s, i) => {
             const div = document.createElement('div'); div.className = `slot`;
-            div.innerHTML = s ? `[${s.name}] LV ${s.lv} | ${s.region} | SYNC ${Math.floor(s.sync)}%` : `-- CREATE TIMELINE --`;
+            div.innerHTML = s ? `[${s.name}] LV ${s.lv} | EXP ${s.exp} | SYNC ${Math.floor(s.sync)}%` : `-- EMPTY --`;
             div.onclick = () => s ? loadSlot(i) : createSlot(i);
             container.appendChild(div);
         });
@@ -126,29 +125,30 @@
 
     function createSlot(i) {
         let n = prompt("Name:"); if(!n) return;
-        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 10, battleExp: 0, region: 'RUINS', defeated: [], items: ["Pie", "Steak", "Bun"] };
+        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 15, battleExp: 0, defeated: [] };
         saveAll(); initSlots();
     }
 
     function loadSlot(i) {
         curSlot = i; const s = storage.slots[i];
-        lv=s.lv; exp=s.exp; sync=s.sync; battleExp=s.battleExp; region=s.region; defeated=s.defeated; items=s.items;
+        lv=s.lv; exp=s.exp; sync=s.sync; battleExp=s.battleExp; defeated=s.defeated;
         hp=20+(lv-1)*4; maxHp=hp;
+        document.getElementById('name-txt').innerText = s.name.toUpperCase();
         document.getElementById('menu-overlay').classList.add('hidden');
         updateStatsUI(); spawnEnemy(); requestAnimationFrame(mainLoop);
     }
 
     function saveAll() {
         if(curSlot !== null) {
-            storage.slots[curSlot] = { lv, exp, sync, battleExp, region, defeated, items, name: storage.slots[curSlot].name };
+            storage.slots[curSlot] = { lv, exp, sync, battleExp, defeated, name: storage.slots[curSlot].name };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
         }
     }
 
-    // --- INPUT ---
+    // --- INPUT (WASD) ---
     window.onkeydown = e => {
         keys[e.code] = true;
-        if ((e.code === 'Enter' || e.code === 'KeyZ') && turn === 'FIGHTING') triggerHit();
+        if ((e.code === 'KeyZ' || e.code === 'Enter') && turn === 'FIGHTING') triggerHit();
     };
     window.onkeyup = e => keys[e.code] = false;
 
@@ -160,15 +160,24 @@
     }
 
     function spawnEnemy() {
-        if (lv >= 7 && !defeated.includes("PAPYRUS")) {
-            enemy = { n: "Papyrus", hp: 680, art: "💀", p: ['BONE_JUMP', 'BLUE_MIX'] };
-        } else if (region === 'RUINS' && !defeated.includes("TORIEL") && lv >= 4) {
-            enemy = { n: "Toriel", hp: 440, art: "🐐", p: ['FIRE_RAIN', 'CURVE_FIRE'] };
+        // Boss Logic - Checking Level Requirements
+        if (lv >= 8 && !defeated.includes("PAPYRUS")) {
+            enemy = { n: "Papyrus", hp: 680, art: "💀", p: ['BONE_JUMP', 'BLUE_MIX'], exp: 0, boss: true };
+        } else if (lv >= 6 && !defeated.includes("DOGAMY")) {
+            enemy = { n: "Dogamy & Dogaressa", hp: 300, art: "🐕", p: ['BLUE_WHITE_SWEEP'], exp: 120, boss: true };
+        } else if (lv >= 5 && !defeated.includes("DOGGO")) {
+            enemy = { n: "Doggo", hp: 150, art: "🗡️", p: ['BLUE_SLASH'], exp: 80, boss: true };
+        } else if (lv >= 4 && !defeated.includes("TORIEL")) {
+            enemy = { n: "Toriel", hp: 440, art: "🐐", p: ['FIRE_RAIN', 'FIRE_CURVE'], exp: 500, boss: true };
+        } else if (lv >= 3 && !defeated.includes("NAPSTABLOOK")) {
+            enemy = { n: "Napstablook", hp: 88, art: "👻", p: ['TEAR_WAVY', 'TEAR_FALL'], exp: 0, boss: true };
         } else {
-            const pool = (region === 'RUINS') ? 
-                [{n:"Froggit", hp:30, art:"🐸", p:['FLY_RAIN', 'FROG_JUMP']}, {n:"Napstablook", hp:88, art:"👻", p:['TEAR_RAIN', 'TEAR_WAVE']}] :
-                [{n:"Snowdrake", hp:50, art:"🐦", p:['ICE_SHARD']}];
-            enemy = { ...pool[Math.floor(Math.random()*pool.length)] };
+            // Random Mobs
+            const mobPool = [
+                {n:"Froggit", hp:30, art:"🐸", p:['FROG_JUMP', 'FLY_RAIN'], exp:20},
+                {n:"Whimsun", hp:10, art:"🦋", p:['DRIFT'], exp:10}
+            ];
+            enemy = { ...mobPool[Math.floor(Math.random()*mobPool.length)] };
         }
         document.getElementById('monster-sprite').innerText = enemy.art;
         setBoxText(`* ${enemy.n} appeared.`);
@@ -182,10 +191,7 @@
             turn = 'CHARA_TURN';
             document.getElementById('soul').style.background = "#fff";
             document.querySelectorAll('.game-btn').forEach(b => b.classList.add('chara-lock'));
-            setTimeout(() => {
-                if (hp < maxHp * 0.5 && items.length > 0) handleBtn('ITEM');
-                else handleBtn('FIGHT');
-            }, 800);
+            setTimeout(() => handleBtn('FIGHT'), 800);
         } else {
             turn = 'PLAYER_TURN';
             document.getElementById('soul').style.background = "var(--red)";
@@ -196,23 +202,15 @@
     function handleBtn(a) {
         if (turn !== 'PLAYER_TURN' && turn !== 'CHARA_TURN') return;
         if (a === 'FIGHT') {
-            turn = 'FIGHTING';
-            sliderX = 0;
+            turn = 'FIGHTING'; sliderX = 0;
             document.getElementById('fight-ui').style.display = 'flex';
             setBoxText("");
-        }
-        if (a === 'ITEM') {
-            if (items.length > 0) {
-                let item = items.pop();
-                hp = Math.min(maxHp, hp + 20);
-                logMsg(turn === 'CHARA_TURN' ? "Chara" : "You", `* Used ${item}. Restored 20 HP.`);
-                updateStatsUI();
-                startSurvival();
-            }
-        }
-        if (a === 'ACT') {
-            logMsg("System", `* You checked ${enemy.n}.`);
-            startSurvival();
+        } else if (a === 'ITEM') {
+            hp = Math.min(maxHp, hp + 15);
+            logMsg(turn==='CHARA_TURN'?"Chara":"You", "* Healed 15 HP.");
+            updateStatsUI(); startSurvival();
+        } else {
+            setBoxText(`* You ${a.toLowerCase()}ed.`); startSurvival();
         }
     }
 
@@ -220,17 +218,13 @@
         sliderX += sliderDir;
         if (sliderX > 370 || sliderX < 0) sliderDir *= -1;
         document.getElementById('slider').style.left = sliderX + 'px';
-        
-        // Chara Auto-Hit Logic (Better as she learns)
-        if (turn === 'CHARA_TURN') {
-            if (Math.abs(190 - sliderX) < (10 + battleExp / 100)) triggerHit();
-        }
+        if (turn === 'CHARA_TURN' && Math.abs(190 - sliderX) < (15 + battleExp/50)) triggerHit();
     }
 
     function triggerHit() {
         const attacker = (turn === 'CHARA_TURN') ? "Chara" : "You";
         let dist = Math.abs(190 - sliderX);
-        let dmg = Math.floor(Math.max(1, (20 - dist / 10) + lv));
+        let dmg = Math.floor(Math.max(1, (15 - dist / 12) + lv));
         enemy.hp -= dmg;
         document.getElementById('fight-ui').style.display = 'none';
         logMsg(attacker, `* Dealt ${dmg} damage.`);
@@ -238,8 +232,18 @@
         else startSurvival();
     }
 
+    function handleVictory() {
+        if(enemy.boss) defeated.push(enemy.n.toUpperCase());
+        exp += enemy.exp;
+        // Papyrus LV up logic
+        if (enemy.n === "Papyrus") lv++;
+        // Standard LV up
+        if (exp >= lv * 100) { lv++; logMsg("System", "* Level Up!"); }
+        saveAll(); updateStatsUI(); spawnEnemy();
+    }
+
     function startSurvival() {
-        turn = 'SURVIVAL'; turnFrames = 350; bullets = [];
+        turn = 'SURVIVAL'; turnFrames = 300; bullets = [];
         isBlue = (enemy.n === "Papyrus");
         document.getElementById('soul').style.filter = isBlue ? "hue-rotate(200deg)" : "none";
         setBoxText("");
@@ -250,36 +254,36 @@
         let dx=0, dy=0, moving = false;
 
         if (!isChara) {
-            if(keys['ArrowLeft']) { dx = -4; moving = true; }
-            if(keys['ArrowRight']) { dx = 4; moving = true; }
+            // WASD CONTROLS
+            if(keys['KeyA']) { dx = -4.5; moving = true; }
+            if(keys['KeyD']) { dx = 4.5; moving = true; }
             if(!isBlue) {
-                if(keys['ArrowUp']) { dy = -4; moving = true; }
-                if(keys['ArrowDown']) { dy = 4; moving = true; }
+                if(keys['KeyW']) { dy = -4.5; moving = true; }
+                if(keys['KeyS']) { dy = 4.5; moving = true; }
             } else {
-                if(keys['ArrowUp'] && onGround) { soulVY = -13; onGround = false; }
-                soulVY += 0.7; dy = soulVY;
-                if (soulY + dy >= 242) { soulY = 242; dy = 0; onGround = true; soulVY = 0; }
+                // Blue Soul Physics
+                if((keys['KeyW'] || keys['Space']) && onGround) { soulVY = -12.5; onGround = false; }
+                soulVY += 0.65; dy = soulVY;
+                if (soulY + dy >= 222) { soulY = 222; dy = 0; onGround = true; soulVY = 0; }
             }
-            // Record behavior
             playerMoveHistory.push({dx, dy, moving});
-            if(playerMoveHistory.length > 300) playerMoveHistory.shift();
+            if(playerMoveHistory.length > 200) playerMoveHistory.shift();
         } else {
-            // Neural Mirroring: Chara mimics your pattern logic
-            let move = playerMoveHistory[Math.floor(Math.random()*playerMoveHistory.length)] || {dx:0, dy:0, moving:false};
-            dx = move.dx; dy = move.dy; moving = move.moving;
-            
-            // Learning adjustment: Chara starts to actively dodge bullets she's "seen" before
+            // Mirroring
+            let m = playerMoveHistory[Math.floor(Math.random()*playerMoveHistory.length)] || {dx:0, dy:0, moving:false};
+            dx = m.dx; dy = m.dy; moving = m.moving;
+            // Learning evasion
             bullets.forEach(b => {
-                let d = Math.hypot(b.x-soulX, b.y-soulY);
-                if (d < 50) { 
-                    if (b.isBlue && battleExp > 500) { dx = 0; dy = 0; moving = false; } // Learned blue stop
-                    else { dx = (b.x > soulX ? -4 : 4); dy = (b.y > soulY ? -4 : 4); moving = true; } 
+                let dist = Math.hypot(b.x-soulX, b.y-soulY);
+                if (dist < 50) {
+                    if (b.col === 'var(--blue)' && battleExp > 400) { dx=0; dy=0; moving=false; }
+                    else { dx = (b.x > soulX ? -5 : 5); dy = (b.y > soulY ? -5 : 5); moving=true; }
                 }
             });
         }
 
         soulX = Math.max(0, Math.min(422, soulX + dx));
-        soulY = Math.max(0, Math.min(242, soulY + dy));
+        soulY = Math.max(0, Math.min(222, soulY + dy));
         document.getElementById('soul').style.left = soulX+'px';
         document.getElementById('soul').style.top = soulY+'px';
 
@@ -287,16 +291,16 @@
 
         bullets.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy;
-            if(b.isWavy) b.x += Math.sin(frame/10)*3;
+            if(b.isWavy) b.x += Math.sin(frame/8)*4;
             b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
 
-            if(Math.hypot(b.x-soulX, b.y-soulY) < 15) {
-                if(b.isBlue && !moving) {} 
+            if(Math.hypot(b.x-soulX, b.y-soulY) < 14) {
+                if(b.col === 'var(--blue)' && !moving) {} 
                 else {
                     hp -= 1; b.el.remove(); bullets.splice(i, 1); updateStatsUI();
-                    if(hp <= 0) handleDeath();
+                    if(hp <= 0) { alert("STAY DETERMINED."); location.reload(); }
                 }
-            } else if(b.y > 300 || b.x > 500 || b.x < -100) { b.el.remove(); bullets.splice(i, 1); }
+            } else if(b.y > 250 || b.x > 450 || b.x < -50) { b.el.remove(); bullets.splice(i, 1); }
         });
 
         battleExp++;
@@ -306,32 +310,18 @@
 
     function spawnBullet() {
         const p = enemy.p[Math.floor(Math.random()*enemy.p.length)];
-        let x=Math.random()*400, y=-20, vx=0, vy=4, art="•", col="white", blue=false, wavy=false;
+        let x=Math.random()*400, y=-20, vx=0, vy=4.5, art="•", col="white", wavy=false;
 
-        if(p === 'TEAR_RAIN') { art="💧"; vy=5; wavy=true; }
-        if(p === 'BONE_JUMP') { x=440; y=240; vx=-6; vy=0; art="🦴"; }
-        if(p === 'FIRE_RAIN') { art="🔥"; vy=6; if(hp < 5) vy=2; } // Toriel Mercy
-        if(p === 'BLUE_MIX') { x=440; y=Math.random()*200; vx=-5; vy=0; art="🦴"; blue=true; col="var(--blue)"; }
+        if (p === 'FIRE_RAIN') art = "🔥";
+        if (p === 'TEAR_WAVY') { art = "💧"; wavy = true; }
+        if (p === 'BONE_JUMP') { x=440; y=220; vx=-6; vy=0; art="🦴"; }
+        if (p === 'BLUE_SLASH') { x=-20; y=soulY; vx=6; vy=0; art="—"; col="var(--blue)"; }
+        if (p === 'FROG_JUMP') { y=240; vy=-5; vx=(Math.random()-0.5)*4; art="🐸"; }
 
         const el = document.createElement('div');
         el.className = 'bullet'; el.innerText = art; el.style.color = col;
         document.getElementById('box').appendChild(el);
-        bullets.push({x, y, vx, vy, el, isBlue: blue, isWavy: wavy});
-    }
-
-    function handleVictory() {
-        if(enemy.boss) defeated.push(enemy.n.toUpperCase());
-        if(enemy.n === "Toriel") region = 'SNOWDIN';
-        exp += 50; if(exp >= lv*100) lv++;
-        saveAll(); updateStatsUI(); spawnEnemy();
-    }
-
-    function handleDeath() {
-        if(enemy.n === "Papyrus") {
-            alert("CAPTURED! You're in the doghouse."); hp=maxHp; updateStatsUI(); startSurvival();
-        } else {
-            alert("STAY DETERMINED..."); location.reload();
-        }
+        bullets.push({x, y, vx, vy, el, col, isWavy: wavy});
     }
 
     function updateStatsUI() {
@@ -339,22 +329,26 @@
         document.getElementById('hp-txt').innerText = `${hp}/${maxHp}`;
         document.getElementById('hp-fill').style.width = (hp/maxHp)*100+"%";
         document.getElementById('sync-txt').innerText = Math.floor(sync);
-        document.getElementById('learn-txt').innerText = battleExp;
+    }
+
+    function logMsg(s, t) {
+        const l = document.getElementById('log');
+        const d = document.createElement('div');
+        if(s === 'Chara') d.className = 'msg-chara';
+        d.innerHTML = `<b>${s}:</b> ${t}`;
+        l.appendChild(d); l.scrollTop = l.scrollHeight;
     }
 
     async function talk(txt) {
         if(!storage.apiKey) return;
         try {
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${storage.apiKey}`, {
-                method: 'POST', body: JSON.stringify({ contents: [{parts:[{text: `You are Chara from Undertale. LV ${lv}. Mirroring Player. Reply cryptically in JSON: {"reply": "text", "syncAdd": number}`}]}]})
+                method: 'POST', body: JSON.stringify({ contents: [{parts:[{text: `You are Chara. LV ${lv}. Response in JSON: {"reply": "text", "sync": number}`}]}]})
             });
             const d = await r.json(); const res = JSON.parse(d.candidates[0].content.parts[0].text);
-            logMsg("Chara", res.reply, "msg-chara");
-            sync = Math.min(100, sync + (res.syncAdd || 1)); updateStatsUI();
+            logMsg("Chara", res.reply); sync = Math.min(100, sync + (res.sync || 1)); updateStatsUI();
         } catch(e) {}
     }
-
-    function logMsg(s, t, c) { const l = document.getElementById('log'); const d = document.createElement('div'); d.className = c; d.innerHTML = `<b>${s}:</b> ${t}`; l.appendChild(d); l.scrollTop = l.scrollHeight; }
 
     document.getElementById('chat-input').onkeypress = e => { if(e.key==='Enter'){ logMsg("You", e.target.value); talk(e.target.value); e.target.value=''; }};
 </script>
