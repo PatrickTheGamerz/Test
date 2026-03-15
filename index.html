@@ -2,32 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V18</title>
+    <title>Undertale: Determination Protocol V19</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000; }
+        :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --cyan: #00ffff; --purple: #d535d5; --bg: #000; }
         
         body { background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
-        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; }
+        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 40px rgba(255,0,0,0.2); }
 
         /* Screens */
         #api-overlay, #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .slot { width: 400px; padding: 15px; border: 2px solid #fff; margin: 10px; cursor: pointer; background: #0a0a0a; font-size: 24px; text-align: center; }
-        .slot:hover { border-color: var(--red); color: var(--red); }
+        .slot { width: 420px; padding: 15px; border: 2px solid #fff; margin: 10px; cursor: pointer; background: #0a0a0a; font-size: 24px; transition: 0.2s; }
+        .slot:hover { border-color: var(--red); transform: scale(1.02); }
 
-        /* Battle side */
+        /* Battle Side */
         #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
         #monster-sprite { height: 180px; font-size: 100px; display: flex; align-items: center; justify-content: center; position: relative; }
         #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
         
-        /* The Soul */
+        /* The Multiverse Soul */
         #soul { 
             width: 18px; height: 18px; position: absolute; z-index: 100; 
             clip-path: path('M9 2.1C9 2.1 8.4 0 4.2 0 1.2 0 0 2.4 0 4.4 0 8.4 9 13.5 9 13.5S18 8.4 18 4.4C18 2.4 16.8 0 13.8 0 10.6 0 9 2.1 9 2.1Z'); 
-            transition: box-shadow 0.2s;
         }
-        .soul-player { background: var(--red); box-shadow: none; }
-        .soul-chara { background: #000; box-shadow: inset 0 0 0 2px var(--red), 0 0 10px var(--red); }
+        .soul-player { background: var(--red); }
+        .soul-chara { background: #000; box-shadow: inset 0 0 0 2px var(--red), 0 0 15px var(--red); }
+        .soul-frisk { background: var(--red); box-shadow: 0 0 10px var(--white); }
 
         .bullet { position: absolute; border-radius: 2px; }
 
@@ -37,19 +37,14 @@
         #hp-fill { height: 100%; background: var(--yellow); width: 100%; transition: width 0.2s; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; }
+        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 30px; padding: 10px; cursor: pointer; text-align: center; }
         .game-btn:disabled { opacity: 0.2; }
-
-        /* Fight Bar */
-        #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 500; }
-        #target-area { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
-        #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 10px #fff; }
 
         /* Chat Side */
         #chat-side { width: 480px; display: flex; flex-direction: column; background: #050505; border-left: 2px solid #222; }
-        #log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 22px; line-height: 1.4; color: #aaa; }
+        #log { flex-grow: 1; padding: 25px; overflow-y: auto; font-size: 22px; line-height: 1.4; }
         .msg-chara { color: var(--red); border-left: 3px solid var(--red); padding-left: 12px; margin-bottom: 20px; }
-        .msg-player { color: #fff; opacity: 0.6; margin-bottom: 10px; align-self: flex-end; }
+        .msg-player { color: #fff; opacity: 0.6; margin-bottom: 10px; align-self: flex-end; text-align: right; }
         #chat-input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 24px; padding: 15px; outline: none; }
 
         .hidden { display: none !important; }
@@ -59,13 +54,14 @@
 
 <div id="game">
     <div id="api-overlay">
-        <h1 style="color:var(--red)">ESTABLISH CONNECTION</h1>
-        <input type="password" id="api-input" placeholder="Google Gemini API Key..." style="width:350px; padding:10px; font-family:inherit;">
-        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px;">LINK</button>
+        <h1 style="color:var(--red); font-size: 40px;">CORE SYNCHRONIZATION</h1>
+        <p style="color:#555">LINKING TO GEMINI 2.5 FLASH NEURAL NET</p>
+        <input type="password" id="api-input" placeholder="Google Gemini API Key..." style="width:350px; padding:12px; font-family:inherit; background:#111; color:#fff; border:1px solid #444;">
+        <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px; width:180px;">CONNECT</button>
     </div>
 
     <div id="menu-overlay" class="hidden">
-        <h1 style="color:var(--red); font-size: 50px;">FILE SELECTION</h1>
+        <h1 style="color:var(--red); font-size: 50px;">FILE SELECT</h1>
         <div id="slot-container"></div>
     </div>
 
@@ -78,15 +74,14 @@
                 <span id="hp-txt">20/20</span>
             </div>
         </div>
-        <div style="font-size:18px; color:#555; margin:5px;">SYNC: <span id="sync-txt" style="color:red">0</span>% | INTENT: <span id="intent-txt">0</span></div>
+        <div id="sync-display" style="font-size:18px; color:#555; margin:5px;">
+            P: <span id="sync-p" style="color:white">80</span>% | F: <span id="sync-f" style="color:var(--white)">20</span>% | C: <span id="sync-c" style="color:red">0</span>%
+        </div>
         
         <div id="monster-sprite"></div>
 
         <div id="box">
             <div id="soul" class="soul-player"></div>
-            <div id="fight-ui">
-                <div id="target-area"><div id="slider"></div></div>
-            </div>
         </div>
 
         <div class="btn-grid">
@@ -104,24 +99,22 @@
 </div>
 
 <script>
-    const KEY = 'UT_DATA_V18';
+    const KEY = 'UT_DATA_V19';
     let storage = JSON.parse(localStorage.getItem(KEY)) || { slots: [null,null,null], apiKey: "" };
     let curSlot = null;
 
     // --- STATE ---
-    let lv=1, hp=20, maxHp=20, exp=0, sync=0, region='RUINS', defeated=[];
-    // Chara's Complex Mind
-    let mind = { accuracy: 5, malice: 0, instinct: 0, lastChoice: 'FIGHT' }; 
+    let lv=1, hp=20, maxHp=20, exp=0, region='RUINS', defeated=[];
+    let syncs = { player: 80, frisk: 20, chara: 0, souls: {} };
+    let mode = 'NORMAL'; // NORMAL, FRISK, SOULS
     
     let turn='MENU', enemy=null, bullets=[], frame=0, turnFrames=0;
-    let soulX=211, soulY=121, soulColor='red', yVel=0;
-    let sliderX=0, sliderDir=8, sliderFrames=0;
-    
+    let soulX=211, soulY=121, yVel=0, currentDominant = 'player';
     const keys = {};
 
     function saveApiKey() {
         const val = document.getElementById('api-input').value;
-        if(val.length > 10) { storage.apiKey = val; localStorage.setItem(KEY, JSON.stringify(storage)); location.reload(); }
+        if(val.startsWith("AIza")) { storage.apiKey = val; localStorage.setItem(KEY, JSON.stringify(storage)); location.reload(); }
     }
 
     if(!storage.apiKey) { document.getElementById('api-overlay').classList.remove('hidden'); }
@@ -131,7 +124,7 @@
         const container = document.getElementById('slot-container'); container.innerHTML = '';
         storage.slots.forEach((s, i) => {
             const div = document.createElement('div'); div.className = 'slot';
-            div.innerHTML = s ? `${s.name} - LV ${s.lv} (${Math.floor(s.sync)}%)` : `-- EMPTY --`;
+            div.innerHTML = s ? `${s.name} - LV ${s.lv}` : `-- INITIALIZE NEW TIMELINE --`;
             div.onclick = () => s ? loadSlot(i) : createSlot(i);
             container.appendChild(div);
         });
@@ -139,21 +132,28 @@
 
     function createSlot(i) {
         let n = prompt("Name:"); if(!n) return;
-        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 2, mind: {accuracy:5, malice:0, instinct:0, lastChoice:'FIGHT'}, region: 'RUINS', defeated: [] };
+        let isFrisk = n.toUpperCase() === 'FRISK';
+        let isSouls = n.toUpperCase() === 'SOULS';
+        storage.slots[i] = { 
+            name: n, lv: 1, exp: 0, region: 'RUINS', defeated: [],
+            syncs: isFrisk ? {player: 80, frisk: 20, chara: 0} : 
+                   isSouls ? {player: 40, chara: 10, souls: {justice:10, bravery:10, kindness:10, patience:10, integrity:10, perseverance:10}} :
+                   {player: 100, chara: 0, frisk: 0}
+        };
         saveAll(); initSlots();
     }
 
     function loadSlot(i) {
         curSlot = i; const s = storage.slots[i];
-        lv=s.lv; exp=s.exp; sync=s.sync; region=s.region; defeated=s.defeated;
-        mind = s.mind || {accuracy:5, malice:0, instinct:0, lastChoice:'FIGHT'};
+        lv=s.lv; exp=s.exp; region=s.region; defeated=s.defeated;
+        syncs = s.syncs; mode = s.name.toUpperCase() === 'FRISK' ? 'FRISK' : (s.name.toUpperCase() === 'SOULS' ? 'SOULS' : 'NORMAL');
         hp=20+(lv-1)*4; maxHp=hp;
         document.getElementById('menu-overlay').classList.add('hidden');
         updateStatsUI(); spawnEnemy(); requestAnimationFrame(mainLoop);
     }
 
     function saveAll() {
-        if(curSlot !== null) storage.slots[curSlot] = { lv, exp, sync, mind, region, defeated, name: storage.slots[curSlot].name };
+        if(curSlot !== null) storage.slots[curSlot] = { lv, exp, syncs, region, defeated, name: storage.slots[curSlot].name };
         localStorage.setItem(KEY, JSON.stringify(storage));
     }
 
@@ -162,191 +162,135 @@
 
     function mainLoop() {
         if(turn === 'SURVIVAL') runSurvival();
-        if(turn === 'FIGHT_PLAYER' || turn === 'FIGHT_CHARA') runFightBar();
         frame++; requestAnimationFrame(mainLoop);
     }
 
     function spawnEnemy() {
-        // RESET TO CLASSIC STATS
-        if(lv >= 7 && !defeated.includes("PAPYRUS")) {
-            enemy = { n: "Papyrus", hp: 680, def: 0, exp: 0, art: "💀", boss: true, p: ['BONE_JUMP', 'BLUE_BONE'] };
-        } else if(lv === 2 && !defeated.includes("NAPSTABLOOK")) {
-            enemy = { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", boss: true, p: ['TEARS'] };
-        } else if(lv === 3 && !defeated.includes("TORIEL")) {
-            enemy = { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", boss: true, p: ['FIRE'] };
-        } else {
-            enemy = { n: "Froggit", hp: 30, def: 4, exp: 20, art: "🐸", p: ['FLY'] };
-        }
+        // CLASSIC STATS
+        if(lv >= 7 && !defeated.includes("PAPYRUS")) enemy = { n: "Papyrus", hp: 680, def: 0, exp: 0, art: "💀", p: ['BONE'] };
+        else if(lv === 2 && !defeated.includes("NAPSTABLOOK")) enemy = { n: "Napstablook", hp: 88, def: 0, exp: 0, art: "👻", p: ['TEAR'] };
+        else if(lv === 3 && !defeated.includes("TORIEL")) enemy = { n: "Toriel", hp: 440, def: 0, exp: 0, art: "🐐", p: ['FIRE'] };
+        else enemy = { n: "Froggit", hp: 30, def: 4, exp: 20, art: "🐸", p: ['FLY'] };
+        
         document.getElementById('monster-sprite').innerText = enemy.art;
-        decideTurn();
-    }
-
-    function decideTurn() {
-        soulColor = (enemy.n === "Papyrus") ? 'blue' : 'red';
         turn = 'PLAYER_TURN';
-        document.querySelectorAll('.game-btn').forEach(b => b.disabled = false);
     }
 
     function handleBtn(a) {
         if(turn !== 'PLAYER_TURN') return;
-        mind.lastChoice = a;
         if(a === 'FIGHT') {
-            // Chara starts clueless, but eventually hijacks the fight bar
-            let charaWantsToHit = (sync > 40 && Math.random() < 0.3);
-            startFightBar(charaWantsToHit);
+            let dmg = (10 + (lv-1)*2); // CLASSIC PLAYER ATTACK
+            enemy.hp -= dmg;
+            logMsg("System", `* Dealt ${dmg} damage.`, "");
+            if(enemy.hp <= 0) { defeated.push(enemy.n.toUpperCase()); spawnEnemy(); }
+            else startSurvivalPhase();
         }
         if(a === 'ITEM') { hp = Math.min(maxHp, hp+15); startSurvivalPhase(); }
-        if(a === 'ACT' || a === 'MERCY') startSurvivalPhase();
+        if(a === 'MERCY' || a === 'ACT') startSurvivalPhase();
     }
 
-    function startFightBar(isChara) {
-        turn = isChara ? 'FIGHT_CHARA' : 'FIGHT_PLAYER';
-        sliderX = 0; sliderFrames = 0;
-        document.getElementById('fight-ui').style.display = 'flex';
-        document.querySelectorAll('.game-btn').forEach(b => b.disabled = true);
-    }
-
-    function runFightBar() {
-        sliderX += sliderDir;
-        sliderFrames++;
-        if(sliderX > 370 || sliderX < 0) sliderDir *= -1;
-        document.getElementById('slider').style.left = sliderX + 'px';
-
-        if(turn === 'FIGHT_CHARA') {
-            // Chara's accuracy learning
-            let target = 190 + (Math.random() * (100-mind.accuracy) - (100-mind.accuracy)/2);
-            if(Math.abs(sliderX - target) < 10 || sliderFrames > 240) triggerHit();
-        } else if(keys['KeyZ'] || keys['Enter']) {
-            triggerHit();
-        }
-    }
-
-    function triggerHit() {
-        let isChara = (turn === 'FIGHT_CHARA');
-        turn = 'ANIMATING';
-        document.getElementById('fight-ui').style.display = 'none';
-        
-        let dist = Math.abs(190 - sliderX);
-        let precision = Math.max(0.1, (1 - (dist / 190)));
-        
-        if(!isChara && precision > 0.8) mind.accuracy = Math.min(100, mind.accuracy + 2);
-
-        // BALANCED DAMAGE: Max 10 base, +2 per LV
-        let base = 10 + (lv-1)*2;
-        let dmg = Math.floor(base * precision);
-        enemy.hp -= dmg;
-        logMsg("System", `* Dealt ${dmg} damage.`, "");
-        
-        setTimeout(() => { if(enemy.hp <= 0) handleVictory(); else startSurvivalPhase(); }, 600);
-    }
-
-    function handleVictory() {
-        if(enemy.boss) defeated.push(enemy.n.toUpperCase());
-        exp += 50; sync = Math.min(100, sync+2);
-        saveAll(); updateStatsUI(); spawnEnemy();
-    }
-
-    function startSurvivalPhase() { turn = 'SURVIVAL'; turnFrames = 380; bullets = []; }
+    function startSurvivalPhase() { turn = 'SURVIVAL'; turnFrames = 300; bullets = []; }
 
     function runSurvival() {
-        let isCharaSeized = (sync > 10 && Math.random() * 100 < sync);
-        let s = keys['ShiftLeft'] ? 1.5 : 4;
+        // DETERMINATE DOMINANT SOUL
+        let pool = [];
+        for(let k in syncs) { if(k !== 'souls') for(let i=0; i<syncs[k]; i++) pool.push(k); }
+        if(mode === 'SOULS') { for(let s in syncs.souls) for(let i=0; i<syncs.souls[s]; i++) pool.push(s); }
         
-        const soulEl = document.getElementById('soul');
-        if(isCharaSeized) {
-            soulEl.className = 'soul-chara';
+        currentDominant = pool[Math.floor(Math.random()*pool.length)] || 'player';
+        
+        const soul = document.getElementById('soul');
+        soul.className = '';
+        if(currentDominant === 'chara') soul.classList.add('soul-chara');
+        else if(currentDominant === 'frisk') soul.classList.add('soul-frisk');
+        else soul.classList.add('soul-player');
+
+        // Apply Color for 6 Souls Mode
+        const soulColors = {justice:'var(--yellow)', bravery:'var(--orange)', kindness:'var(--green)', patience:'var(--cyan)', integrity:'var(--blue)', perseverance:'var(--purple)'};
+        if(soulColors[currentDominant]) soul.style.background = soulColors[currentDominant];
+        else soul.style.background = '';
+
+        // --- MOVEMENT PHYSICS ---
+        let mx=0, my=0, s = keys['ShiftLeft'] ? 1.5 : 4;
+
+        if(currentDominant === 'player') {
+            if(keys['ArrowUp'] || keys['KeyW']) my -= s;
+            if(keys['ArrowDown'] || keys['KeyS']) my += s;
+            if(keys['ArrowLeft'] || keys['KeyA']) mx -= s;
+            if(keys['ArrowRight'] || keys['KeyD']) mx += s;
         } else {
-            soulEl.className = 'soul-player';
-        }
-
-        // --- DUAL PHYSICS ---
-        let moveX = 0, moveY = 0;
-        // Player Intent
-        if(soulColor !== 'blue') {
-            if(keys['ArrowUp'] || keys['KeyW']) moveY -= s;
-            if(keys['ArrowDown'] || keys['KeyS']) moveY += s;
-        }
-        if(keys['ArrowLeft'] || keys['KeyA']) moveX -= s;
-        if(keys['ArrowRight'] || keys['KeyD']) moveX += s;
-
-        // Chara Intent (The Tug-of-War)
-        if(sync > 5) {
-            let near = null, d = 90;
+            // AUTOMATIC AI DODGING
+            let near = null, d = 80;
             bullets.forEach(b => { let dst = Math.hypot(b.x-soulX, b.y-soulY); if(dst < d){ d=dst; near=b; }});
             if(near) {
-                let charaForce = (sync / 100) * 3;
-                moveX += (near.x > soulX ? -charaForce : charaForce);
-                if(soulColor !== 'blue') moveY += (near.y > soulY ? -charaForce : charaForce);
+                let force = (currentDominant === 'chara') ? 5 : 3;
+                mx += (near.x > soulX ? -force : force);
+                my += (near.y > soulY ? -force : force);
             }
         }
 
-        soulX += moveX; soulY += moveY;
-
-        // Gravity
-        if (soulColor === 'blue') {
-            yVel += 0.4; soulY += yVel;
-            if (soulY >= 242) { soulY = 242; yVel = 0; if (keys['ArrowUp'] || keys['KeyW']) yVel = -8.5; }
+        // Integrity Blue Soul Physics
+        if(currentDominant === 'integrity' || (enemy.n === 'Papyrus' && currentDominant === 'player')) {
+            yVel += 0.4; my = yVel;
+            if(soulY >= 242) { soulY = 242; yVel = 0; if(keys['ArrowUp'] || keys['KeyW']) yVel = -8.5; }
         }
 
+        soulX += mx; soulY += my;
         soulX = Math.max(0, Math.min(422, soulX)); soulY = Math.max(0, Math.min(242, soulY));
-        soulEl.style.left = soulX+'px'; soulEl.style.top = soulY+'px';
+        soul.style.left = soulX+'px'; soul.style.top = soulY+'px';
 
         if(frame % 30 === 0) spawnProj();
 
-        for(let i=bullets.length-1; i>=0; i--) {
-            let b = bullets[i]; b.x += b.vx; b.y += b.vy;
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
             b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
             if(Math.hypot(b.x-soulX, b.y-soulY) < 14) {
                 hp -= 1; b.el.remove(); bullets.splice(i,1); updateStatsUI();
                 if(hp <= 0) location.reload();
-            } else if(b.y > 300 || b.x > 500) { b.el.remove(); bullets.splice(i,1); }
-        }
-        turnFrames--; if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); decideTurn(); }
+            } else if(b.y > 300) { b.el.remove(); bullets.splice(i,1); }
+        });
+
+        turnFrames--; if(turnFrames <= 0) { bullets.forEach(b => b.el.remove()); turn = 'PLAYER_TURN'; }
     }
 
     function spawnProj() {
-        const p = enemy.p[Math.floor(Math.random()*enemy.p.length)];
-        let x = Math.random()*440, y = -10, vx = 0, vy = 5;
-        if(p === 'BONE_JUMP') { x = 440; y = 230; vx = -6; vy = 0; }
-        const b = { x, y, vx, vy, el: document.createElement('div') };
-        b.el.className = 'bullet';
-        b.el.style.width = p.includes('BONE') ? '10px' : '16px';
-        b.el.style.height = p.includes('BONE') ? '60px' : '16px';
-        b.el.style.background = "#fff";
+        let b = { x: Math.random()*400, y: -20, vx: 0, vy: 5, el: document.createElement('div') };
+        b.el.className = 'bullet'; b.el.style.width = '16px'; b.el.style.height = '16px'; b.el.style.background = "#fff";
         document.getElementById('box').appendChild(b.el); bullets.push(b);
     }
 
     function updateStatsUI() {
-        maxHp = 20 + (lv-1)*4;
         document.getElementById('lv-txt').innerText = `LV ${lv}`;
-        document.getElementById('hp-txt').innerText = `${Math.ceil(hp)}/${maxHp}`;
+        document.getElementById('hp-txt').innerText = `${hp}/${maxHp}`;
         document.getElementById('hp-fill').style.width = (hp/maxHp)*100+"%";
-        document.getElementById('sync-txt').innerText = Math.floor(sync);
-        document.getElementById('intent-txt').innerText = Math.floor(mind.accuracy);
+        document.getElementById('sync-p').innerText = Math.floor(syncs.player || 0);
+        document.getElementById('sync-f').innerText = Math.floor(syncs.frisk || 0);
+        document.getElementById('sync-c').innerText = Math.floor(syncs.chara || 0);
     }
 
-    // --- GEMINI 2.5 FLASH API ---
+    // --- GEMINI 2.5 FLASH NEURAL API ---
     async function talk(txt) {
         if(!storage.apiKey) return;
-        const sys = `You are Chara. Sync: ${sync}%. Accuracy: ${mind.accuracy}%. You share the soul. 
-        Acknowledge your presence. You pull the soul when bullets are near. Mention the red outline on the black soul.
-        Be brief and clinical. JSON: {"reply": "...", "controlMod": number}`;
-        
+        const prompt = `You are Chara. Sync Status: Player ${syncs.player}%, Frisk ${syncs.frisk}%, Chara ${syncs.chara}%. 
+        Mode: ${mode}. Comment on the struggle for control. Mention the black soul with red outline if you are winning. 
+        Be cryptic. Output JSON only: {"reply": "string", "playerMod": number, "charaMod": number}`;
+
         try {
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${storage.apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: sys + " User: " + txt }] }],
+                    contents: [{ role: "user", parts: [{ text: prompt + " User says: " + txt }] }],
                     generationConfig: { responseMimeType: "application/json" }
                 })
             });
             const d = await r.json();
             const res = JSON.parse(d.candidates[0].content.parts[0].text);
             logMsg("Chara", res.reply, "msg-chara");
-            sync = Math.min(100, Math.max(0, sync + (res.controlMod || 0)));
+            syncs.player = Math.max(0, syncs.player + res.playerMod);
+            syncs.chara = Math.min(100, syncs.chara + res.charaMod);
             updateStatsUI();
-        } catch(e) { console.error("Chat Offline"); }
+        } catch(e) { console.error("Neural Link Failed."); }
     }
 
     document.getElementById('chat-input').onkeypress = e => { if(e.key === 'Enter'){ logMsg("You", e.target.value, "msg-player"); talk(e.target.value); e.target.value = ''; }};
