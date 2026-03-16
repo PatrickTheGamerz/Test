@@ -11,71 +11,32 @@
             transition: background 0.5s;
         }
 
-        /* Battle Mode Background (Moving Squares) */
+        /* Normal Battlebox Grid (Matches your image) */
         body.battle-mode {
-            background: 
-                linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)),
-                repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
-                repeating-linear-gradient(45deg, #000 25%, #222 25%, #222 75%, #000 75%, #000);
-            background-size: 60px 60px;
-            animation: moveGrid 2s linear infinite;
+            background-color: #000;
+            background-image: 
+                linear-gradient(#1f501f 1px, transparent 1px),
+                linear-gradient(90deg, #1f501f 1px, transparent 1px);
+            background-size: 80px 80px;
+            background-position: center bottom;
         }
-        @keyframes moveGrid { 100% { background-position: 60px 60px; } }
 
         /* Undertale UI Layout */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; }
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .interactive { pointer-events: auto; }
         
         /* Top Stats */
         #top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
-        .ut-box { background: #000; padding: 20px; border: 4px solid white; font-size: 24px; text-shadow: 2px 2px 0px #000; }
-        .stat-line { margin-bottom: 10px; }
-        .stat-val { color: #ffff00; }
-
-        /* Menus */
-        #right-controls { display: flex; flex-direction: column; gap: 15px; align-items: flex-end; }
-        .ut-btn { 
-            background: #000; color: #fff; border: 4px solid white; padding: 15px 25px; 
-            font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; transition: 0.1s;
-        }
-        .ut-btn:hover { border-color: #ffff00; color: #ffff00; }
-        .ut-btn:active { background: #222; }
-
-        /* Panels (Inventory) */
-        .side-panel { 
-            display: none; position: absolute; top: 100px; right: 200px; width: 400px; height: 60vh; 
-            background: #000; border: 6px solid white; padding: 20px; overflow-y: auto; 
-            pointer-events: auto; z-index: 10; 
-        }
-        .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 32px; }
-        .close-btn { background: #000; color: white; border: none; font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; }
-        .close-btn:hover { color: red; }
         
-        /* Inventory Items */
-        .inv-item { border-bottom: 2px dashed #555; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
-        .inv-item-actions button { background: #000; color: white; border: 2px solid white; padding: 5px 10px; font-family: 'VT323'; font-size: 18px; cursor: pointer; margin-left: 5px; }
-        .inv-item-actions button:hover { color: #ffff00; border-color: #ffff00; }
-
-        /* Bottom Controls (Auto, Roll, Fast) */
-        #bottom-bar { display: flex; justify-content: center; align-items: center; gap: 40px; padding-bottom: 30px; }
-        #btn-roll { font-size: 40px; padding: 20px 60px; font-weight: bold; border: 6px solid white; }
-        #btn-roll:hover { color: #ffff00; border-color: #ffff00; }
-        .ut-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
+        /* Bottom Battle UI */
+        #bottom-ui { display: flex; flex-direction: column; align-items: center; padding-bottom: 10px; }
         
-        /* Roulette / Roll Overlay */
-        #roulette-overlay {
-            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); 
-            z-index: 50; flex-direction: column; justify-content: center; align-items: center; text-align: center;
-        }
-        #roulette-soul { font-size: 80px; color: red; animation: pulse 0.5s infinite alternate; margin-bottom: 20px; }
-        #roulette-name { font-size: 60px; text-transform: uppercase; letter-spacing: 2px; }
-        #roulette-chance { font-size: 30px; color: #888; margin-top: 10px; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
-
-        /* Keep / Skip Box */
+        /* The Dialogue / Encounter Box */
         #kd-modal {
-            display: none; position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%);
-            background: #000; border: 6px solid white; padding: 30px; text-align: center; pointer-events: auto; z-index: 100; min-width: 400px;
+            display: none; width: 800px; height: 180px; margin-bottom: 20px;
+            background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; 
+            pointer-events: auto; z-index: 100; box-sizing: border-box;
+            font-size: 32px; line-height: 1.2;
         }
         .kd-buttons { display: flex; justify-content: space-around; margin-top: 30px; }
         .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
@@ -83,29 +44,66 @@
         .kd-btn:hover::before { content: '♥ '; color: red; }
         .kd-btn:hover { color: #ffff00; }
 
-        /* Rarity Colors */
-        .r-common { color: #ffffff; }
-        .r-uncommon { color: #aaffaa; }
-        .r-rare { color: #5555ff; }
-        .r-epic { color: #ff8800; }
-        .r-legendary { color: #ff00ff; text-shadow: 2px 2px 0px #880088; }
-        .r-mythic { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
-        .r-god { color: #ff0000; text-shadow: 2px 2px 0px #880000, 0 0 10px #ff0000; }
+        /* Undertale Stat Bar */
+        #ut-stats { display: flex; align-items: center; gap: 30px; font-size: 28px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
+        .hp-bar-bg { width: 50px; height: 25px; background: red; display: inline-block; vertical-align: middle; }
+        .hp-bar-fg { width: 100%; height: 100%; background: yellow; }
 
+        /* Bottom Buttons */
+        #action-buttons { display: flex; justify-content: center; gap: 20px; }
+        .ut-action-btn { 
+            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
+            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; 
+            display: flex; align-items: center; gap: 10px; width: 180px; justify-content: center;
+        }
+        .ut-action-btn:hover { background: #331100; color: #ffff00; border-color: #ffff00; }
+        .ut-action-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
+
+        /* Panels (Inventory / Info) */
+        .side-panel { 
+            display: none; position: absolute; top: 50px; right: 50px; width: 450px; height: 70vh; 
+            background: #000; border: 6px solid white; padding: 20px; overflow-y: auto; 
+            pointer-events: auto; z-index: 10; 
+        }
+        .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 32px; }
+        .close-btn { background: #000; color: white; border: none; font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; }
+        .close-btn:hover { color: red; }
+        
+        .inv-item { border-bottom: 2px dashed #555; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; font-size: 24px; }
+        .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
+        .inv-item-actions { display: flex; justify-content: flex-end; gap: 5px; }
+        .inv-item-actions button { background: #000; color: white; border: 2px solid white; padding: 5px 15px; font-family: 'VT323'; font-size: 22px; cursor: pointer; }
+        .inv-item-actions button:hover { color: #ffff00; border-color: #ffff00; }
+
+        /* Secret Visual Effects Overlay */
+        #fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
+        .dmg-text { position: absolute; color: red; font-family: 'VT323'; font-size: 80px; font-weight: bold; text-shadow: 4px 4px 0 black; animation: dmgBounce 1.5s forwards; left: 50%; transform: translateX(-50%); top: 40%; opacity: 0; }
+        @keyframes dmgBounce { 0% { top: 40%; opacity: 1; transform: translateX(-50%) scale(1); } 20% { top: 30%; transform: translateX(-50%) scale(1.2); } 100% { top: 60%; opacity: 0; transform: translateX(-50%) scale(1); } }
+        
+        .slash-fx { position: absolute; width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><line x1="10" y1="10" x2="90" y2="90" stroke="white" stroke-width="8" stroke-linecap="round"/></svg>') no-repeat center/contain; animation: slashAnim 0.4s forwards; opacity: 0; }
+        @keyframes slashAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+
+        .beam-fx { position: absolute; top: 50%; left: 0; width: 100%; height: 60px; background: rgba(255, 255, 255, 0.8); box-shadow: 0 0 20px cyan, 0 0 40px cyan; transform: translateY(-50%); animation: beamAnim 1.5s forwards; opacity: 0; }
+        @keyframes beamAnim { 0% { opacity: 1; height: 10px; } 10% { height: 80px; } 80% { opacity: 1; height: 60px; } 100% { opacity: 0; height: 0px; } }
+
+        .frog-fx { position: absolute; font-size: 60px; top: 60%; left: 50%; animation: frogJump 2s forwards; }
+        @keyframes frogJump { 0% { transform: translate(-50%, 0); opacity: 1; } 20% { transform: translate(-150%, -100px); } 40% { transform: translate(-250%, 0); } 60% { transform: translate(-150%, -100px); } 80% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, 100px); opacity: 0; } }
+        
+        /* Info Modal */
+        #info-modal { display: none; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -30%); background: black; border: 4px solid white; padding: 20px; z-index: 300; width: 400px; text-align: left; }
+
+        /* Utility classes */
+        .color-gray { color: #aaaaaa; }
+        .color-white { color: #ffffff; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
         <div id="top-bar">
-            <div class="ut-box interactive">
-                <div class="stat-line">LV: <span class="stat-val" id="stat-rolls">0</span></div>
-                <div class="stat-line">EQUIPPED: <br><span id="stat-equipped" style="color:#888; font-size: 20px;">None</span></div>
-            </div>
-
-            <div id="right-controls" class="interactive">
-                <button class="ut-btn" onclick="openPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/30)</button>
-                <button class="ut-btn" onclick="alert('* You try to open the shop.\n* But nobody came.')">SHOP</button>
+            <div>
+                <button class="ut-action-btn interactive" onclick="openPanel('inventory-panel')" style="margin-bottom: 10px; width: auto; font-size: 24px;">ITEM (<span id="inv-count">0</span>/30)</button>
+                <div style="font-size: 24px;">EQUIPPED: <span id="stat-equipped" style="color:#888;">None</span></div>
             </div>
         </div>
 
@@ -114,27 +112,38 @@
             <div id="inv-list"></div>
         </div>
 
-        <div id="bottom-bar" class="interactive">
-            <button id="btn-autoroll" class="ut-btn" onclick="toggleAutoRoll()">AUTO: OFF</button>
-            <button id="btn-roll" class="ut-btn" onclick="triggerRoll()">♥ ROLL</button>
-            <button id="btn-fastroll" class="ut-btn" onclick="toggleQuickRoll()">FAST: OFF</button>
+        <div id="bottom-ui" class="interactive">
+            
+            <div id="kd-modal">
+                <div id="kd-text">* You encountered <span id="kd-name">Aura</span>!</div>
+                <div style="font-size: 24px; color: #888; margin-top: 10px;">(Odds: 1 in <span id="kd-chance">?</span>)</div>
+                <div class="kd-buttons">
+                    <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">ACT (Keep)</button>
+                    <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">FLEE (Skip)</button>
+                </div>
+            </div>
+
+            <div id="ut-stats">
+                <span>NAME</span>
+                <span>LV <span id="stat-lv">1</span></span>
+                <span>EXP: <span id="stat-exp">0</span>/<span id="stat-next">10</span></span>
+            </div>
+
+            <div id="action-buttons">
+                <button id="btn-autoroll" class="ut-action-btn" onclick="toggleAutoRoll()">AUTO: OFF</button>
+                <button id="btn-roll" class="ut-action-btn" onclick="triggerRoll()" style="border-color: #ff0000; color: #ff0000;">♥ ROLL</button>
+                <button id="btn-fastroll" class="ut-action-btn" onclick="toggleQuickRoll()">FAST: OFF</button>
+            </div>
         </div>
     </div>
 
-    <div id="roulette-overlay">
-        <div id="roulette-soul">♥</div>
-        <div id="roulette-name" class="r-common">???</div>
-        <div id="roulette-chance">Calculating...</div>
-    </div>
+    <div id="fx-layer"></div>
 
-    <div id="kd-modal">
-        <div style="font-size: 24px; color: #aaa; margin-bottom: 10px;">YOU ENCOUNTERED:</div>
-        <div id="kd-name" style="font-size: 40px; margin-bottom: 10px;">Aura Name</div>
-        <div style="font-size: 20px; color: #888;">ODDS: 1 in <span id="kd-chance">?</span></div>
-        <div class="kd-buttons">
-            <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">ACT (Keep)</button>
-            <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">FLEE (Skip)</button>
-        </div>
+    <div id="info-modal" class="interactive">
+        <h2 id="info-name" style="margin-top:0;">Name</h2>
+        <p><strong>Rarity:</strong> 1 in <span id="info-chance"></span></p>
+        <p><strong>Base EXP:</strong> <span id="info-exp"></span></p>
+        <button onclick="document.getElementById('info-modal').style.display='none'" style="background:black; color:white; border:2px solid white; font-family:'VT323'; font-size:24px; padding:5px 15px; cursor:pointer;">Close</button>
     </div>
 
     <script type="importmap">
@@ -150,85 +159,102 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- UNDERTALE RNG DATA ---
+        // --- NEW UNDERTALE RNG DATA ---
         const AURAS = [
-            { id: 'candy', name: 'Monster Candy', chance: 2, color: 0xaaaaaa, class: 'r-common', particles: 0 },
-            { id: 'bandage', name: 'Bandage', chance: 4, color: 0xffaaaa, class: 'r-common', particles: 10 },
-            { id: 'froggit', name: 'Froggit', chance: 10, color: 0xffffff, class: 'r-uncommon', particles: 40, flies: true, battleBg: true },
-            { id: 'whimsun', name: 'Whimsun', chance: 20, color: 0xddddff, class: 'r-uncommon', particles: 30, glow: true },
-            { id: 'papyrus', name: 'Papyrus', chance: 100, color: 0xffaa00, class: 'r-epic', particles: 100, rings: 1 },
-            { id: 'toriel', name: 'Toriel', chance: 250, color: 0xff5500, class: 'r-epic', particles: 150, rings: 2, glow: true },
-            { id: 'undyne', name: 'Undyne The Undying', chance: 1000, color: 0x00ff00, class: 'r-legendary', particles: 300, rings: 3, glow: true },
-            { id: 'sans', name: 'Sans', chance: 5000, color: 0x00ffff, class: 'r-mythic', particles: 500, rings: 4, glow: true, battleBg: true },
-            { id: 'omega', name: 'Omega Flowey', chance: 25000, color: 0x00ff00, class: 'r-god', particles: 1000, rings: 6, glow: true },
-            { id: 'asriel', name: 'God of Hyperdeath', chance: 100000, color: 0xffffff, class: 'r-god', particles: 2000, rings: 8, glow: true, battleBg: true }
+            { id: 'dummy', name: 'Dummy', chance: 2, color: 0xffffff, exp: 2, type: 'monster', auraType: 'none' },
+            { id: 'whimsun', name: 'Whimsun', chance: 4, color: 0xffffff, exp: 5, type: 'monster', auraType: 'flies_down' },
+            { id: 'froggit', name: 'Froggit', chance: 5, color: 0xffffff, exp: 8, type: 'monster', auraType: 'flies_random' },
+            { id: 'moldsmal', name: 'Moldsmal', chance: 6, color: 0x00ff00, exp: 12, type: 'monster', auraType: 'none' },
+            { id: 'loox', name: 'Loox', chance: 8, color: 0xffffff, exp: 20, type: 'monster', auraType: 'lines' },
+            { id: 'vegetoid', name: 'Vegetoid', chance: 10, color: 0xffaa00, exp: 35, type: 'monster', auraType: 'veggies' }
         ];
 
-        // Global State
+        // EXP / LV SYSTEM
+        const EXP_CURVE = [0, 10, 30, 70, 120, 200, 300, 500, 800, 1200, 1700, 2500, 3500, 5000, 7000, 10000, 15000, 25000, 50000, 99999];
+
         window.playerData = {
-            rolls: 0, inventory: [], maxInventory: 30, equipped: null,
-            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null
+            lv: 1, exp: 0, rolls: 0, inventory: [], maxInventory: 30, equipped: null,
+            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null,
+            isVegetoidHealActive: false // Secret 'V' state
+        };
+
+        window.addExp = function(amount) {
+            window.playerData.exp += amount;
+            let currentExp = window.playerData.exp;
+            let newLv = 1;
+            let nextReq = EXP_CURVE[1];
+
+            for(let i = 0; i < EXP_CURVE.length; i++) {
+                if (currentExp >= EXP_CURVE[i]) {
+                    newLv = i + 1;
+                    nextReq = EXP_CURVE[i+1] || "MAX";
+                } else {
+                    break;
+                }
+            }
+
+            if(newLv > window.playerData.lv) {
+                // Leveled up!
+                window.playerData.lv = newLv;
+            }
+
+            document.getElementById('stat-lv').innerText = window.playerData.lv;
+            document.getElementById('stat-exp').innerText = window.playerData.exp;
+            document.getElementById('stat-next').innerText = nextReq;
         };
 
         // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
-        // Transparent fog to blend with CSS backgrounds
-        scene.fog = new THREE.FogExp2(0x000000, 0.03); 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 2, 8);
         
-        // Renderer with alpha: true so the CSS background shows through
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setClearColor(0x000000, 0); // Transparent!
+        renderer.setClearColor(0x000000, 0); 
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2;
         controls.minDistance = 4; controls.maxDistance = 15;
 
-        // Generate an 8-bit Red Soul Canvas Texture
-        function createSoulTexture() {
+        // Generate an Upside Down 8-bit White Soul (Monster Soul)
+        function createMonsterSoulTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 16; canvas.height = 16;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ff0000';
-            // Draw pixel heart
+            ctx.fillStyle = '#ffffff'; // White for monsters
             const pixels = [
-                [0,1,1,0,0,1,1,0],
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1],
-                [0,1,1,1,1,1,1,0],
+                [0,0,0,1,1,0,0,0],
                 [0,0,1,1,1,1,0,0],
-                [0,0,0,1,1,0,0,0]
+                [0,1,1,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [0,1,1,0,0,1,1,0]
             ];
+            // Draw flipped
             for(let y=0; y<pixels.length; y++) {
                 for(let x=0; x<pixels[y].length; x++) {
-                    if(pixels[y][x]) ctx.fillRect(x*2 + 1, y*2 + 2, 2, 2);
+                    if(pixels[y][x]) ctx.fillRect(x*2 + 1, (6-y)*2 + 2, 2, 2); // Invert Y
                 }
             }
             const tex = new THREE.CanvasTexture(canvas);
-            tex.magFilter = THREE.NearestFilter; // Keep it pixelated!
+            tex.magFilter = THREE.NearestFilter;
             return tex;
         }
 
-        // The central 3D Soul Sprite
-        const soulMaterial = new THREE.SpriteMaterial({ map: createSoulTexture() });
+        const soulMaterial = new THREE.SpriteMaterial({ map: createMonsterSoulTexture() });
         const soulSprite = new THREE.Sprite(soulMaterial);
         soulSprite.scale.set(1.5, 1.5, 1);
         soulSprite.position.y = 1;
+        soulSprite.visible = false; // Hide until equipped
         scene.add(soulSprite);
 
-        // Auras Setup
         let auraGroup = new THREE.Group();
         auraGroup.position.copy(soulSprite.position);
         scene.add(auraGroup);
-        
-        let activeParticles = null; let activeRings = [];
-        let auraLight = new THREE.PointLight(0xffffff, 0, 10);
-        scene.add(auraLight);
+        let activeParticles = null;
 
         // --- LOGIC FUNCTIONS ---
         window.equipAura = function(uid) {
@@ -238,73 +264,63 @@
             window.playerData.equipped = aura;
             
             document.getElementById('stat-equipped').innerText = aura.name;
-            document.getElementById('stat-equipped').className = aura.class;
+            soulSprite.visible = true;
+            document.body.classList.add('battle-mode'); // Always battle mode for these
 
-            // Handle CSS Backgrounds
-            if (aura.battleBg) {
-                document.body.classList.add('battle-mode');
-            } else {
-                document.body.classList.remove('battle-mode');
-            }
-
-            // Update 3D Visuals
+            // Update Particles
             while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
-            activeRings = [];
-            
-            if (aura.glow) {
-                auraLight.color.setHex(aura.color); auraLight.intensity = 5;
-            } else {
-                auraLight.intensity = 0;
-            }
+            activeParticles = null;
 
-            if (aura.rings) {
-                for(let i=0; i<aura.rings; i++) {
-                    const ringGeo = new THREE.TorusGeometry(1.5 + (i*0.5), 0.05, 8, 50);
-                    const ringMat = new THREE.MeshBasicMaterial({ color: aura.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-                    if (aura.glow) ringMat.blending = THREE.AdditiveBlending;
-                    const ring = new THREE.Mesh(ringGeo, ringMat);
-                    ring.rotation.x = Math.PI / 2;
-                    ring.userData = { speedX: (Math.random()-0.5)*0.05, speedY: (Math.random()-0.5)*0.05, speedZ: (Math.random()-0.5)*0.05 };
-                    auraGroup.add(ring); activeRings.push(ring);
-                }
-            }
-
-            if (aura.particles > 0) {
+            if (aura.auraType !== 'none') {
+                const count = aura.auraType === 'veggies' ? 60 : 100;
                 const partsGeo = new THREE.BufferGeometry();
-                const partsPos = new Float32Array(aura.particles * 3);
-                for(let i=0; i<aura.particles * 3; i+=3) {
-                    const radius = 2 + Math.random() * 2;
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.acos((Math.random() * 2) - 1);
-                    partsPos[i] = radius * Math.sin(phi) * Math.cos(theta);
-                    partsPos[i+1] = radius * Math.sin(phi) * Math.sin(theta);
-                    partsPos[i+2] = radius * Math.cos(phi);
+                const partsPos = new Float32Array(count * 3);
+                const partsColors = new Float32Array(count * 3);
+                
+                const c = new THREE.Color();
+                for(let i=0; i<count * 3; i+=3) {
+                    partsPos[i] = (Math.random() - 0.5) * 8;
+                    partsPos[i+1] = Math.random() * 5;
+                    partsPos[i+2] = (Math.random() - 0.5) * 8;
+
+                    // Init colors
+                    if(aura.auraType === 'veggies') c.setHex(0xffaa00); // Orange
+                    else if(aura.auraType === 'lines') c.setHex(0xffffff);
+                    else c.setHex(0xffffff);
+                    
+                    partsColors[i] = c.r; partsColors[i+1] = c.g; partsColors[i+2] = c.b;
                 }
+                
                 partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3));
-                const partsMat = new THREE.PointsMaterial({ 
-                    color: aura.color, size: aura.flies ? 0.2 : 0.1, transparent: true, opacity: 0.8, 
-                    blending: aura.glow ? THREE.AdditiveBlending : THREE.NormalBlending 
-                });
+                partsGeo.setAttribute('color', new THREE.BufferAttribute(partsColors, 3));
+                
+                // Use a larger point size for Veggies/Lines
+                const size = (aura.auraType === 'veggies' || aura.auraType === 'lines') ? 0.25 : 0.1;
+                const partsMat = new THREE.PointsMaterial({ size: size, vertexColors: true, transparent: true, opacity: 0.8 });
+                
                 activeParticles = new THREE.Points(partsGeo, partsMat);
-                activeParticles.userData = { isFlies: aura.flies };
+                activeParticles.userData = { type: aura.auraType };
                 auraGroup.add(activeParticles);
-            } else { activeParticles = null; }
+            }
         };
 
         window.deleteAura = function(uid) {
+            const item = window.playerData.inventory.find(i => i.uid === uid);
+            if(item) {
+                // Drop gives EXP!
+                window.addExp(item.aura.exp * 2); 
+            }
+
             window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
             if(window.playerData.equipped && !window.playerData.inventory.some(i => i.aura.id === window.playerData.equipped.id)) {
                 window.playerData.equipped = null;
                 document.getElementById('stat-equipped').innerText = "None";
-                document.getElementById('stat-equipped').className = "";
+                soulSprite.visible = false;
                 document.body.classList.remove('battle-mode');
                 while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
-                auraLight.intensity = 0;
             }
             window.updateInventoryUI();
         };
-
-        let rouletteInterval;
 
         window.triggerRoll = function() {
             if(window.playerData.isRolling) return;
@@ -314,56 +330,31 @@
 
             window.playerData.isRolling = true;
             document.getElementById('btn-roll').disabled = true;
-            document.getElementById('roulette-overlay').style.display = 'flex';
-            
-            const rollDuration = window.playerData.quickRoll ? 300 : 2500;
-            
-            // The Roulette Slot Machine Effect
-            const nameEl = document.getElementById('roulette-name');
-            const chanceEl = document.getElementById('roulette-chance');
-            
-            rouletteInterval = setInterval(() => {
-                const randomAura = AURAS[Math.floor(Math.random() * AURAS.length)];
-                nameEl.innerText = randomAura.name;
-                nameEl.className = randomAura.class;
-                chanceEl.innerText = `1 in ???`;
-            }, 60);
+            document.getElementById('kd-modal').style.display = 'none';
+
+            // RNG Math
+            const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
+            let rolledAura = AURAS[0]; 
+            for(let a of sorted) {
+                if (Math.random() <= (1 / a.chance)) { rolledAura = a; break; }
+            }
+
+            // Gain EXP just for encountering it!
+            window.addExp(rolledAura.exp);
 
             setTimeout(() => {
-                clearInterval(rouletteInterval);
                 window.playerData.rolls++;
-                document.getElementById('stat-rolls').innerText = window.playerData.rolls;
 
-                // Actual RNG Math
-                const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
-                let rolledAura = AURAS[0]; 
-                for(let a of sorted) {
-                    if (Math.random() <= (1 / a.chance)) { rolledAura = a; break; }
+                if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
+                    window.resolveRoll('keep', rolledAura);
+                } else {
+                    window.playerData.pendingAura = rolledAura;
+                    const kd = document.getElementById('kd-modal');
+                    kd.style.display = 'block';
+                    document.getElementById('kd-name').innerText = rolledAura.name;
+                    document.getElementById('kd-chance').innerText = rolledAura.chance;
                 }
-
-                // Show Final Result on Roulette overlay briefly
-                nameEl.innerText = rolledAura.name;
-                nameEl.className = rolledAura.class;
-                chanceEl.innerText = `1 in ${rolledAura.chance.toLocaleString()}`;
-
-                setTimeout(() => {
-                    document.getElementById('roulette-overlay').style.display = 'none';
-
-                    // Auto-Keep if AutoRoll is on
-                    if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
-                        window.resolveRoll('keep', rolledAura);
-                    } else {
-                        // Encounter Prompt
-                        window.playerData.pendingAura = rolledAura;
-                        const kd = document.getElementById('kd-modal');
-                        kd.style.display = 'block';
-                        document.getElementById('kd-name').innerText = rolledAura.name;
-                        document.getElementById('kd-name').className = rolledAura.class;
-                        document.getElementById('kd-chance').innerText = rolledAura.chance.toLocaleString();
-                    }
-                }, window.playerData.quickRoll ? 200 : 1000);
-
-            }, rollDuration);
+            }, window.playerData.quickRoll ? 100 : 500);
         };
 
         window.resolveRoll = function(action, overrideAura = null) {
@@ -377,6 +368,9 @@
                     window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: aura });
                     window.updateInventoryUI();
                 }
+            } else if (action === 'skip') {
+                // Fleeing gives bonus EXP
+                window.addExp(aura.exp * 2);
             }
 
             window.playerData.isRolling = false;
@@ -384,9 +378,56 @@
             window.playerData.pendingAura = null;
 
             if(window.playerData.autoRoll) {
-                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 800);
+                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 500);
             }
         };
+
+        // --- SPECIAL 'V' ABILITIES ---
+        let vCooldown = false;
+        window.addEventListener('keydown', (e) => {
+            if((e.key === 'v' || e.key === 'V') && !vCooldown && window.playerData.equipped) {
+                vCooldown = true;
+                setTimeout(() => vCooldown = false, 3000); // 3 sec cooldown
+                executeSpecialAbility(window.playerData.equipped);
+            }
+        });
+
+        function executeSpecialAbility(aura) {
+            const fxLayer = document.getElementById('fx-layer');
+            fxLayer.innerHTML = ''; // Clear old fx
+
+            if(aura.id === 'dummy' || aura.id === 'whimsun' || aura.id === 'moldsmal') {
+                // Slash + Damage
+                let slash = document.createElement('div');
+                slash.className = 'slash-fx';
+                fxLayer.appendChild(slash);
+                
+                setTimeout(() => {
+                    let dmg = document.createElement('div');
+                    dmg.className = 'dmg-text';
+                    dmg.innerText = aura.id === 'dummy' ? '99999' : '9999';
+                    fxLayer.appendChild(dmg);
+                }, 300);
+
+            } else if (aura.id === 'froggit') {
+                // Frog jump
+                let frog = document.createElement('div');
+                frog.className = 'frog-fx';
+                frog.innerText = '🐸'; // Simple emoji for visual
+                fxLayer.appendChild(frog);
+
+            } else if (aura.id === 'loox') {
+                // Beam attack
+                let beam = document.createElement('div');
+                beam.className = 'beam-fx';
+                fxLayer.appendChild(beam);
+
+            } else if (aura.id === 'vegetoid') {
+                // Heal veggies active
+                window.playerData.isVegetoidHealActive = true;
+                setTimeout(() => window.playerData.isVegetoidHealActive = false, 2500);
+            }
+        }
 
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
@@ -394,27 +435,55 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
             
-            // Bob the soul up and down gently
             soulSprite.position.y = 1 + Math.sin(time * 3) * 0.1;
 
-            activeRings.forEach((ring, index) => {
-                ring.rotation.x += ring.userData.speedX; ring.rotation.y += ring.userData.speedY; ring.rotation.z += ring.userData.speedZ;
-                ring.position.y = Math.sin(time * 2 + index) * 0.5;
-            });
-
             if(activeParticles) {
-                if(activeParticles.userData.isFlies) {
-                    // Jitter for Froggit "flies"
-                    const positions = activeParticles.geometry.attributes.position.array;
-                    for(let i=0; i<positions.length; i+=3) {
-                        positions[i] += (Math.random()-0.5)*0.05;
-                        positions[i+1] += (Math.random()-0.5)*0.05;
-                        positions[i+2] += (Math.random()-0.5)*0.05;
+                const pos = activeParticles.geometry.attributes.position.array;
+                const col = activeParticles.geometry.attributes.color.array;
+                const type = activeParticles.userData.type;
+
+                for(let i=0; i<pos.length; i+=3) {
+                    if (type === 'flies_random') {
+                        // Froggit: Jitter
+                        pos[i] += (Math.random()-0.5)*0.1;
+                        pos[i+1] += (Math.random()-0.5)*0.1;
+                        pos[i+2] += (Math.random()-0.5)*0.1;
+                        
+                        // Keep bounded
+                        if(pos[i+1] > 4) pos[i+1] = 4;
+                        if(pos[i+1] < 0) pos[i+1] = 0;
+
+                    } else if (type === 'flies_down' || type === 'veggies') {
+                        // Whimsun / Vegetoid: Fall down
+                        pos[i+1] -= (type==='veggies'? 0.05 : 0.02);
+                        if(pos[i+1] <= 0) {
+                            pos[i+1] = 5; // Reset to top
+                            pos[i] = (Math.random() - 0.5) * 8;
+                            pos[i+2] = (Math.random() - 0.5) * 8;
+                            
+                            if(type === 'veggies') {
+                                // Veggie color logic
+                                if(window.playerData.isVegetoidHealActive && Math.random() < 0.3) {
+                                    // Green veggie
+                                    col[i] = 0; col[i+1] = 1; col[i+2] = 0; 
+                                } else {
+                                    // Orange veggie
+                                    col[i] = 1; col[i+1] = 0.66; col[i+2] = 0; 
+                                }
+                            }
+                        }
+                    } else if (type === 'lines') {
+                        // Loox: Move horizontally
+                        pos[i] += 0.05;
+                        if(pos[i] > 5) {
+                            pos[i] = -5;
+                            pos[i+1] = Math.random() * 5;
+                            pos[i+2] = (Math.random() - 0.5) * 8;
+                        }
                     }
-                    activeParticles.geometry.attributes.position.needsUpdate = true;
-                } else {
-                    activeParticles.rotation.y += 0.005;
                 }
+                activeParticles.geometry.attributes.position.needsUpdate = true;
+                if(type === 'veggies') activeParticles.geometry.attributes.color.needsUpdate = true;
             }
             controls.update();
             renderer.render(scene, camera);
@@ -431,13 +500,11 @@
 
     <script>
         // --- UI LOGIC ---
-
         function toggleAutoRoll() {
             window.playerData.autoRoll = !window.playerData.autoRoll;
             const btn = document.getElementById('btn-autoroll');
             btn.innerText = `AUTO: ${window.playerData.autoRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.autoRoll ? 'ut-btn active-toggle' : 'ut-btn';
-            
+            btn.className = window.playerData.autoRoll ? 'ut-action-btn active-toggle' : 'ut-action-btn';
             if(window.playerData.autoRoll && !window.playerData.isRolling) window.triggerRoll();
         }
 
@@ -445,7 +512,7 @@
             window.playerData.quickRoll = !window.playerData.quickRoll;
             const btn = document.getElementById('btn-fastroll');
             btn.innerText = `FAST: ${window.playerData.quickRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.quickRoll ? 'ut-btn active-toggle' : 'ut-btn';
+            btn.className = window.playerData.quickRoll ? 'ut-action-btn active-toggle' : 'ut-action-btn';
         }
 
         function openPanel(id) {
@@ -457,6 +524,15 @@
             document.querySelectorAll('.side-panel').forEach(p => p.style.display = 'none');
         }
 
+        window.showInfo = function(uid) {
+            const item = window.playerData.inventory.find(i => i.uid === uid);
+            if(!item) return;
+            document.getElementById('info-name').innerText = item.aura.name;
+            document.getElementById('info-chance').innerText = item.aura.chance;
+            document.getElementById('info-exp').innerText = item.aura.exp;
+            document.getElementById('info-modal').style.display = 'block';
+        }
+
         window.updateInventoryUI = function() {
             document.getElementById('inv-count').innerText = window.playerData.inventory.length;
             const list = document.getElementById('inv-list');
@@ -466,18 +542,21 @@
                 const div = document.createElement('div');
                 div.className = `inv-item`;
                 div.innerHTML = `
-                    <div>
-                        <strong class="${item.aura.class}">${item.aura.name}</strong><br>
-                        <span style="font-size:16px; color:#888;">1 in ${item.aura.chance.toLocaleString()}</span>
+                    <div class="inv-item-top">
+                        <span>* ${item.aura.name}</span>
                     </div>
                     <div class="inv-item-actions">
                         <button onclick="window.equipAura('${item.uid}')">USE</button>
-                        <button style="color:red; border-color:red;" onclick="window.deleteAura('${item.uid}')">DROP</button>
+                        <button onclick="window.showInfo('${item.uid}')">INFO</button>
+                        <button onclick="window.deleteAura('${item.uid}')" style="color:#ff6666; border-color:#ff6666;">DROP</button>
                     </div>
                 `;
                 list.appendChild(div);
             });
         };
+        
+        // Setup base stats on load
+        window.addExp(0);
     </script>
 </body>
 </html>
