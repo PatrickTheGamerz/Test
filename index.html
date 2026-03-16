@@ -3,383 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doomsday Bunker Builder</title>
+    <title>3D Bunker Defense Prototype</title>
     <style>
-        :root {
-            --bg-color: #121212;
-            --panel-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent: #ff9800;
-            --danger: #f44336;
-            --success: #4caf50;
-            --border: #333;
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: white;}
+        canvas { display: block; }
+        
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Let clicks pass through to 3D canvas unless on a button */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 10px; height: 10px; background-color: white; border-radius: 50%;
+            transform: translate(-50%, -50%);
         }
 
-        #game-container {
-            width: 100%;
-            max-width: 1000px;
-            background-color: var(--panel-bg);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        #stats {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0, 0, 0, 0.7); padding: 15px; border: 1px solid #0f0;
         }
 
-        h1, h2, h3 { margin-top: 0; color: var(--accent); }
-
-        .screen { display: none; }
-        .screen.active { display: block; }
-
-        /* Setup Screen */
-        #setup-screen { text-align: center; padding: 50px 20px; }
-        select, button {
-            background-color: #333;
-            color: #fff;
-            border: 1px solid var(--accent);
-            padding: 10px 20px;
-            font-size: 16px;
-            font-family: inherit;
-            cursor: pointer;
-            border-radius: 4px;
-            margin: 10px;
-        }
-        button:hover { background-color: var(--accent); color: #000; }
-
-        /* Game Screen */
-        .header-stats {
-            display: flex;
-            justify-content: space-between;
-            background-color: #000;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-size: 1.2em;
-            font-weight: bold;
+        #computer-screen {
+            display: none; background: rgba(0, 20, 0, 0.9); border: 2px solid #0f0;
+            padding: 30px; border-radius: 10px; text-align: center; pointer-events: auto;
         }
 
-        .text-danger { color: var(--danger); }
-        .text-success { color: var(--success); }
-
-        .game-layout {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
+        button {
+            background-color: #000; color: #0f0; border: 1px solid #0f0;
+            padding: 10px 20px; margin: 10px; cursor: pointer; font-family: inherit; font-size: 16px;
         }
+        button:hover { background-color: #0f0; color: #000; }
 
-        .panel {
-            background-color: #000;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
+        #warning {
+            position: absolute; top: 20px; right: 20px; color: red; font-size: 24px; font-weight: bold; display: none;
         }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px dashed #333;
-        }
-
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .shop-item {
-            background-color: #222;
-            border: 1px solid #444;
-            padding: 15px;
-            border-radius: 4px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .shop-item h4 { margin: 0 0 10px 0; color: #fff; }
-        .shop-item p { margin: 5px 0; font-size: 0.9em; color: #aaa; }
-        .shop-item button { margin-top: 10px; width: 100%; }
-
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-danger { border-color: var(--danger); }
-        .btn-danger:hover { background-color: var(--danger); }
-
-        /* Result Screen */
-        #result-screen { text-align: center; padding: 50px 20px; }
-        #outcome-text { font-size: 1.2em; line-height: 1.6; margin: 20px 0; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-<div id="game-container">
+<div id="ui-layer">
+    <div id="crosshair"></div>
+    <div id="stats">
+        <h3>Survival Stats</h3>
+        <div>Money: $<span id="money">1000000</span></div>
+        <div>Base Health: <span id="health">100</span>%</div>
+    </div>
     
-    <div id="setup-screen" class="screen active">
-        <h1>☢️ DOOMSDAY BUNKER BUILDER ☢️</h1>
-        <p>You have exactly 10 minutes and $1,000,000 to build a bunker.</p>
-        <p>Take loans. Go into debt. Money won't matter when society collapses anyway.</p>
-        
-        <div style="margin: 30px 0;">
-            <label for="apocalypse-select" style="font-size: 1.2em;">Choose Your Demise: </label><br><br>
-            <select id="apocalypse-select">
-                <option value="nuclear">Nuclear War</option>
-                <option value="zombie">Zombie Outbreak</option>
-                <option value="asteroid">Asteroid Strike</option>
-                <option value="flood">Global Flood</option>
-            </select>
-        </div>
-        
-        <button onclick="startGame()">ENTER BUNKER</button>
+    <div id="warning">⚠️ ZOMBIE APPROACHING ⚠️</div>
+
+    <div id="computer-screen">
+        <h2>TERMINAL ACCESS</h2>
+        <p>Purchase Upgrades to survive the horde.</p>
+        <button onclick="buyUpgrade('door')">Reinforce Doors ($50,000)</button>
+        <button onclick="buyUpgrade('turret')">Buy Auto-Turret ($150,000)</button><br>
+        <button onclick="closeComputer()" style="border-color: red; color: red;">Close Terminal</button>
     </div>
-
-    <div id="game-screen" class="screen">
-        <div class="header-stats">
-            <div>⏱️ <span id="time-display" class="text-danger">10:00</span></div>
-            <div>💰 $<span id="money-display" class="text-success">1,000,000</span></div>
-            <div>🏦 Debt: $<span id="debt-display" class="text-danger">0</span></div>
-            <div id="current-disaster" style="color: var(--accent);">Disaster</div>
-        </div>
-
-        <div class="game-layout">
-            <div class="panel">
-                <h3>Bunker Stats</h3>
-                <div class="stat-row"><span>Depth:</span> <span id="stat-depth">Level 1</span></div>
-                <div class="stat-row"><span>Structure Integrity:</span> <span id="stat-structure">0</span></div>
-                <div class="stat-row"><span>Radiation Shield:</span> <span id="stat-radiation">0</span></div>
-                <div class="stat-row"><span>Water Sealing:</span> <span id="stat-flood">0</span></div>
-                <div class="stat-row"><span>Air Quality:</span> <span id="stat-air">0</span></div>
-                <div class="stat-row"><span>Energy:</span> <span id="stat-energy">0</span></div>
-                <div class="stat-row"><span>Defense (Weapons):</span> <span id="stat-defense">0</span></div>
-                <br>
-                <h3>Supplies</h3>
-                <div class="stat-row"><span>Food:</span> <span id="stat-food">0</span></div>
-                <div class="stat-row"><span>Water:</span> <span id="stat-water">0</span></div>
-
-                <div class="controls" style="flex-direction: column;">
-                    <button onclick="takeLoan()">Take $500,000 Loan</button>
-                    <button class="btn-danger" onclick="triggerEndgame()">Trigger Apocalypse Now</button>
-                </div>
-            </div>
-
-            <div class="panel">
-                <h3>Construction & Supplies Menu</h3>
-                <div class="shop-grid" id="shop-container">
-                    </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="result-screen" class="screen">
-        <h1 id="result-title">APOCALYPSE NOW</h1>
-        <div id="outcome-text"></div>
-        <button onclick="location.reload()">Play Again</button>
-    </div>
-
 </div>
 
 <script>
     // Game State
-    let state = {
-        money: 1000000,
-        debt: 0,
-        timeLeft: 600, // 10 minutes in seconds
-        apocalypse: '',
-        timer: null,
-        stats: {
-            depth: 1,
-            structure: 0,
-            radiation: 0,
-            flood: 0,
-            air: 0,
-            energy: 0,
-            defense: 0,
-            food: 0,
-            water: 0
-        }
-    };
+    let money = 1000000;
+    let baseHealth = 100;
+    let isComputerOpen = false;
 
-    // Shop Catalog
-    const catalog = [
-        { id: 'dig', name: 'Dig Deeper', desc: '+1 Depth Level', cost: 150000, stat: 'depth', val: 1 },
-        { id: 'concrete', name: 'Thick Concrete Walls', desc: '+20 Structure', cost: 50000, stat: 'structure', val: 20 },
-        { id: 'blastdoor', name: 'Steel Blast Doors', desc: '+30 Structure, +10 Defense', cost: 120000, stat: 'structure', val: 30, stat2: 'defense', val2: 10 },
-        { id: 'lead', name: 'Lead Lining', desc: '+40 Radiation Shield', cost: 200000, stat: 'radiation', val: 40 },
-        { id: 'pumps', name: 'Industrial Water Pumps', desc: '+40 Water Sealing', cost: 100000, stat: 'flood', val: 40 },
-        { id: 'hepa', name: 'HEPA Air Scrubber', desc: '+30 Air Quality', cost: 80000, stat: 'air', val: 30 },
-        { id: 'generator', name: 'Geothermal Generator', desc: '+50 Energy', cost: 350000, stat: 'energy', val: 50 },
-        { id: 'hydroponics', name: 'Hydroponic Farm', desc: '+40 Food, +10 Air', cost: 250000, stat: 'food', val: 40, stat2: 'air', val2: 10 },
-        { id: 'food', name: 'Pallet of Canned Beans', desc: '+15 Food', cost: 10000, stat: 'food', val: 15 },
-        { id: 'water', name: '10,000 Gal Water Tank', desc: '+20 Water', cost: 15000, stat: 'water', val: 20 },
-        { id: 'armory', name: 'Military Armory', desc: '+50 Defense', cost: 200000, stat: 'defense', val: 50 }
-    ];
+    // Three.js Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.Fog(0x111111, 10, 50);
 
-    // Initialization
-    function startGame() {
-        state.apocalypse = document.getElementById('apocalypse-select').value;
-        const apoNames = {
-            'nuclear': '☢️ Incoming Threat: Nuclear War',
-            'zombie': '🧟 Incoming Threat: Zombie Outbreak',
-            'asteroid': '☄️ Incoming Threat: Asteroid Strike',
-            'flood': '🌊 Incoming Threat: Global Flood'
-        };
-        document.getElementById('current-disaster').innerText = apoNames[state.apocalypse];
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.y = 1.6; // Player eye level
 
-        document.getElementById('setup-screen').classList.remove('active');
-        document.getElementById('game-screen').classList.active = true;
-        document.getElementById('game-screen').classList.add('active');
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-        renderShop();
-        updateUI();
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffaa00, 1, 20);
+    pointLight.position.set(0, 4, 0);
+    scene.add(pointLight);
 
-        state.timer = setInterval(() => {
-            state.timeLeft--;
-            updateUI();
-            if (state.timeLeft <= 0) {
-                triggerEndgame();
+    // Environment (The Bunker)
+    const floorGeo = new THREE.PlaneGeometry(50, 50);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    // The Computer (Blue Cube)
+    const compGeo = new THREE.BoxGeometry(1, 1, 1);
+    const compMat = new THREE.MeshStandardMaterial({ color: 0x0088ff, emissive: 0x002255 });
+    const computer = new THREE.Mesh(compGeo, compMat);
+    computer.position.set(3, 1, -3);
+    computer.userData = { isComputer: true }; // Tag for raycasting
+    scene.add(computer);
+
+    // The Zombie (Red Cube)
+    const zombieGeo = new THREE.BoxGeometry(1, 2, 1);
+    const zombieMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const zombie = new THREE.Mesh(zombieGeo, zombieMat);
+    zombie.position.set(-10, 1, -20);
+    scene.add(zombie);
+
+    // Raycaster for clicking
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Controls state
+    const keys = { w: false, a: false, s: false, d: false };
+    const speed = 0.1;
+
+    // Event Listeners
+    document.addEventListener('keydown', (e) => {
+        if (!isComputerOpen) keys[e.key.toLowerCase()] = true;
+    });
+    document.addEventListener('keyup', (e) => {
+        keys[e.key.toLowerCase()] = false;
+    });
+
+    // Handle Clicking the Computer
+    window.addEventListener('click', (event) => {
+        if (isComputerOpen) return;
+
+        // Calculate mouse position in normalized device coordinates (-1 to +1)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children);
+
+        for (let i = 0; i < intersects.length; i++) {
+            if (intersects[i].object.userData.isComputer && intersects[i].distance < 5) {
+                openComputer();
+                break;
             }
-        }, 1000);
+        }
+    });
+
+    // Window resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // UI Logic
+    function openComputer() {
+        isComputerOpen = true;
+        document.getElementById('computer-screen').style.display = 'block';
+        document.getElementById('crosshair').style.display = 'none';
+        keys.w = keys.a = keys.s = keys.d = false; // stop moving
     }
 
-    // Format Money
-    function formatMoney(num) {
-        return num.toLocaleString('en-US');
+    function closeComputer() {
+        isComputerOpen = false;
+        document.getElementById('computer-screen').style.display = 'none';
+        document.getElementById('crosshair').style.display = 'block';
     }
 
-    // Update the UI elements
-    function updateUI() {
-        // Time formatting
-        let m = Math.floor(state.timeLeft / 60);
-        let s = state.timeLeft % 60;
-        document.getElementById('time-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        
-        document.getElementById('money-display').innerText = formatMoney(state.money);
-        document.getElementById('debt-display').innerText = formatMoney(state.debt);
-
-        // Stats
-        document.getElementById('stat-depth').innerText = `Level ${state.stats.depth}`;
-        document.getElementById('stat-structure').innerText = state.stats.structure;
-        document.getElementById('stat-radiation').innerText = state.stats.radiation;
-        document.getElementById('stat-flood').innerText = state.stats.flood;
-        document.getElementById('stat-air').innerText = state.stats.air;
-        document.getElementById('stat-energy').innerText = state.stats.energy;
-        document.getElementById('stat-defense').innerText = state.stats.defense;
-        document.getElementById('stat-food').innerText = state.stats.food;
-        document.getElementById('stat-water').innerText = state.stats.water;
+    function buyUpgrade(type) {
+        if (type === 'door' && money >= 50000) {
+            money -= 50000;
+            baseHealth += 50;
+        } else if (type === 'turret' && money >= 150000) {
+            money -= 150000;
+            // Visually change the zombie to "dead" (gray) for prototype purposes
+            zombie.material.color.setHex(0x555555);
+            zombie.position.y = 0.5; // knock it down
+            zombie.rotation.x = Math.PI / 2;
+        }
+        document.getElementById('money').innerText = money.toLocaleString();
+        document.getElementById('health').innerText = baseHealth;
     }
 
-    // Render Shop Items
-    function renderShop() {
-        const container = document.getElementById('shop-container');
-        container.innerHTML = '';
-        catalog.forEach(item => {
-            let btn = document.createElement('div');
-            btn.className = 'shop-item';
-            btn.innerHTML = `
-                <div>
-                    <h4>${item.name}</h4>
-                    <p>${item.desc}</p>
-                    <p style="color: var(--accent); font-weight: bold;">$${formatMoney(item.cost)}</p>
-                </div>
-                <button onclick="buyItem('${item.id}')">Buy</button>
-            `;
-            container.appendChild(btn);
-        });
-    }
+    // Animation / Game Loop
+    function animate() {
+        requestAnimationFrame(animate);
 
-    // Buy Logic
-    function buyItem(id) {
-        let item = catalog.find(i => i.id === id);
-        if (state.money >= item.cost) {
-            state.money -= item.cost;
-            state.stats[item.stat] += item.val;
-            if (item.stat2) {
-                state.stats[item.stat2] += item.val2;
+        if (!isComputerOpen) {
+            // Movement Logic
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            direction.y = 0; // Keep movement on flat plane
+            direction.normalize();
+
+            const right = new THREE.Vector3();
+            right.crossVectors(camera.up, direction).normalize();
+
+            if (keys.w) camera.position.addScaledVector(direction, speed);
+            if (keys.s) camera.position.addScaledVector(direction, -speed);
+            if (keys.a) camera.position.addScaledVector(right, speed);
+            if (keys.d) camera.position.addScaledVector(right, -speed);
+            
+            // Basic Mouse Look (simplified for prototype)
+            // In a real game, you'd use PointerLockControls here.
+        }
+
+        // Zombie Logic (moves toward player)
+        if (zombie.position.y > 0.6) { // if not dead
+            const distance = zombie.position.distanceTo(camera.position);
+            if (distance < 25) {
+                document.getElementById('warning').style.display = 'block';
+                // Very basic follow logic
+                zombie.lookAt(camera.position);
+                zombie.translateZ(0.02); // Move forward
+                
+                if (distance < 2) {
+                    baseHealth -= 0.1; // Damage base
+                    document.getElementById('health').innerText = Math.floor(baseHealth);
+                    if (baseHealth <= 0) alert("ZOMBIES BROKE IN. YOU DIED.");
+                }
+            } else {
+                document.getElementById('warning').style.display = 'none';
             }
-            updateUI();
-        } else {
-            alert("Not enough money! Take out a loan, coward!");
         }
+
+        renderer.render(scene, camera);
     }
 
-    // Loan Logic
-    function takeLoan() {
-        state.money += 500000;
-        state.debt += 500000;
-        updateUI();
-    }
-
-    // Endgame Logic
-    function triggerEndgame() {
-        clearInterval(state.timer);
-        document.getElementById('game-screen').classList.remove('active');
-        document.getElementById('result-screen').classList.add('active');
-
-        let survived = false;
-        let reasons = [];
-
-        // Universal Checks
-        if (state.stats.food < 30) reasons.push("You starved to death.");
-        if (state.stats.water < 30) reasons.push("You died of dehydration.");
-
-        let baseAlive = reasons.length === 0;
-
-        // Specific Apocalypse Checks
-        if (state.apocalypse === 'nuclear') {
-            if (state.stats.radiation < 40) reasons.push("Radiation seeped through the walls. You mutated (and not in a cool superhero way).");
-            if (state.stats.air < 30) reasons.push("You choked on radioactive fallout dust.");
-            if (state.stats.depth < 2) reasons.push("You were too close to the surface and were vaporized by the blast.");
-            if (baseAlive && state.stats.radiation >= 40 && state.stats.air >= 30 && state.stats.depth >= 2) survived = true;
-        } 
-        else if (state.apocalypse === 'zombie') {
-            if (state.stats.defense < 50) reasons.push("You didn't have enough firepower to stop the horde.");
-            if (state.stats.structure < 40) reasons.push("The undead broke through your weak doors.");
-            if (baseAlive && state.stats.defense >= 50 && state.stats.structure >= 40) survived = true;
-        }
-        else if (state.apocalypse === 'asteroid') {
-            if (state.stats.depth < 4) reasons.push("The shockwave crushed your shallow bunker like a tin can.");
-            if (state.stats.structure < 60) reasons.push("Your walls collapsed from the massive earthquakes.");
-            if (state.stats.energy < 50) reasons.push("The ash blotted out the sun, your power failed, and you froze in the dark.");
-            if (baseAlive && state.stats.depth >= 4 && state.stats.structure >= 60 && state.stats.energy >= 50) survived = true;
-        }
-        else if (state.apocalypse === 'flood') {
-            if (state.stats.flood < 50) reasons.push("Your bunker flooded and you drowned.");
-            if (state.stats.air < 30) reasons.push("Underwater without a proper air scrubber, you suffocated.");
-            if (baseAlive && state.stats.flood >= 50 && state.stats.air >= 30) survived = true;
-        }
-
-        // Build Result Screen
-        let titleEl = document.getElementById('result-title');
-        let textEl = document.getElementById('outcome-text');
-        
-        if (survived) {
-            titleEl.innerText = "YOU SURVIVED!";
-            titleEl.style.color = "var(--success)";
-            textEl.innerHTML = `
-                <p>Against all odds, your bunker withstood the ${state.apocalypse} apocalypse.</p>
-                <p>You sit comfortably in your underground fortress, eating canned beans.</p>
-                <p style="color:var(--danger); margin-top:20px;">By the way, you died with <b>$${formatMoney(state.debt)}</b> in debt. Your credit score is ruined, but luckily, Equifax was destroyed.</p>
-            `;
-        } else {
-            titleEl.innerText = "YOU DIED.";
-            titleEl.style.color = "var(--danger)";
-            let failText = reasons.map(r => `<li>${r}</li>`).join('');
-            textEl.innerHTML = `
-                <p>The apocalypse came, and your bunker failed you.</p>
-                <ul style="text-align:left; display:inline-block;">${failText}</ul>
-                <p style="color:var(--accent); margin-top:20px;">At least you don't have to pay back your <b>$${formatMoney(state.debt)}</b> in debt.</p>
-            `;
-        }
-    }
+    animate();
 </script>
 </body>
 </html>
