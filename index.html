@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UNDERTALE RNG - BATTLE UPDATE</title>
+    <title>UNDERTALE RNG - TRUE BATTLE</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -21,44 +21,44 @@
             background-position: center bottom;
         }
 
-        /* Undertale UI Layout */
+        /* UI Layout */
         #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .interactive { pointer-events: auto; }
         
-        /* Top Right Menus */
-        #top-right-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .ut-menu-btn { background: #000; color: white; border: 4px solid white; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 24px; cursor: pointer; width: 200px; text-align: center; }
-        .ut-menu-btn:hover { color: #ffff00; border-color: #ffff00; }
-        #btn-reset { display: none; color: #ff0000; border-color: #ff0000; } /* Hidden until LV 20 */
+        /* Top Stats & Menus */
+        #top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
+        #top-left-stats { font-size: 28px; padding: 15px; background: rgba(0,0,0,0.9); border: 4px solid white; line-height: 1.2; }
+        #top-right-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
+        
+        .ut-menu-btn { 
+            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
+            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; width: 220px; text-align: center;
+        }
+        .ut-menu-btn:hover { background: #331100; color: #ffff00; border-color: #ffff00; }
+        
+        #btn-reset { display: none; color: #ff0000; border-color: #ff0000; } 
         #btn-reset:hover { background: #330000; }
 
         /* Bottom Battle UI */
         #bottom-ui { display: flex; flex-direction: column; align-items: center; padding-bottom: 10px; }
         
-        /* The Dialogue / Encounter Box */
+        /* Dialogue / Encounter Box */
         #kd-modal {
-            display: flex; flex-direction: column; justify-content: space-between; width: 800px; height: 180px; margin-bottom: 20px;
+            display: flex; flex-direction: column; justify-content: center; width: 800px; height: 180px; margin-bottom: 20px;
             background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; 
-            pointer-events: auto; z-index: 100; box-sizing: border-box;
-            font-size: 32px; line-height: 1.2;
+            box-sizing: border-box; font-size: 36px; line-height: 1.2;
         }
-        .kd-buttons { display: flex; justify-content: space-around; margin-top: 10px; opacity: 0; pointer-events: none; transition: 0.2s; }
-        .kd-buttons.active { opacity: 1; pointer-events: auto; }
-        .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
-        .kd-btn::before { content: '  '; white-space: pre; }
-        .kd-btn:hover::before { content: '♥ '; color: red; }
-        .kd-btn:hover { color: #ffff00; }
-
-        /* Undertale Stat Bar */
-        #ut-stats { display: flex; align-items: center; gap: 30px; font-size: 28px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
         .stat-yellow { color: #ffff00; }
 
+        /* Undertale Stat Bar */
+        #ut-stats { display: flex; align-items: center; gap: 40px; font-size: 32px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
+
         /* Bottom Buttons */
-        #action-buttons { display: flex; justify-content: center; gap: 20px; }
+        #action-buttons { display: flex; justify-content: center; gap: 30px; }
         .ut-action-btn { 
             background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
-            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; 
-            display: flex; align-items: center; gap: 10px; width: 220px; justify-content: center;
+            font-family: 'VT323', monospace; font-size: 36px; cursor: pointer; 
+            display: flex; align-items: center; gap: 10px; width: 240px; justify-content: center;
         }
         .ut-action-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
         .ut-action-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
@@ -66,30 +66,33 @@
 
         /* Panels */
         .side-panel { 
-            display: none; position: absolute; top: 50px; right: 250px; width: 450px; height: 70vh; 
+            display: none; position: absolute; top: 50px; right: 280px; width: 450px; max-height: 70vh; 
             background: #000; border: 6px solid white; padding: 20px; overflow-y: auto; 
             pointer-events: auto; z-index: 10; 
         }
-        .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 32px; }
-        .close-btn { background: #000; color: white; border: none; font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; }
-        .close-btn:hover { color: red; }
+        .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 36px; }
+        .close-btn { background: transparent; color: #aaa; border: none; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; }
+        .close-btn:hover { color: white; }
         
-        .inv-item { border-bottom: 2px dashed #555; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; font-size: 24px; }
+        .inv-item { border-bottom: 2px solid #333; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; font-size: 28px; }
         .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
-        .inv-item-actions { display: flex; justify-content: flex-end; gap: 5px; }
-        .inv-item-actions button { background: #000; color: white; border: 2px solid white; padding: 5px 15px; font-family: 'VT323'; font-size: 22px; cursor: pointer; }
-        .inv-item-actions button:hover { color: #ffff00; border-color: #ffff00; }
+        .inv-item-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .inv-item-actions button { background: transparent; color: white; border: none; font-family: 'VT323'; font-size: 26px; cursor: pointer; }
+        .inv-item-actions button:hover { color: #ffff00; text-decoration: underline; }
 
-        /* Secret Visual Effects Layer */
+        /* Info Modal */
+        #info-modal { 
+            display: none; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -30%); 
+            background: #000; border: 6px solid white; padding: 30px; z-index: 300; width: 500px; text-align: left; 
+        }
+        .info-stat { font-size: 32px; margin: 10px 0; color: #ddd; }
+
+        /* Secret CSS Effects Layer (Just for Slashing) */
         #fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
         .dmg-text { position: absolute; color: red; font-family: 'VT323'; font-size: 80px; font-weight: bold; text-shadow: 4px 4px 0 black; animation: dmgBounce 1.5s forwards; left: 50%; transform: translateX(-50%); top: 40%; opacity: 0; }
         @keyframes dmgBounce { 0% { top: 40%; opacity: 1; transform: translateX(-50%) scale(1); } 20% { top: 30%; transform: translateX(-50%) scale(1.2); } 100% { top: 60%; opacity: 0; transform: translateX(-50%) scale(1); } }
-        
         .slash-fx { position: absolute; width: 250px; height: 250px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><line x1="10" y1="10" x2="90" y2="90" stroke="white" stroke-width="8" stroke-linecap="round"/></svg>') no-repeat center/contain; animation: slashAnim 0.4s forwards; opacity: 0; }
         @keyframes slashAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
-
-        /* Info Modal */
-        #info-modal { display: none; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -30%); background: black; border: 4px solid white; padding: 20px; z-index: 300; width: 400px; text-align: left; }
 
     </style>
 </head>
@@ -97,13 +100,13 @@
 
     <div id="ui-layer">
         <div id="top-bar">
-            <div style="font-size: 24px; padding: 10px; background: rgba(0,0,0,0.8); border: 2px solid #555;">
-                EQUIPPED: <span id="stat-equipped" style="color:#888;">None</span><br>
-                LUCK MULTIPLIER: <span id="stat-luck" class="stat-yellow">x1.0</span>
+            <div id="top-left-stats">
+                EQUIPPED: <span id="stat-equipped" style="color:#aaa;">None</span><br>
+                DETERMINATION: <span id="stat-luck" class="stat-yellow">x1.0</span>
             </div>
             
             <div id="top-right-menu" class="interactive">
-                <button class="ut-menu-btn" onclick="openPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/30)</button>
+                <button class="ut-menu-btn" onclick="openPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/10)</button>
                 <button id="btn-reset" class="ut-menu-btn" onclick="trueReset()">TRUE RESET</button>
             </div>
         </div>
@@ -115,17 +118,13 @@
 
         <div id="bottom-ui" class="interactive">
             <div id="kd-modal">
-                <div>* <span id="kd-text">Waiting for encounter...</span></div>
-                <div class="kd-buttons" id="kd-actions">
-                    <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">ACT (Keep)</button>
-                    <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">FLEE (Skip)</button>
-                </div>
+                <div id="kd-text">* Waiting for encounter...</div>
             </div>
 
             <div id="ut-stats">
-                <span>NAME</span>
+                <span>CHARA</span>
                 <span>LV <span id="stat-lv">1</span></span>
-                <span>EXP: <span id="stat-exp">0</span>/<span id="stat-next">10</span></span>
+                <span>EXP <span id="stat-exp">0</span>/<span id="stat-next">10</span></span>
             </div>
 
             <div id="action-buttons">
@@ -139,10 +138,13 @@
     <div id="fx-layer"></div>
 
     <div id="info-modal" class="interactive">
-        <h2 id="info-name" style="margin-top:0;">Name</h2>
-        <p><strong>Rarity:</strong> 1 in <span id="info-chance"></span></p>
-        <p><strong>Base EXP:</strong> <span id="info-exp"></span></p>
-        <button onclick="document.getElementById('info-modal').style.display='none'" style="background:black; color:white; border:2px solid white; font-family:'VT323'; font-size:24px; padding:5px 15px; cursor:pointer;">Close</button>
+        <h2 id="info-name" class="stat-yellow" style="margin-top:0; font-size: 40px; border-bottom: 4px solid white; padding-bottom: 10px;">Name</h2>
+        <div class="info-stat">* Rarity: 1 in <span id="info-chance"></span></div>
+        <div class="info-stat">* Base EXP: <span id="info-exp"></span></div>
+        <div class="info-stat" style="color: #888; margin-top: 20px;">* A mysterious aura.</div>
+        <div style="text-align: right; margin-top: 30px;">
+            <button onclick="document.getElementById('info-modal').style.display='none'" style="background:transparent; color:white; border:none; font-family:'VT323'; font-size:32px; cursor:pointer;">* Close</button>
+        </div>
     </div>
 
     <script type="importmap">
@@ -158,23 +160,58 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- GAME DATA & PROGRESSION ---
+        // --- GAME DATA ---
         const AURAS = [
-            { id: 'dummy', name: 'Dummy', chance: 2, color: 0xffffff, exp: 2, type: 'monster', auraType: 'none' },
-            { id: 'whimsun', name: 'Whimsun', chance: 4, color: 0xffffff, exp: 5, type: 'monster', auraType: 'flies_down' },
-            { id: 'froggit', name: 'Froggit', chance: 5, color: 0xffffff, exp: 8, type: 'monster', auraType: 'flies_random' },
-            { id: 'moldsmal', name: 'Moldsmal', chance: 6, color: 0x00ff00, exp: 12, type: 'monster', auraType: 'none' },
-            { id: 'loox', name: 'Loox', chance: 8, color: 0xffffff, exp: 20, type: 'monster', auraType: 'bouncing_eyes' },
-            { id: 'vegetoid', name: 'Vegetoid', chance: 10, color: 0xffaa00, exp: 35, type: 'monster', auraType: 'veggies' }
+            { id: 'dummy', name: 'Dummy', chance: 2, color: 0xffffff, exp: 2, auraType: 'none' },
+            { id: 'whimsun', name: 'Whimsun', chance: 4, color: 0xffffff, exp: 5, auraType: 'flies_down' },
+            { id: 'froggit', name: 'Froggit', chance: 5, color: 0xffffff, exp: 8, auraType: 'flies_random' },
+            { id: 'moldsmal', name: 'Moldsmal', chance: 6, color: 0x00ff00, exp: 12, auraType: 'none' },
+            { id: 'loox', name: 'Loox', chance: 8, color: 0xffffff, exp: 20, auraType: 'bouncing_eyes' },
+            { id: 'vegetoid', name: 'Vegetoid', chance: 10, color: 0xffaa00, exp: 35, auraType: 'veggies' }
         ];
 
         const EXP_CURVE = [0, 10, 30, 70, 120, 200, 300, 500, 800, 1200, 1700, 2500, 3500, 5000, 7000, 10000, 15000, 25000, 50000, 99999];
 
         window.playerData = {
-            lv: 1, exp: 0, rolls: 0, luck: 1.0, inventory: [], maxInventory: 30, equipped: null,
-            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null, isVegetoidHealActive: false
+            lv: 1, exp: 0, rolls: 0, luck: 1.0, inventory: [], maxInventory: 10, equipped: null,
+            autoRoll: false, quickRoll: false, isRolling: false, isVegetoidHealActive: false
         };
 
+        // --- SAVE SYSTEM ---
+        window.saveGame = function() {
+            const data = {
+                lv: window.playerData.lv, exp: window.playerData.exp,
+                rolls: window.playerData.rolls, luck: window.playerData.luck,
+                equippedId: window.playerData.equipped ? window.playerData.equipped.id : null,
+                inventory: window.playerData.inventory.map(i => ({ uid: i.uid, auraId: i.aura.id }))
+            };
+            localStorage.setItem('utRngSave', JSON.stringify(data));
+        };
+
+        window.loadGame = function() {
+            const saved = localStorage.getItem('utRngSave');
+            if(saved) {
+                const data = JSON.parse(saved);
+                window.playerData.lv = data.lv || 1;
+                window.playerData.exp = data.exp || 0;
+                window.playerData.rolls = data.rolls || 0;
+                window.playerData.luck = data.luck || 1.0;
+                window.playerData.inventory = (data.inventory || []).map(i => {
+                    return { uid: i.uid, aura: AURAS.find(a => a.id === i.auraId) };
+                }).filter(i => i.aura); 
+
+                document.getElementById('stat-luck').innerText = `x${window.playerData.luck.toFixed(1)}`;
+                window.addExp(0); // Updates UI & Unlocks
+                window.updateInventoryUI();
+
+                if (data.equippedId) {
+                    const item = window.playerData.inventory.find(i => i.aura.id === data.equippedId);
+                    if (item) window.equipAura(item.uid);
+                }
+            }
+        };
+
+        // --- PROGRESSION ---
         window.addExp = function(amount) {
             window.playerData.exp += amount;
             let currentExp = window.playerData.exp;
@@ -192,6 +229,7 @@
             document.getElementById('stat-next').innerText = nextReq;
             
             checkUnlocks();
+            window.saveGame();
         };
 
         function checkUnlocks() {
@@ -216,15 +254,12 @@
 
         window.trueReset = function() {
             if(confirm("* A TRUE RESET will wipe all your LV, EXP, and items.\n* But your DETERMINATION (Luck) will permanently increase by +0.5.\n* Proceed?")) {
-                window.playerData.lv = 1;
-                window.playerData.exp = 0;
-                window.playerData.inventory = [];
-                window.playerData.equipped = null;
+                window.playerData.lv = 1; window.playerData.exp = 0;
+                window.playerData.inventory = []; window.playerData.equipped = null;
                 window.playerData.luck += 0.5;
                 
-                // Reset UI & Visuals
                 document.getElementById('stat-luck').innerText = `x${window.playerData.luck.toFixed(1)}`;
-                window.addExp(0); // Recalculates locks
+                window.addExp(0); 
                 window.playerData.autoRoll = false; window.playerData.quickRoll = false;
                 document.getElementById('btn-autoroll').className = 'ut-action-btn';
                 document.getElementById('btn-fastroll').className = 'ut-action-btn';
@@ -236,6 +271,10 @@
                 soulSprite.visible = false;
                 document.body.classList.remove('battle-mode');
                 document.getElementById('kd-text').innerText = "* The world was reset.";
+                
+                // Remove battlebox visuals
+                battleBoxGroup.visible = false;
+                window.saveGame();
             }
         };
 
@@ -254,24 +293,41 @@
         controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2;
         controls.minDistance = 4; controls.maxDistance = 15;
 
-        // Create the Semi-Transparent 3D Battle Box
+        // Better 3D Battle Box (Chunky Bars instead of thin lines)
         const boxWidth = 6, boxHeight = 6, boxDepth = 6;
-        const boxGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        
-        // Solid semi-transparent background for the box
-        const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.6, side: THREE.BackSide });
-        const battleBox = new THREE.Mesh(boxGeo, boxMat);
-        battleBox.position.y = 1;
-        battleBox.visible = false; // Hidden until equipped
-        scene.add(battleBox);
+        const battleBoxGroup = new THREE.Group();
+        battleBoxGroup.position.y = 1;
+        scene.add(battleBoxGroup);
 
-        // White outlines for the box
-        const edges = new THREE.EdgesGeometry(boxGeo);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
-        const battleBoxOutline = new THREE.LineSegments(edges, lineMat);
-        battleBoxOutline.position.y = 1;
-        battleBoxOutline.visible = false;
-        scene.add(battleBoxOutline);
+        // Solid background plane for the back of the box
+        const bgGeo = new THREE.PlaneGeometry(boxWidth, boxHeight);
+        const bgMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.7 });
+        const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+        bgMesh.position.z = -boxDepth/2;
+        battleBoxGroup.add(bgMesh);
+
+        // Helper to create chunky white borders
+        function createEdge(x, y, z, w, h, d) {
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            battleBoxGroup.add(mesh);
+        }
+        const t = 0.1; // Thickness
+        const hw = boxWidth/2, hh = boxHeight/2, hd = boxDepth/2;
+        
+        // Front Frame
+        createEdge(0, hh, hd, boxWidth, t, t); createEdge(0, -hh, hd, boxWidth, t, t);
+        createEdge(hw, 0, hd, t, boxHeight, t); createEdge(-hw, 0, hd, t, boxHeight, t);
+        // Back Frame
+        createEdge(0, hh, -hd, boxWidth, t, t); createEdge(0, -hh, -hd, boxWidth, t, t);
+        createEdge(hw, 0, -hd, t, boxHeight, t); createEdge(-hw, 0, -hd, t, boxHeight, t);
+        // Connecting Sides
+        createEdge(hw, hh, 0, t, t, boxDepth); createEdge(-hw, hh, 0, t, t, boxDepth);
+        createEdge(hw, -hh, 0, t, t, boxDepth); createEdge(-hw, -hh, 0, t, t, boxDepth);
+        
+        battleBoxGroup.visible = false; // Hidden until equipped
 
         // Soul setup
         function createMonsterSoulTexture() {
@@ -299,7 +355,10 @@
         auraGroup.position.copy(soulSprite.position);
         scene.add(auraGroup);
         let activeParticles = null;
-        let particleVelocities = null; // For Loox's bouncing eyes
+        let particleVelocities = null; 
+        
+        // Custom 3D Attack Objects
+        let active3DAttack = null;
 
         // --- CORE LOGIC ---
         window.equipAura = function(uid) {
@@ -310,15 +369,14 @@
             
             document.getElementById('stat-equipped').innerText = aura.name;
             soulSprite.visible = true;
-            battleBox.visible = true;
-            battleBoxOutline.visible = true;
+            battleBoxGroup.visible = true;
             document.body.classList.add('battle-mode');
 
             while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
-            activeParticles = null; particleVelocities = null;
+            activeParticles = null; particleVelocities = null; active3DAttack = null;
 
             if (aura.auraType !== 'none') {
-                const count = (aura.auraType === 'veggies' || aura.auraType === 'bouncing_eyes') ? 50 : 100;
+                const count = (aura.auraType === 'veggies' || aura.auraType === 'bouncing_eyes') ? 40 : 80;
                 const partsGeo = new THREE.BufferGeometry();
                 const partsPos = new Float32Array(count * 3);
                 const partsColors = new Float32Array(count * 3);
@@ -326,16 +384,15 @@
                 
                 const c = new THREE.Color();
                 for(let i=0; i<count * 3; i+=3) {
-                    // Spawn inside the Battle Box dimensions (-3 to +3)
-                    partsPos[i] = (Math.random() - 0.5) * 5;     // X
-                    partsPos[i+1] = (Math.random() - 0.5) * 5;   // Y (relative to center)
-                    partsPos[i+2] = (Math.random() - 0.5) * 5;   // Z
+                    // Spawn safely inside the bounds of the Battle Box (-2.8 to 2.8)
+                    partsPos[i] = (Math.random() - 0.5) * 5.6;     
+                    partsPos[i+1] = (Math.random() - 0.5) * 5.6;   
+                    partsPos[i+2] = (Math.random() - 0.5) * 5.6;   
 
-                    // Setup velocities for Loox bouncing eyes
                     if(aura.auraType === 'bouncing_eyes') {
-                        particleVelocities[i] = (Math.random() - 0.5) * 0.1;   // VX
-                        particleVelocities[i+1] = (Math.random() - 0.5) * 0.1; // VY
-                        particleVelocities[i+2] = (Math.random() - 0.5) * 0.1; // VZ
+                        particleVelocities[i] = (Math.random() - 0.5) * 0.15;   
+                        particleVelocities[i+1] = (Math.random() - 0.5) * 0.15; 
+                        particleVelocities[i+2] = (Math.random() - 0.5) * 0.15; 
                     }
 
                     if(aura.auraType === 'veggies') c.setHex(0xffaa00); else c.setHex(0xffffff);
@@ -345,13 +402,14 @@
                 partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3));
                 partsGeo.setAttribute('color', new THREE.BufferAttribute(partsColors, 3));
                 
-                const size = (aura.auraType === 'veggies' || aura.auraType === 'bouncing_eyes') ? 0.3 : 0.1;
+                const size = (aura.auraType === 'veggies' || aura.auraType === 'bouncing_eyes') ? 0.35 : 0.15;
                 const partsMat = new THREE.PointsMaterial({ size: size, vertexColors: true, transparent: true, opacity: 0.9 });
                 
                 activeParticles = new THREE.Points(partsGeo, partsMat);
                 activeParticles.userData = { type: aura.auraType };
                 auraGroup.add(activeParticles);
             }
+            window.saveGame();
         };
 
         window.deleteAura = function(uid) {
@@ -362,38 +420,36 @@
             if(window.playerData.equipped && !window.playerData.inventory.some(i => i.aura.id === window.playerData.equipped.id)) {
                 window.playerData.equipped = null;
                 document.getElementById('stat-equipped').innerText = "None";
-                soulSprite.visible = false; battleBox.visible = false; battleBoxOutline.visible = false;
+                soulSprite.visible = false; battleBoxGroup.visible = false;
                 document.body.classList.remove('battle-mode');
                 while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
             }
             window.updateInventoryUI();
+            window.saveGame();
         };
 
         let rouletteInterval;
+        let clearTextTimeout;
 
         window.triggerRoll = function() {
             if(window.playerData.isRolling) return;
-            if(!window.playerData.autoRoll && window.playerData.inventory.length >= window.playerData.maxInventory) {
-                document.getElementById('kd-text').innerText = "* Your inventory is full."; return;
-            }
-
             window.playerData.isRolling = true;
             document.getElementById('btn-roll').disabled = true;
-            document.getElementById('kd-actions').classList.remove('active');
+            clearTimeout(clearTextTimeout);
             
             const textEl = document.getElementById('kd-text');
 
-            // Encounter Roulette Animation inside Dialogue Box
+            // Encounter Animation
             rouletteInterval = setInterval(() => {
                 const randomAura = AURAS[Math.floor(Math.random() * AURAS.length)];
-                textEl.innerHTML = `* You encountered <span style="color: #fff">${randomAura.name}</span>!`;
+                textEl.innerHTML = `* You encountered <span style="color: #fff">${randomAura.name}</span>...`;
             }, 60);
 
             setTimeout(() => {
                 clearInterval(rouletteInterval);
                 window.playerData.rolls++;
 
-                // RNG Math with LUCK multiplier
+                // RNG Math
                 const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
                 let rolledAura = AURAS[0]; 
                 for(let a of sorted) {
@@ -401,51 +457,43 @@
                     if (Math.random() <= (1 / adjustedChance)) { rolledAura = a; break; }
                 }
 
-                window.addExp(rolledAura.exp);
-                
-                // Show final result
-                textEl.innerHTML = `* You encountered <span class="stat-yellow">${rolledAura.name}</span>! <br><span style="font-size: 20px; color: #888;">(Odds: 1 in ${rolledAura.chance})</span>`;
-
-                if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
-                    window.resolveRoll('keep', rolledAura);
+                // Auto-Keep / Auto-Skip Logic
+                if (window.playerData.inventory.length < window.playerData.maxInventory) {
+                    window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: rolledAura });
+                    textEl.innerHTML = `* You encountered <span class="stat-yellow">${rolledAura.name}</span>!<br>* Got ${rolledAura.name}.`;
+                    window.addExp(rolledAura.exp);
                 } else {
-                    window.playerData.pendingAura = rolledAura;
-                    document.getElementById('kd-actions').classList.add('active'); // Show buttons
+                    textEl.innerHTML = `* You encountered <span class="stat-yellow">${rolledAura.name}</span>!<br>* Inventory full! You fled.`;
+                    window.addExp(rolledAura.exp * 2);
                 }
+                
+                window.updateInventoryUI();
+                window.saveGame();
+
+                // Wait 2 seconds to let the player read, then reset or auto-roll again
+                const readDelay = window.playerData.quickRoll ? 500 : 2000;
+                
+                clearTextTimeout = setTimeout(() => {
+                    window.playerData.isRolling = false;
+                    document.getElementById('btn-roll').disabled = false;
+                    
+                    if(window.playerData.autoRoll) {
+                        window.triggerRoll(); // Loop
+                    } else {
+                        textEl.innerHTML = "* Waiting for encounter...";
+                    }
+                }, readDelay);
+
             }, window.playerData.quickRoll ? 200 : 1200);
         };
 
-        window.resolveRoll = function(action, overrideAura = null) {
-            const aura = overrideAura || window.playerData.pendingAura;
-            document.getElementById('kd-actions').classList.remove('active');
-            
-            if(action === 'keep') {
-                if(window.playerData.inventory.length >= window.playerData.maxInventory) {
-                    document.getElementById('kd-text').innerText = "* Inventory Full.";
-                } else {
-                    window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: aura });
-                    window.updateInventoryUI();
-                    document.getElementById('kd-text').innerText = `* Got ${aura.name}.`;
-                }
-            } else if (action === 'skip') {
-                window.addExp(aura.exp * 2);
-                document.getElementById('kd-text').innerText = `* You fled from ${aura.name}.`;
-            }
 
-            window.playerData.isRolling = false;
-            document.getElementById('btn-roll').disabled = false;
-            window.playerData.pendingAura = null;
-
-            if(window.playerData.autoRoll) {
-                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 600);
-            }
-        };
-
-        // --- SPECIAL 'V' ABILITIES ---
+        // --- SPECIAL 'V' ABILITIES (Now inside 3D Box) ---
         let vCooldown = false;
         
-        // Custom 8-bit frog texture for CSS
         const frogSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="white" d="M2,4 h2 v2 h-2 z M12,4 h2 v2 h-2 z M4,6 h8 v2 h-8 z M2,8 h12 v4 h-12 z M0,12 h4 v2 h-4 z M12,12 h4 v2 h-4 z"/></svg>`;
+        const frogTex = new THREE.TextureLoader().load(frogSvg);
+        frogTex.magFilter = THREE.NearestFilter;
 
         window.addEventListener('keydown', (e) => {
             if((e.key === 'v' || e.key === 'V') && !vCooldown && window.playerData.equipped) {
@@ -455,37 +503,34 @@
         });
 
         function executeSpecialAbility(aura) {
-            const fxLayer = document.getElementById('fx-layer');
-            fxLayer.innerHTML = ''; 
-
+            // Screen space UI slashes for simple physical attacks
             if(aura.id === 'dummy' || aura.id === 'whimsun' || aura.id === 'moldsmal') {
+                const fxLayer = document.getElementById('fx-layer'); fxLayer.innerHTML = ''; 
                 let slash = document.createElement('div'); slash.className = 'slash-fx'; fxLayer.appendChild(slash);
                 setTimeout(() => {
                     let dmg = document.createElement('div'); dmg.className = 'dmg-text';
                     dmg.innerText = aura.id === 'dummy' ? '99999' : '9999'; fxLayer.appendChild(dmg);
                 }, 300);
 
+            // True 3D space attacks inside the Battle Box
             } else if (aura.id === 'froggit') {
-                let frog = document.createElement('div');
-                frog.style.position = 'absolute'; frog.style.width = '100px'; frog.style.height = '100px';
-                frog.style.background = `url('${frogSvg}') no-repeat center/contain`;
-                frog.style.animation = 'frogJump 2s forwards';
-                
-                // Add jump animation directly to stylesheet so it's fresh
-                const style = document.createElement('style');
-                style.innerHTML = `@keyframes frogJump { 0% { top: 60%; left: 120%; } 25% { top: 30%; left: 80%; } 50% { top: 60%; left: 50%; } 75% { top: 60%; left: 50%; } 100% { top: 120%; left: 50%; } }`;
-                fxLayer.appendChild(style);
-                fxLayer.appendChild(frog);
+                if(active3DAttack) auraGroup.remove(active3DAttack);
+                const mat = new THREE.SpriteMaterial({ map: frogTex });
+                active3DAttack = new THREE.Sprite(mat);
+                active3DAttack.scale.set(1.5, 1.5, 1);
+                active3DAttack.position.set(2.5, -2.5, 0); // Start bottom right of box
+                active3DAttack.userData = { type: 'frog', time: 0 };
+                auraGroup.add(active3DAttack);
 
             } else if (aura.id === 'loox') {
-                // Giant Eye Background Flash
-                let eye = document.createElement('div');
-                eye.style.position = 'absolute'; eye.style.inset = '0';
-                eye.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 60%)';
-                eye.style.opacity = '0'; eye.style.transition = 'opacity 0.2s';
-                fxLayer.appendChild(eye);
-                setTimeout(()=> eye.style.opacity = '1', 50);
-                setTimeout(()=> eye.style.opacity = '0', 300);
+                if(active3DAttack) auraGroup.remove(active3DAttack);
+                // Thick cyan beam spanning the box
+                const geo = new THREE.BoxGeometry(boxWidth - 0.2, 0.4, 0.4);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 1 });
+                active3DAttack = new THREE.Mesh(geo, mat);
+                active3DAttack.position.set(0, 0, 0);
+                active3DAttack.userData = { type: 'laser', time: 0 };
+                auraGroup.add(active3DAttack);
 
             } else if (aura.id === 'vegetoid') {
                 window.playerData.isVegetoidHealActive = true;
@@ -498,14 +543,37 @@
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
+            const delta = clock.getDelta();
             
             soulSprite.position.y = 1 + Math.sin(time * 3) * 0.1;
 
+            // Handle 3D Special Attacks
+            if(active3DAttack) {
+                const data = active3DAttack.userData;
+                data.time += 0.016; // Approx delta
+                
+                if(data.type === 'frog') {
+                    // Parabola Jump inside box: x from 2.5 to -2.5, y arcs up
+                    const progress = data.time / 2.0; // 2 seconds duration
+                    if(progress <= 1.0) {
+                        active3DAttack.position.x = 2.5 - (progress * 5.0);
+                        active3DAttack.position.y = -2.5 + Math.sin(progress * Math.PI) * 4.0;
+                    } else {
+                        auraGroup.remove(active3DAttack); active3DAttack = null;
+                    }
+                } else if (data.type === 'laser') {
+                    // Fade out laser over 1.5 seconds
+                    active3DAttack.material.opacity = 1.0 - (data.time / 1.5);
+                    if(data.time >= 1.5) { auraGroup.remove(active3DAttack); active3DAttack = null; }
+                }
+            }
+
+            // Handle Particles
             if(activeParticles) {
                 const pos = activeParticles.geometry.attributes.position.array;
                 const col = activeParticles.geometry.attributes.color.array;
                 const type = activeParticles.userData.type;
-                const bound = 2.8; // Box limits (-3 to 3 relative to center)
+                const bound = (boxWidth/2) - 0.2; // Box limits
 
                 for(let i=0; i<pos.length; i+=3) {
                     if (type === 'flies_random') {
@@ -517,8 +585,8 @@
                         pos[i+1] -= (type==='veggies'? 0.06 : 0.03);
                         if(pos[i+1] <= -bound) {
                             pos[i+1] = bound; // Respawn at top of box
-                            pos[i] = (Math.random() - 0.5) * boxWidth;
-                            pos[i+2] = (Math.random() - 0.5) * boxDepth;
+                            pos[i] = (Math.random() - 0.5) * (boxWidth-0.5);
+                            pos[i+2] = (Math.random() - 0.5) * (boxDepth-0.5);
                             
                             if(type === 'veggies') {
                                 if(window.playerData.isVegetoidHealActive && Math.random() < 0.4) {
@@ -529,7 +597,7 @@
                             }
                         }
                     } else if (type === 'bouncing_eyes') {
-                        // Loox physics: bounce off box walls
+                        // Loox physics: bounce strictly off 3D box walls
                         pos[i] += particleVelocities[i]; pos[i+1] += particleVelocities[i+1]; pos[i+2] += particleVelocities[i+2];
                         
                         if(pos[i] > bound || pos[i] < -bound) particleVelocities[i] *= -1;
@@ -551,6 +619,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Load game immediately on start
+        window.loadGame();
     </script>
 
     <script>
@@ -582,7 +652,7 @@
             const item = window.playerData.inventory.find(i => i.uid === uid);
             if(!item) return;
             document.getElementById('info-name').innerText = item.aura.name;
-            document.getElementById('info-chance').innerText = item.aura.chance;
+            document.getElementById('info-chance').innerText = item.aura.chance.toLocaleString();
             document.getElementById('info-exp').innerText = item.aura.exp;
             document.getElementById('info-modal').style.display = 'block';
         }
@@ -598,16 +668,14 @@
                 div.innerHTML = `
                     <div class="inv-item-top"><span>* ${item.aura.name}</span></div>
                     <div class="inv-item-actions">
-                        <button onclick="window.equipAura('${item.uid}')">USE</button>
-                        <button onclick="window.showInfo('${item.uid}')">INFO</button>
-                        <button onclick="window.deleteAura('${item.uid}')" style="color:#ff6666; border-color:#ff6666;">DROP</button>
+                        <button onclick="window.equipAura('${item.uid}')">* USE</button>
+                        <button onclick="window.showInfo('${item.uid}')">* INFO</button>
+                        <button onclick="window.deleteAura('${item.uid}')" style="color:#ff5555;">* DROP</button>
                     </div>
                 `;
                 list.appendChild(div);
             });
         };
-        
-        window.addExp(0); // Init logic checks
     </script>
 </body>
 </html>
