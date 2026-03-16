@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Web RNG: Aura Roller</title>
+    <title>Web RNG: Sol's Edition</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050510; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; user-select: none; }
         
@@ -10,36 +10,71 @@
         #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .interactive { pointer-events: auto; }
         
-        /* Top Bar */
+        /* Top Bar & Stats */
         #top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
-        #stats { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 1px solid #444; }
-        .stat-line { font-size: 18px; margin-bottom: 5px; text-shadow: 1px 1px 2px black; }
+        #stats { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .stat-line { font-size: 16px; margin-bottom: 5px; text-shadow: 1px 1px 2px black; }
         
-        /* Inventory Button & Panel */
-        #btn-inv { background: #222; color: #fff; border: 2px solid #666; padding: 10px 20px; font-size: 18px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        #btn-inv:hover { background: #444; transform: scale(1.05); }
+        /* Left Sidebar (Settings) */
+        #left-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .toggle-btn { background: #222; color: #fff; border: 2px solid #555; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .toggle-btn.active { background: #2E7D32; border-color: #4CAF50; }
+        .setting-box { background: rgba(0,0,0,0.8); padding: 10px; border-radius: 6px; border: 1px solid #444; font-size: 14px; }
+        select { background: #222; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; width: 100%; margin-top: 5px; }
+
+        /* Right Sidebar (Menus) */
+        #right-controls { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        .menu-btn { background: #222; color: #fff; border: 2px solid #666; padding: 10px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 150px; }
+        .menu-btn:hover { background: #444; }
         
-        #inventory-panel { display: none; position: absolute; top: 70px; right: 20px; width: 300px; height: 60vh; background: rgba(10,10,15,0.95); border: 2px solid #555; border-radius: 8px; padding: 15px; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        /* Panels (Inventory / Crafting) */
+        .side-panel { display: none; position: absolute; top: 80px; right: 180px; width: 320px; height: 70vh; background: rgba(15,15,20,0.95); border: 2px solid #555; border-radius: 8px; padding: 15px; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 10; }
+        .panel-header { margin-top:0; border-bottom: 1px solid #555; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .close-btn { background: red; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        /* Inventory Items */
         .inv-item { background: #222; margin-bottom: 10px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid gray; }
-        .inv-item button { background: #444; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
-        .inv-item button:hover { background: #666; }
+        .inv-item-actions button { background: #444; color: white; border: none; padding: 5px 8px; cursor: pointer; border-radius: 4px; margin-left: 5px; font-size: 12px; }
+        .inv-item-actions button:hover { background: #666; }
+        .inv-item-actions .btn-del { background: #aa3333; }
+        .inv-item-actions .btn-del:hover { background: #ff4444; }
+
+        /* Crafting Items */
+        .craft-item { background: #222; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #555; }
+        .craft-req { font-size: 12px; color: #aaa; margin: 5px 0; }
+        .craft-btn { width: 100%; background: #4CAF50; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .craft-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
 
         /* Bottom Controls */
         #bottom-bar { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
         #roll-result { font-size: 40px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.5); opacity: 0; transition: opacity 0.3s; text-align: center; }
         #roll-chance { font-size: 20px; opacity: 0.8; }
-        
-        #btn-roll { background: linear-gradient(45deg, #4CAF50, #2E7D32); border: 3px solid #81C784; color: white; font-size: 36px; font-weight: bold; padding: 15px 60px; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,255,0,0.2); transition: 0.1s; text-transform: uppercase; letter-spacing: 2px; }
-        #btn-roll:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 15px 30px rgba(0,255,0,0.4); }
-        #btn-roll:active { transform: translateY(2px) scale(0.95); }
+        #btn-roll { background: linear-gradient(45deg, #4CAF50, #2E7D32); border: 3px solid #81C784; color: white; font-size: 32px; font-weight: bold; padding: 15px 50px; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,255,0,0.2); transition: 0.1s; letter-spacing: 2px; }
+        #btn-roll:hover { transform: translateY(-3px) scale(1.05); }
+        #btn-roll:disabled { background: #555; border-color: #444; cursor: not-allowed; box-shadow: none; transform: none; }
 
-        /* Rarity Colors */
-        .r-common { color: #aaaaaa; }
-        .r-uncommon { color: #55ff55; }
-        .r-rare { color: #5555ff; }
-        .r-epic { color: #aa00ff; text-shadow: 0 0 10px #aa00ff; }
-        .r-legendary { color: #ffaa00; text-shadow: 0 0 15px #ffaa00; font-style: italic; }
-        .r-galactic { color: #ff00ff; text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; font-weight: 900; letter-spacing: 5px; }
+        /* Keep / Skip Modal */
+        #kd-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,10,15,0.95); border: 2px solid #aaa; border-radius: 12px; padding: 30px; text-align: center; pointer-events: auto; z-index: 100; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        #kd-modal h2 { margin-top: 0; font-size: 30px; }
+        .kd-buttons { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+        .kd-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+        #btn-keep { background: #4CAF50; color: white; }
+        #btn-skip { background: #F44336; color: white; }
+
+        /* Loader */
+        #rolling-text { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-style: italic; color: #aaa; display: none; }
+
+        /* Rarity Colors (Sol's RNG Style) */
+        .r-1 { color: #aaaaaa; } /* Common */
+        .r-2 { color: #55ff55; } /* Good */
+        .r-3 { color: #5555ff; } /* Rare */
+        .r-4 { color: #ffddaa; text-shadow: 0 0 5px #ffddaa; } /* Divinus */
+        .r-5 { color: #ffaaff; text-shadow: 0 0 8px #ffaaff; } /* Crystallized */
+        .r-6 { color: #ff0000; text-shadow: 0 0 10px #ff0000; font-weight: bold; } /* Rage */
+        .r-7 { color: #00ffff; text-shadow: 0 0 10px #00ffff; } /* Glacier */
+        .r-8 { color: #ff00ff; text-shadow: 0 0 15px #ff00ff; letter-spacing: 2px; } /* Magnetic */
+        .r-9 { color: #ffaa00; text-shadow: 0 0 20px #ffaa00; font-style: italic; letter-spacing: 3px; } /* Solar/Lunar */
+        .r-10 { color: #ffffff; text-shadow: 0 0 30px #ffffff, 0 0 10px #00aaff; font-weight: 900; letter-spacing: 5px; } /* Archangel */
 
     </style>
 </head>
@@ -47,25 +82,74 @@
 
     <div id="ui-layer">
         <div id="top-bar">
-            <div id="stats" class="interactive">
-                <div class="stat-line">Rolls: <span id="stat-rolls">0</span></div>
-                <div class="stat-line" style="font-size: 14px; color:#aaa;">Equipped: <span id="stat-equipped" style="color:white">None</span></div>
-            </div>
             <div>
-                <button id="btn-inv" class="interactive" onclick="toggleInventory()">Inventory (0)</button>
-                <div id="inventory-panel">
-                    <h2 style="margin-top:0; border-bottom: 1px solid #555; padding-bottom: 10px;">Auras</h2>
-                    <div id="inv-list"></div>
+                <div id="stats" class="interactive">
+                    <div class="stat-line">Rolls: <span id="stat-rolls">0</span></div>
+                    <div class="stat-line">Luck Multiplier: <span id="stat-luck" style="color: #55ff55">x1.0</span></div>
+                    <div class="stat-line" style="font-size: 14px; color:#aaa; margin-top:10px;">Equipped: <span id="stat-equipped" style="color:white">None</span></div>
                 </div>
+                
+                <div id="left-controls" class="interactive">
+                    <button id="toggle-autoroll" class="toggle-btn" onclick="toggleAutoRoll()">Auto-Roll: OFF</button>
+                    <button id="toggle-quickroll" class="toggle-btn" onclick="toggleQuickRoll()">Quick-Roll: OFF</button>
+                    
+                    <div class="setting-box">
+                        <label>Auto-Skip Below:</label>
+                        <select id="auto-skip-val" onchange="updateSkipVal()">
+                            <option value="0">Never Skip (Keep All)</option>
+                            <option value="16">Skip < Rare (1 in 16)</option>
+                            <option value="64">Skip < Crystallized (1 in 64)</option>
+                            <option value="1000">Skip < 1 in 1,000</option>
+                            <option value="10000">Skip < 1 in 10,000</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="right-controls" class="interactive">
+                <button class="menu-btn" onclick="openPanel('inventory-panel')">Inventory (<span id="inv-count">0</span>/<span id="inv-max">30</span>)</button>
+                <button class="menu-btn" onclick="openPanel('crafting-panel')">Crafting</button>
+                <button class="menu-btn" onclick="alert('Shop coming soon! (Need coins feature)')">Shop</button>
+            </div>
+        </div>
+
+        <div id="inventory-panel" class="side-panel">
+            <h2 class="panel-header">Inventory <button class="close-btn" onclick="closePanels()">X</button></h2>
+            <div id="inv-list"></div>
+        </div>
+
+        <div id="crafting-panel" class="side-panel">
+            <h2 class="panel-header">Crafting <button class="close-btn" onclick="closePanels()">X</button></h2>
+            
+            <div class="craft-item">
+                <strong style="color: #55ff55">Luck Glove (+0.5x Luck)</strong>
+                <div class="craft-req" id="req-glove">Requires: 5x Good, 2x Rare</div>
+                <button class="craft-btn" id="btn-craft-glove" onclick="craftItem('glove')">Craft</button>
+            </div>
+
+            <div class="craft-item">
+                <strong style="color: #ffaa00">Solar Device (+2.0x Luck)</strong>
+                <div class="craft-req" id="req-solar">Requires: 1x Solar, 10x Divinus</div>
+                <button class="craft-btn" id="btn-craft-solar" onclick="craftItem('solar')">Craft</button>
             </div>
         </div>
 
         <div id="bottom-bar">
+            <div id="rolling-text">Rolling...</div>
             <div id="roll-result">
                 <div id="roll-name">COMMON</div>
                 <div id="roll-chance">1 in 2</div>
             </div>
-            <button id="btn-roll" class="interactive" onclick="roll()">ROLL</button>
+            <button id="btn-roll" class="interactive" onclick="triggerRoll()">ROLL</button>
+        </div>
+    </div>
+
+    <div id="kd-modal">
+        <h2 id="kd-name" class="r-1">Aura Name</h2>
+        <div style="color: #aaa">Chance: <span id="kd-chance">1 in ?</span></div>
+        <div class="kd-buttons">
+            <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">KEEP</button>
+            <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">SKIP</button>
         </div>
     </div>
 
@@ -82,114 +166,111 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- GAME DATA: The RNG Table ---
+        // --- GAME DATA: The Sol's RNG Style Table ---
         const AURAS = [
-            { id: 'common', name: 'Common', chance: 2, color: 0xaaaaaa, class: 'r-common', particles: 0 },
-            { id: 'uncommon', name: 'Uncommon', chance: 10, color: 0x55ff55, class: 'r-uncommon', particles: 50 },
-            { id: 'rare', name: 'Rare', chance: 250, color: 0x5555ff, class: 'r-rare', particles: 200, rings: 1 },
-            { id: 'epic', name: 'Epic', chance: 1500, color: 0xaa00ff, class: 'r-epic', particles: 500, rings: 2, glow: true },
-            { id: 'legendary', name: 'Legendary', chance: 50000, color: 0xffaa00, class: 'r-legendary', particles: 1500, rings: 3, glow: true },
-            { id: 'galactic', name: 'GALACTIC', chance: 1000000, color: 0xff00ff, class: 'r-galactic', particles: 3000, rings: 5, glow: true, starfield: true }
+            { id: 'common', name: 'Common', chance: 2, color: 0xaaaaaa, class: 'r-1', particles: 0 },
+            { id: 'uncommon', name: 'Uncommon', chance: 4, color: 0x88ff88, class: 'r-1', particles: 0 },
+            { id: 'good', name: 'Good', chance: 5, color: 0x55ff55, class: 'r-2', particles: 10 },
+            { id: 'natural', name: 'Natural', chance: 8, color: 0x22aa22, class: 'r-2', particles: 20 },
+            { id: 'rare', name: 'Rare', chance: 16, color: 0x5555ff, class: 'r-3', particles: 50 },
+            { id: 'divinus', name: 'Divinus', chance: 32, color: 0xffddaa, class: 'r-4', particles: 80, glow: true },
+            { id: 'crystallized', name: 'Crystallized', chance: 64, color: 0xffaaff, class: 'r-5', particles: 100, rings: 1 },
+            { id: 'rage', name: 'Rage', chance: 128, color: 0xff0000, class: 'r-6', particles: 150, rings: 1 },
+            { id: 'topaz', name: 'Topaz', chance: 150, color: 0xffff00, class: 'r-6', particles: 150, rings: 1 },
+            { id: 'glacier', name: 'Glacier', chance: 256, color: 0x00ffff, class: 'r-7', particles: 200, rings: 2 },
+            { id: 'magnetic', name: 'Magnetic', chance: 512, color: 0x4444ff, class: 'r-8', particles: 250, rings: 2, glow: true },
+            { id: 'sidereum', name: 'Sidereum', chance: 4096, color: 0xaa00aa, class: 'r-8', particles: 400, rings: 3, glow: true },
+            { id: 'solar', name: 'Solar', chance: 5000, color: 0xff8800, class: 'r-9', particles: 600, rings: 3, glow: true },
+            { id: 'lunar', name: 'Lunar', chance: 5000, color: 0xaaaaff, class: 'r-9', particles: 600, rings: 3, glow: true },
+            { id: 'eclipse', name: 'Eclipse', chance: 30000, color: 0x550055, class: 'r-9', particles: 1000, rings: 4, glow: true },
+            { id: 'galactic', name: 'GALACTIC', chance: 500000, color: 0xff00ff, class: 'r-10', particles: 2000, rings: 5, glow: true },
+            { id: 'archangel', name: 'ARCHANGEL', chance: 250000000, color: 0xffffff, class: 'r-10', particles: 5000, rings: 8, glow: true }
         ];
 
         // Global State
         window.playerData = {
             rolls: 0,
             inventory: [],
-            equipped: null
+            maxInventory: 30,
+            equipped: null,
+            luck: 1.0,
+            autoRoll: false,
+            quickRoll: false,
+            autoSkipVal: 0,
+            isRolling: false,
+            pendingAura: null
         };
 
         // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x050510, 0.02);
-
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 5, 12);
-
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enablePan = false;
-        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below floor
-        controls.minDistance = 5;
-        controls.maxDistance = 20;
+        controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.minDistance = 5; controls.maxDistance = 20;
 
-        // --- ENVIRONMENT ---
-        // Floor Grid
         const gridHelper = new THREE.GridHelper(50, 50, 0x222244, 0x111122);
         scene.add(gridHelper);
-
-        // The "Player" Dummy
         const dummyGeo = new THREE.CapsuleGeometry(1, 2.5, 4, 16);
         const dummyMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.2, metalness: 0.8 });
         const dummy = new THREE.Mesh(dummyGeo, dummyMat);
         dummy.position.y = 2.25;
         scene.add(dummy);
 
-        // Base Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(5, 10, 5);
         scene.add(directionalLight);
 
-        // --- AURA VISUAL SYSTEM ---
         let auraGroup = new THREE.Group();
         auraGroup.position.copy(dummy.position);
         scene.add(auraGroup);
-        
-        let activeParticles = null;
-        let activeRings = [];
+        let activeParticles = null; let activeRings = [];
         let auraLight = new THREE.PointLight(0xffffff, 0, 10);
         scene.add(auraLight);
 
-        window.equipAura = function(auraIndex) {
-            const aura = window.playerData.inventory[auraIndex];
-            window.playerData.equipped = aura;
-            document.getElementById('stat-equipped').innerText = aura.name;
-            document.getElementById('stat-equipped').className = aura.class;
+        // --- LOGIC FUNCTIONS (Exposed to Window for UI) ---
+        
+        window.equipAura = function(uid) {
+            const auraData = window.playerData.inventory.find(i => i.uid === uid);
+            if(!auraData) return;
+            window.playerData.equipped = auraData.aura;
+            document.getElementById('stat-equipped').innerText = auraData.aura.name;
+            document.getElementById('stat-equipped').className = auraData.aura.class;
 
-            // Clear old visuals
-            while(auraGroup.children.length > 0){ 
-                let child = auraGroup.children[0];
-                auraGroup.remove(child); 
-            }
+            // Update 3D Visuals
+            while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
             activeRings = [];
             
-            if(!aura) { auraLight.intensity = 0; return; }
-
-            // Apply new visuals
-            if (aura.glow) {
-                auraLight.color.setHex(aura.color);
-                auraLight.intensity = 5;
-                auraLight.position.copy(dummy.position);
+            if (auraData.aura.glow) {
+                auraLight.color.setHex(auraData.aura.color); auraLight.intensity = 5;
             } else {
                 auraLight.intensity = 0;
             }
 
-            // Create Rings
-            if (aura.rings) {
-                for(let i=0; i<aura.rings; i++) {
+            if (auraData.aura.rings) {
+                for(let i=0; i<auraData.aura.rings; i++) {
                     const ringGeo = new THREE.TorusGeometry(1.5 + (i*0.5), 0.05, 8, 50);
-                    const ringMat = new THREE.MeshBasicMaterial({ color: aura.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-                    if (aura.glow) ringMat.blending = THREE.AdditiveBlending;
+                    const ringMat = new THREE.MeshBasicMaterial({ color: auraData.aura.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+                    if (auraData.aura.glow) ringMat.blending = THREE.AdditiveBlending;
                     const ring = new THREE.Mesh(ringGeo, ringMat);
                     ring.rotation.x = Math.PI / 2;
                     ring.userData = { speedX: (Math.random()-0.5)*0.05, speedY: (Math.random()-0.5)*0.05, speedZ: (Math.random()-0.5)*0.05 };
-                    auraGroup.add(ring);
-                    activeRings.push(ring);
+                    auraGroup.add(ring); activeRings.push(ring);
                 }
             }
 
-            // Create Particles
-            if (aura.particles > 0) {
+            if (auraData.aura.particles > 0) {
                 const partsGeo = new THREE.BufferGeometry();
-                const partsPos = new Float32Array(aura.particles * 3);
-                for(let i=0; i<aura.particles * 3; i+=3) {
-                    // Spawn in a sphere around player
+                const partsPos = new Float32Array(auraData.aura.particles * 3);
+                for(let i=0; i<auraData.aura.particles * 3; i+=3) {
                     const radius = 2 + Math.random() * 3;
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos((Math.random() * 2) - 1);
@@ -198,41 +279,135 @@
                     partsPos[i+2] = radius * Math.cos(phi);
                 }
                 partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3));
-                
-                const partsMat = new THREE.PointsMaterial({ 
-                    color: aura.color, size: 0.1, transparent: true, opacity: 0.6,
-                    blending: aura.glow ? THREE.AdditiveBlending : THREE.NormalBlending
-                });
+                const partsMat = new THREE.PointsMaterial({ color: auraData.aura.color, size: 0.1, transparent: true, opacity: 0.6, blending: auraData.aura.glow ? THREE.AdditiveBlending : THREE.NormalBlending });
                 activeParticles = new THREE.Points(partsGeo, partsMat);
                 auraGroup.add(activeParticles);
-            } else {
-                activeParticles = null;
+            } else { activeParticles = null; }
+        };
+
+        window.deleteAura = function(uid) {
+            window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
+            if(window.playerData.equipped && !window.playerData.inventory.some(i => i.aura.id === window.playerData.equipped.id)) {
+                // Un-equip if deleted
+                window.playerData.equipped = null;
+                document.getElementById('stat-equipped').innerText = "None";
+                document.getElementById('stat-equipped').className = "";
+                while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
+                auraLight.intensity = 0;
+            }
+            window.updateInventoryUI();
+        };
+
+        window.triggerRoll = function() {
+            if(window.playerData.isRolling) return;
+            if(!window.playerData.autoRoll && window.playerData.inventory.length >= window.playerData.maxInventory) {
+                alert("Inventory Full! Delete some auras."); return;
+            }
+
+            window.playerData.isRolling = true;
+            document.getElementById('btn-roll').disabled = true;
+            document.getElementById('rolling-text').style.display = 'block';
+            document.getElementById('roll-result').style.opacity = 0;
+
+            const rollDuration = window.playerData.quickRoll ? 200 : 2500;
+            
+            setTimeout(() => {
+                window.playerData.rolls++;
+                document.getElementById('stat-rolls').innerText = window.playerData.rolls;
+                document.getElementById('rolling-text').style.display = 'none';
+
+                // Core RNG Math
+                const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
+                let rolledAura = AURAS[0]; 
+                
+                for(let a of sorted) {
+                    // Apply Luck Multiplier
+                    const adjustedChance = a.chance / window.playerData.luck;
+                    if (Math.random() <= (1 / adjustedChance)) {
+                        rolledAura = a; break;
+                    }
+                }
+
+                // Auto-Skip Logic
+                if(window.playerData.autoRoll && rolledAura.chance < window.playerData.autoSkipVal) {
+                    // Silently Skip
+                    window.playerData.isRolling = false;
+                    document.getElementById('btn-roll').disabled = false;
+                    if(window.playerData.autoRoll) setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 1000);
+                    return;
+                }
+
+                showRollResult(rolledAura);
+
+                // Auto-Keep if AutoRoll is on and space allows
+                if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
+                    window.resolveRoll('keep', rolledAura);
+                } else {
+                    // Show Prompt
+                    window.playerData.pendingAura = rolledAura;
+                    const kd = document.getElementById('kd-modal');
+                    kd.style.display = 'block';
+                    document.getElementById('kd-name').innerText = rolledAura.name;
+                    document.getElementById('kd-name').className = rolledAura.class;
+                    document.getElementById('kd-chance').innerText = `1 in ${rolledAura.chance.toLocaleString()}`;
+                }
+
+            }, rollDuration);
+        };
+
+        window.resolveRoll = function(action, overrideAura = null) {
+            const aura = overrideAura || window.playerData.pendingAura;
+            document.getElementById('kd-modal').style.display = 'none';
+            
+            if(action === 'keep') {
+                if(window.playerData.inventory.length >= window.playerData.maxInventory) {
+                    alert("Inventory Full!");
+                } else {
+                    window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: aura });
+                    window.updateInventoryUI();
+                }
+            }
+
+            window.playerData.isRolling = false;
+            document.getElementById('btn-roll').disabled = false;
+            window.playerData.pendingAura = null;
+
+            if(window.playerData.autoRoll) {
+                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 1000);
             }
         };
+
+        function showRollResult(aura) {
+            const resEl = document.getElementById('roll-result');
+            document.getElementById('roll-name').innerText = aura.name;
+            document.getElementById('roll-name').className = aura.class;
+            document.getElementById('roll-chance').innerText = `1 in ${aura.chance.toLocaleString()}`;
+
+            if (aura.chance >= 4000) {
+                document.body.style.background = "#ffffff";
+                setTimeout(() => document.body.style.background = "#050510", 100);
+            }
+
+            resEl.style.opacity = 1;
+            resEl.style.transform = "scale(1.2)";
+            setTimeout(() => { resEl.style.transform = "scale(1)"; }, 100);
+        }
 
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-
-            // Rotate Rings
             activeRings.forEach((ring, index) => {
-                ring.rotation.x += ring.userData.speedX;
-                ring.rotation.y += ring.userData.speedY;
-                ring.rotation.z += ring.userData.speedZ;
-                ring.position.y = Math.sin(time * 2 + index) * 0.5; // Hover effect
+                ring.rotation.x += ring.userData.speedX; ring.rotation.y += ring.userData.speedY; ring.rotation.z += ring.userData.speedZ;
+                ring.position.y = Math.sin(time * 2 + index) * 0.5;
             });
-
-            // Rotate Particles
             if(activeParticles) {
                 activeParticles.rotation.y += 0.005;
-                if(window.playerData.equipped && window.playerData.equipped.id === 'galactic') {
-                    activeParticles.rotation.x -= 0.002;
-                    activeParticles.rotation.z += 0.003;
+                if(window.playerData.equipped && window.playerData.equipped.chance >= 500000) {
+                    activeParticles.rotation.x -= 0.002; activeParticles.rotation.z += 0.003;
                 }
             }
-
             controls.update();
             renderer.render(scene, camera);
         }
@@ -244,86 +419,104 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- RNG GAME LOGIC ---
-        window.roll = function() {
-            window.playerData.rolls++;
-            document.getElementById('stat-rolls').innerText = window.playerData.rolls;
-
-            // The Math: Sort from Rarest to Most Common
-            const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
-            let rolledAura = AURAS[0]; // Default to common
-
-            for(let a of sorted) {
-                // Generate a random number between 0 and 1. Compare against 1/chance.
-                if (Math.random() <= (1 / a.chance)) {
-                    rolledAura = a;
-                    break;
-                }
-            }
-
-            showRollResult(rolledAura);
-            addToInventory(rolledAura);
-        };
-
-        function showRollResult(aura) {
-            const resEl = document.getElementById('roll-result');
-            const nameEl = document.getElementById('roll-name');
-            const chanceEl = document.getElementById('roll-chance');
-
-            nameEl.innerText = aura.name;
-            nameEl.className = aura.class;
-            chanceEl.innerText = `1 in ${aura.chance.toLocaleString()}`;
-
-            // Screen shake / flash for rare stuff
-            if (aura.chance >= 1500) {
-                document.body.style.background = "#ffffff";
-                setTimeout(() => document.body.style.background = "#050510", 50);
-            }
-
-            resEl.style.opacity = 1;
-            resEl.style.transform = "scale(1.2)";
-            setTimeout(() => { resEl.style.transform = "scale(1)"; }, 100);
-            
-            clearTimeout(window.rollFade);
-            window.rollFade = setTimeout(() => { resEl.style.opacity = 0; }, 3000);
-        }
-
-        function addToInventory(aura) {
-            window.playerData.inventory.push(aura);
-            document.getElementById('btn-inv').innerText = `Inventory (${window.playerData.inventory.length})`;
-            renderInventory();
-        }
-
     </script>
 
     <script>
-        function toggleInventory() {
-            const p = document.getElementById('inventory-panel');
-            p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        // --- UI & NON-3D LOGIC ---
+
+        function toggleAutoRoll() {
+            window.playerData.autoRoll = !window.playerData.autoRoll;
+            const btn = document.getElementById('toggle-autoroll');
+            btn.innerText = `Auto-Roll: ${window.playerData.autoRoll ? 'ON' : 'OFF'}`;
+            btn.className = window.playerData.autoRoll ? 'toggle-btn active' : 'toggle-btn';
+            
+            if(window.playerData.autoRoll && !window.playerData.isRolling) {
+                window.triggerRoll();
+            }
         }
 
-        function renderInventory() {
+        function toggleQuickRoll() {
+            window.playerData.quickRoll = !window.playerData.quickRoll;
+            const btn = document.getElementById('toggle-quickroll');
+            btn.innerText = `Quick-Roll: ${window.playerData.quickRoll ? 'ON' : 'OFF'}`;
+            btn.className = window.playerData.quickRoll ? 'toggle-btn active' : 'toggle-btn';
+        }
+
+        function updateSkipVal() {
+            window.playerData.autoSkipVal = parseInt(document.getElementById('auto-skip-val').value);
+        }
+
+        function openPanel(id) {
+            closePanels();
+            document.getElementById(id).style.display = 'block';
+            if(id === 'crafting-panel') checkCraftingStatus();
+        }
+
+        function closePanels() {
+            document.querySelectorAll('.side-panel').forEach(p => p.style.display = 'none');
+        }
+
+        window.updateInventoryUI = function() {
+            document.getElementById('inv-count').innerText = window.playerData.inventory.length;
             const list = document.getElementById('inv-list');
             list.innerHTML = '';
             
-            // Reverse so newest is at the top
-            [...window.playerData.inventory].reverse().forEach((aura, reverseIndex) => {
-                // Calculate actual array index
-                const realIndex = window.playerData.inventory.length - 1 - reverseIndex;
-                
-                const item = document.createElement('div');
-                item.className = `inv-item`;
-                item.style.borderLeftColor = "#" + aura.color.toString(16).padStart(6, '0');
-                
-                item.innerHTML = `
+            [...window.playerData.inventory].reverse().forEach((item) => {
+                const div = document.createElement('div');
+                div.className = `inv-item`;
+                div.style.borderLeftColor = "#" + item.aura.color.toString(16).padStart(6, '0');
+                div.innerHTML = `
                     <div>
-                        <strong class="${aura.class}">${aura.name}</strong><br>
-                        <span style="font-size:12px; color:#888;">1 in ${aura.chance.toLocaleString()}</span>
+                        <strong class="${item.aura.class}">${item.aura.name}</strong><br>
+                        <span style="font-size:12px; color:#888;">1 in ${item.aura.chance.toLocaleString()}</span>
                     </div>
-                    <button onclick="equipAura(${realIndex})">Equip</button>
+                    <div class="inv-item-actions">
+                        <button onclick="window.equipAura('${item.uid}')">Equip</button>
+                        <button class="btn-del" onclick="window.deleteAura('${item.uid}')">Del</button>
+                    </div>
                 `;
-                list.appendChild(item);
+                list.appendChild(div);
             });
+            checkCraftingStatus(); // Update crafting buttons if open
+        };
+
+        // --- CRAFTING SYSTEM ---
+        function countAura(auraId) {
+            return window.playerData.inventory.filter(i => i.aura.id === auraId).length;
+        }
+
+        function removeAuras(auraId, count) {
+            let removed = 0;
+            window.playerData.inventory = window.playerData.inventory.filter(i => {
+                if(removed < count && i.aura.id === auraId) { removed++; return false; }
+                return true;
+            });
+        }
+
+        function checkCraftingStatus() {
+            // Check Glove (5 Good, 2 Rare)
+            const hasGloveReqs = countAura('good') >= 5 && countAura('rare') >= 2;
+            document.getElementById('btn-craft-glove').disabled = !hasGloveReqs;
+            document.getElementById('req-glove').style.color = hasGloveReqs ? '#55ff55' : '#aaa';
+
+            // Check Solar (1 Solar, 10 Divinus)
+            const hasSolarReqs = countAura('solar') >= 1 && countAura('divinus') >= 10;
+            document.getElementById('btn-craft-solar').disabled = !hasSolarReqs;
+            document.getElementById('req-solar').style.color = hasSolarReqs ? '#55ff55' : '#aaa';
+        }
+
+        function craftItem(type) {
+            if(type === 'glove') {
+                removeAuras('good', 5); removeAuras('rare', 2);
+                window.playerData.luck += 0.5;
+                alert("Crafted Luck Glove! Luck increased by +0.5x!");
+            } else if (type === 'solar') {
+                removeAuras('solar', 1); removeAuras('divinus', 10);
+                window.playerData.luck += 2.0;
+                alert("Crafted Solar Device! Luck increased by +2.0x!");
+            }
+            document.getElementById('stat-luck').innerText = `x${window.playerData.luck.toFixed(1)}`;
+            window.updateInventoryUI();
         }
     </script>
 </body>
