@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Undertale: Determination Protocol V18</title>
+    <title>Undertale: Determination Protocol V18 (Upgraded)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         :root { --red: #ff0000; --yellow: #ffff00; --white: #ffffff; --orange: #ffaa00; --green: #00ff00; --blue: #00a2ff; --bg: #000; }
         
         body { background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'VT323', monospace; overflow: hidden; }
-        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; transition: filter 0.1s; }
+        #game { display: flex; width: 1100px; height: 750px; border: 4px solid #333; position: relative; box-shadow: 0 0 80px rgba(255,0,0,0.15); transition: filter 0.1s; }
 
         /* Screens */
         #api-overlay, #menu-overlay { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -16,15 +16,16 @@
         .slot:hover { border-color: var(--red); color: var(--red); transform: scale(1.02); }
 
         /* Battle Side */
-        #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        #battle-side { width: 620px; border-right: 4px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; position: relative; }
         
-        #monster-sprite { 
-            height: 180px; font-size: 110px; display: flex; align-items: center; justify-content: center; position: relative; 
-            animation: breathe 3s ease-in-out infinite;
-        }
+        /* JUICE: Monster Breathing */
+        #monster-sprite { height: 180px; font-size: 110px; display: flex; align-items: center; justify-content: center; position: relative; animation: breathe 3s ease-in-out infinite; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05) translateY(-5px); } }
 
-        #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; }
-        #narration { padding: 20px; font-size: 28px; line-height: 1.2; pointer-events: none; }
+        #box { width: 440px; height: 260px; border: 6px solid #fff; position: relative; overflow: hidden; margin: 15px 0; background: #000; transition: border-color 0.1s; }
+        
+        /* Narration */
+        #narration-text { position: absolute; padding: 20px; font-size: 26px; color: #fff; line-height: 1.2; z-index: 50; }
 
         #soul { 
             width: 18px; height: 18px; position: absolute; z-index: 100; 
@@ -33,27 +34,18 @@
 
         .bullet { position: absolute; border-radius: 2px; }
 
-        /* Animations */
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05) translateY(-5px); } }
-        @keyframes shake { 0% { transform: translate(2px, 2px); } 20% { transform: translate(-3px, 0px); } 40% { transform: translate(3px, 2px); } 100% { transform: translate(0,0); } }
-        .shake { animation: shake 0.2s ease-in-out; }
-
-        .dmg-num { position: absolute; color: var(--red); font-size: 42px; font-weight: bold; animation: floatUp 0.8s forwards; z-index: 1000; text-shadow: 2px 2px #000; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-80px); } }
-
         /* Fight Bar */
-        #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 500; }
+        #fight-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 500; }
         #target-area { width: 380px; height: 120px; border: 4px solid #fff; position: relative; background: url('https://raw.githubusercontent.com/FryingPan/undertale-fight-assets/master/images/target.png') center/cover; }
         #slider { width: 14px; height: 100%; background: #fff; position: absolute; left: 0; box-shadow: 0 0 20px #fff; }
 
         /* UI Elements */
-        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; }
+        #stat-ui { width: 100%; display: flex; justify-content: space-between; font-size: 32px; z-index: 10; }
         #hp-bar { width: 180px; height: 22px; background: var(--red); border: 2px solid #000; position: relative; }
         #hp-fill { height: 100%; background: var(--yellow); width: 100%; transition: width 0.2s; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 32px; padding: 12px; cursor: pointer; }
-        .game-btn:hover:not(:disabled) { background: #331a00; color: #fff; }
+        .game-btn { background: #000; border: 3px solid var(--orange); color: var(--orange); font-family: inherit; font-size: 32px; padding: 12px; cursor: pointer; text-align: center; }
         .game-btn:disabled { opacity: 0.1; }
         .btn-hijacked { border-color: var(--white) !important; color: var(--white) !important; animation: blink 0.2s infinite; }
 
@@ -64,7 +56,16 @@
         .msg-player { color: #fff; opacity: 0.5; margin-bottom: 15px; align-self: flex-end; }
         #chat-input { background: #000; border: none; border-top: 2px solid #333; color: #fff; font-family: inherit; font-size: 26px; padding: 20px; outline: none; }
 
+        /* Animations */
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        /* JUICE: Shake & Damage Numbers */
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(-1deg); } 40% { transform: translate(3px, 2px) rotate(1deg); } 60% { transform: translate(-1px, -1px) rotate(1deg); } 100% { transform: translate(1px, -2px) rotate(0deg); } }
+        .shake { animation: shake 0.2s; }
+
+        .dmg-num { position: absolute; color: var(--red); font-size: 45px; font-family: sans-serif; font-weight: 900; -webkit-text-stroke: 2px black; animation: floatUp 0.8s ease-out forwards; pointer-events: none; z-index: 1000; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -73,7 +74,7 @@
 <div id="game">
     <div id="api-overlay">
         <h1 style="color:var(--red); font-size: 45px;">DETERMINATION CORE</h1>
-        <p style="color:#555">LINKING TO GEMINI 2.0 FLASH PROMPT ENGINE</p>
+        <p style="color:#555">LINKING TO GEMINI 2.5 FLASH PROMPT ENGINE</p>
         <input type="password" id="api-input" placeholder="Google API Key..." style="width:380px; padding:15px; font-family:inherit; font-size:20px; background:#111; border:1px solid #444; color:#fff;">
         <button class="game-btn" onclick="saveApiKey()" style="margin-top:20px; width: 200px;">ESTABLISH</button>
     </div>
@@ -92,12 +93,12 @@
                 <span id="hp-txt">20/20</span>
             </div>
         </div>
-        <div style="font-size:18px; color:#444; margin:5px;">SYNC: <span id="sync-txt" style="color:red">0</span>% | MIMICRY: <span id="mimic-txt">0</span>%</div>
+        <div style="font-size:18px; color:#444; margin:5px; z-index:10;">SYNC: <span id="sync-txt" style="color:red">0</span>% | MIMICRY: <span id="mimic-txt">0</span>%</div>
         
         <div id="monster-sprite"></div>
 
         <div id="box">
-            <div id="narration"></div>
+            <div id="narration-text"></div>
             <div id="soul"></div>
             <div id="fight-ui">
                 <div id="target-area"><div id="slider"></div></div>
@@ -123,25 +124,43 @@
     let storage = JSON.parse(localStorage.getItem(KEY)) || { slots: [null,null,null], apiKey: "" };
     let curSlot = null;
 
+    // --- ENHANCED NEURAL STATE ---
     let lv=1, hp=20, maxHp=20, exp=0, sync=0, region='RUINS', defeated=[];
-    let learning = { accuracy: 10, mimicry: 0, pref: 'FIGHT' };
-    let playerHistory = []; // Records movement patterns
+    let learning = { 
+        accuracy: 10,        // Chara's hit precision (0-100)
+        mimicry: 0,         // How well she dodges like you
+        panicFactor: 0.5,   // Speed of her movement
+        pref: 'FIGHT'       // Her preferred button
+    };
     
     let turn='MENU', enemy=null, bullets=[], frame=0, turnFrames=0;
     let soulX=211, soulY=121, soulColor='red', yVel=0;
     let sliderX=0, sliderDir=8, sliderFrames=0;
-    let possessionFrames = 0;
+    let possessionFrames = 0; // Active possession timer
     const keys = {};
 
+    // --- SMART MIMICRY (Ghost in the Machine) ---
+    let playerHistory = [];
+    const RECORD_LIMIT = 200;
+    let typingInterval = null;
+
+    // --- CORE PERSISTENCE ---
     function saveApiKey() {
         const val = document.getElementById('api-input').value;
         if(val.startsWith("AIza")) { 
-            storage.apiKey = val; localStorage.setItem(KEY, JSON.stringify(storage)); location.reload(); 
+            storage.apiKey = val; 
+            localStorage.setItem(KEY, JSON.stringify(storage)); 
+            location.reload(); 
         }
     }
 
-    if(!storage.apiKey) document.getElementById('api-overlay').classList.remove('hidden');
-    else { document.getElementById('api-overlay').classList.add('hidden'); document.getElementById('menu-overlay').classList.remove('hidden'); initSlots(); }
+    if(!storage.apiKey) { 
+        document.getElementById('api-overlay').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('api-overlay').classList.add('hidden'); 
+        document.getElementById('menu-overlay').classList.remove('hidden'); 
+        initSlots(); 
+    }
 
     function initSlots() {
         const container = document.getElementById('slot-container'); container.innerHTML = '';
@@ -155,14 +174,14 @@
 
     function createSlot(i) {
         let n = prompt("Name:"); if(!n) return;
-        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 5, learning: {accuracy:10, mimicry:0, pref:'FIGHT'}, region: 'RUINS', defeated: [] };
+        storage.slots[i] = { name: n, lv: 1, exp: 0, sync: 5, learning: {accuracy:10, mimicry:0, panicFactor:0.5, pref:'FIGHT'}, region: 'RUINS', defeated: [] };
         saveAll(); initSlots();
     }
 
     function loadSlot(i) {
         curSlot = i; const s = storage.slots[i];
         lv=s.lv; exp=s.exp; sync=s.sync; region=s.region; defeated=s.defeated;
-        learning = s.learning || {accuracy:10, mimicry:0, pref:'FIGHT'};
+        learning = s.learning || {accuracy:10, mimicry:0, panicFactor:0.5, pref:'FIGHT'};
         hp=20+(lv-1)*4; maxHp=hp;
         document.getElementById('menu-overlay').classList.add('hidden');
         updateStatsUI(); spawnEnemy(); requestAnimationFrame(mainLoop);
@@ -173,75 +192,84 @@
         localStorage.setItem(KEY, JSON.stringify(storage));
     }
 
+    // --- SYSTEM ENGINE ---
     window.onkeydown = e => keys[e.code] = true;
     window.onkeyup = e => keys[e.code] = false;
 
-    // --- NARRATION ENGINE ---
-    function narrate(text) {
-        const el = document.getElementById('narration');
-        el.innerText = "";
-        let i = 0;
-        const interval = setInterval(() => {
-            el.innerText = "* " + text.substring(0, i);
-            i++;
-            if(i > text.length) clearInterval(interval);
-        }, 30);
-    }
-
     function mainLoop() {
-        const gameEl = document.getElementById('game');
         if(turn === 'SURVIVAL') runSurvival();
         if(turn === 'FIGHT_PLAYER' || turn === 'FIGHT_CHARA') runFightBar();
         
-        // Possession Tick
+        // POSSESSION TICK
         if(frame % 120 === 0 && turn !== 'MENU' && sync > 2) {
-            if(Math.random() * 100 < sync) possessionFrames = Math.floor(sync * 6.5);
+            if(Math.random() * 100 < sync) {
+                possessionFrames = Math.floor(sync * 6.5);
+            }
         }
 
-        // Glitch Effect
-        if(sync > 75 && frame % 200 === 0) {
-            gameEl.style.filter = "invert(1) grayscale(1)";
-            setTimeout(() => gameEl.style.filter = "none", 80);
+        // JUICE: Glitch Effect at High Sync
+        if (sync > 80 && frame % 100 === 0 && Math.random() > 0.4) {
+            document.getElementById('game').style.filter = "invert(1) hue-rotate(180deg)";
+            setTimeout(() => { document.getElementById('game').style.filter = "none"; }, 80);
         }
 
         frame++; requestAnimationFrame(mainLoop);
     }
 
+    function narrate(text) {
+        const msg = document.getElementById('narration-text');
+        msg.style.display = 'block';
+        msg.innerText = '';
+        if(typingInterval) clearInterval(typingInterval);
+        
+        let i = 0;
+        typingInterval = setInterval(() => {
+            msg.innerText = "* " + text.substring(0, i);
+            i++;
+            if(i > text.length) clearInterval(typingInterval);
+        }, 30);
+    }
+
     function spawnEnemy() {
-        const pool = [
-            { n: "Froggit", hp: 300, art: "🐸", p: ['FLY'], msg: "Froggit hops restlessly." },
-            { n: "Whimsun", hp: 250, art: "🦋", p: ['FLY'], msg: "Whimsun is apologetic." },
-            { n: "Moldsmal", hp: 400, art: "🍮", p: ['FLY'], msg: "Moldsmal lies flat." }
-        ];
-        enemy = pool[Math.floor(Math.random()*pool.length)];
+        if(lv >= 7 && !defeated.includes("PAPYRUS")) {
+            enemy = { n: "Papyrus", hp: 15000, def: 20, exp: 0, art: "💀", boss: true, p: ['BONE_JUMP', 'BLUE_BONE'] };
+        } else if(lv === 2 && !defeated.includes("NAPSTABLOOK")) {
+            enemy = { n: "Napstablook", hp: 3500, def: 5, exp: 0, art: "👻", boss: true, p: ['TEARS'] };
+        } else if(lv === 3 && !defeated.includes("TORIEL")) {
+            enemy = { n: "Toriel", hp: 45000, def: 15, exp: 0, art: "🐐", boss: true, p: ['FIRE'] };
+        } else {
+            enemy = { n: "Froggit", hp: 1200, def: 5, exp: 20, art: "🐸", p: ['FLY'] };
+        }
         document.getElementById('monster-sprite').innerText = enemy.art;
         decideTurn();
     }
 
     function decideTurn() {
+        soulColor = (enemy.n === "Papyrus") ? 'blue' : 'red';
         turn = 'PLAYER_TURN';
-        document.getElementById('soul').style.display = 'none';
-        document.getElementById('narration').style.display = 'block';
         document.querySelectorAll('.game-btn').forEach(b => { b.disabled = false; b.classList.remove('btn-hijacked'); });
         
-        let flavor = enemy.msg;
-        if(sync > 60) flavor = "You feel a cold hand on your shoulder.";
+        // NARRATION LOGIC
+        let flavor = `You encountered ${enemy.n}.`;
+        if (sync > 40) flavor = "It smells like dust.";
+        if (sync > 70) flavor = "We are going to erase them.";
+        if (enemy.n === "Papyrus" && sync > 50) flavor = "Forgetable.";
         narrate(flavor);
-
+        
+        // Hijack logic
         if(sync > 45 && Math.random() < (sync/150)) {
-            let choice = (hp < 10) ? 'ITEM' : learning.pref;
-            const btn = document.getElementById('b-'+choice);
-            btn.classList.add('btn-hijacked');
-            setTimeout(() => { if(turn === 'PLAYER_TURN') handleBtn(choice); }, 800);
+            let choice = (hp < 15) ? 'ITEM' : learning.pref;
+            document.getElementById('b-'+choice).classList.add('btn-hijacked');
+            setTimeout(() => { handleBtn(choice); }, 600);
         }
     }
 
     function handleBtn(a) {
         if(turn !== 'PLAYER_TURN') return;
-        document.getElementById('narration').style.display = 'none';
+        document.getElementById('narration-text').style.display = 'none'; // Hide text
         if(a === 'FIGHT') startFightBar(sync > 60 && Math.random() < 0.4);
-        else if(a === 'ITEM') { hp = Math.min(maxHp, hp+10); updateStatsUI(); startSurvivalPhase(); }
-        else startSurvivalPhase();
+        if(a === 'ITEM') { hp = Math.min(maxHp, hp+20); startSurvivalPhase(); }
+        if(a === 'ACT' || a === 'MERCY') startSurvivalPhase();
     }
 
     function startFightBar(isChara) {
@@ -252,15 +280,18 @@
     }
 
     function runFightBar() {
-        sliderX += sliderDir; sliderFrames++;
+        sliderX += sliderDir;
+        sliderFrames++;
         if(sliderX > 370 || sliderX < 0) sliderDir *= -1;
         document.getElementById('slider').style.left = sliderX + 'px';
 
         if(turn === 'FIGHT_CHARA') {
             let error = (100 - learning.accuracy) * 2;
             let targetX = 190 + (Math.random() * error - error/2);
-            if(Math.abs(sliderX - targetX) < 10 || sliderFrames > 200) triggerHit();
-        } else if(keys['KeyZ'] || keys['Enter']) triggerHit();
+            if(Math.abs(sliderX - targetX) < 8 || sliderFrames > 220) triggerHit();
+        } else if(keys['KeyZ'] || keys['Enter']) {
+            triggerHit();
+        }
     }
 
     function triggerHit() {
@@ -269,76 +300,106 @@
         document.getElementById('fight-ui').style.display = 'none';
         
         let dist = Math.abs(190 - sliderX);
-        let precision = Math.max(0.1, (1 - (dist / 190)));
-        if(!isChara && precision > 0.85) learning.accuracy = Math.min(100, learning.accuracy + 2);
+        let precision = Math.max(0.05, (1 - (dist / 190)));
+        
+        if(!isChara && precision > 0.9) learning.accuracy = Math.min(100, learning.accuracy + 1.5);
 
-        let dmg = Math.floor((20 + lv*10) * precision);
+        let baseDmg = (25 + lv*15);
+        let dmg = Math.floor(baseDmg * precision);
         enemy.hp -= dmg;
 
-        // Visual Feedback
-        showDmg(dmg);
-        document.getElementById('battle-side').classList.add('shake');
-        setTimeout(() => document.getElementById('battle-side').classList.remove('shake'), 200);
+        // JUICE: Screen Shake
+        const battleSide = document.getElementById('battle-side');
+        battleSide.classList.add('shake');
+        setTimeout(() => battleSide.classList.remove('shake'), 200);
 
-        setTimeout(() => { if(enemy.hp <= 0) handleVictory(); else startSurvivalPhase(); }, 600);
-    }
+        // JUICE: Damage Number
+        const dmgEl = document.createElement('div');
+        dmgEl.className = 'dmg-num';
+        dmgEl.innerText = dmg;
+        // Position near the monster sprite
+        dmgEl.style.left = '50%'; 
+        dmgEl.style.top = '100px';
+        dmgEl.style.transform = 'translateX(-50%)';
+        battleSide.appendChild(dmgEl);
+        setTimeout(() => dmgEl.remove(), 800);
 
-    function showDmg(n) {
-        const d = document.createElement('div');
-        d.className = 'dmg-num'; d.innerText = n;
-        d.style.left = '300px'; d.style.top = '150px';
-        document.getElementById('battle-side').appendChild(d);
-        setTimeout(() => d.remove(), 800);
+        logMsg("System", `* Dealt ${dmg} damage.`, "");
+
+        setTimeout(() => { 
+            if(enemy.hp <= 0) handleVictory(); 
+            else startSurvivalPhase(); 
+        }, 800);
     }
 
     function handleVictory() {
-        exp += 50; sync = Math.min(100, sync+3);
-        if(exp >= lv*100) { lv++; exp=0; }
+        if(enemy.boss) defeated.push(enemy.n.toUpperCase());
+        exp += 500; sync = Math.min(100, sync+2.5);
         saveAll(); updateStatsUI(); spawnEnemy();
     }
 
-    function startSurvivalPhase() { 
-        turn = 'SURVIVAL'; turnFrames = 300; bullets = []; 
-        document.getElementById('soul').style.display = 'block';
-    }
+    // --- SURVIVAL & SMART MIMICRY ---
+    function startSurvivalPhase() { turn = 'SURVIVAL'; turnFrames = 380; bullets = []; document.getElementById('narration-text').style.display = 'none'; }
 
     function runSurvival() {
         let activePossession = possessionFrames > 0;
-        let s = keys['ShiftLeft'] ? 2 : 5;
-        
-        document.getElementById('soul').style.background = activePossession ? "#fff" : "var(--red)";
+        let s = keys['ShiftLeft'] ? 1.5 : 4.5;
+
+        document.getElementById('soul').style.background = activePossession ? "#fff" : (soulColor === 'blue' ? 'var(--blue)' : 'var(--red)');
         document.getElementById('box').style.borderColor = activePossession ? "var(--red)" : "#fff";
 
         if(activePossession) {
-            // NEURAL MIMICRY: Replay player movement history
-            if(playerHistory.length > 0) {
-                let pattern = playerHistory[Math.floor(Math.random()*playerHistory.length)];
-                soulX += (pattern.x - soulX) * 0.15;
-                soulY += (pattern.y - soulY) * 0.15;
+            // CHARA AI: Playback player history smoothly, but dodge if a bullet is right on top
+            if (playerHistory.length > 0) {
+                let shadowMove = playerHistory[Math.floor(Math.random() * playerHistory.length)];
+                let mx = (shadowMove.x - soulX) * 0.1;
+                let my = (shadowMove.y - soulY) * 0.1;
+                
+                // Panic/Dodge logic to avoid instant death
+                let near = null, minDist = 60;
+                bullets.forEach(b => { let d = Math.hypot(b.x-soulX, b.y-soulY); if(d < minDist){ minDist=d; near=b; }});
+                if(near) {
+                    let moveStep = 4 + (learning.mimicry/30);
+                    mx += (near.x > soulX ? -moveStep : moveStep);
+                    if(soulColor !== 'blue') my += (near.y > soulY ? -moveStep : moveStep);
+                }
+                
+                soulX += mx;
+                if(soulColor !== 'blue') soulY += my;
+                if(soulColor === 'blue' && soulY >= 242 && near && near.y > soulY) yVel = -7.5; // Jump
             }
             possessionFrames--;
         } else {
-            if(keys['ArrowUp'] || keys['KeyW']) soulY -= s;
-            if(keys['ArrowDown'] || keys['KeyS']) soulY += s;
+            // PLAYER CONTROL
+            if(soulColor !== 'blue' && (keys['ArrowUp'] || keys['KeyW'])) soulY -= s;
+            if(soulColor !== 'blue' && (keys['ArrowDown'] || keys['KeyS'])) soulY += s;
             if(keys['ArrowLeft'] || keys['KeyA']) soulX -= s;
             if(keys['ArrowRight'] || keys['KeyD']) soulX += s;
             
-            // Record Movement
+            // RECORD HISTORY
             playerHistory.push({x: soulX, y: soulY});
-            if(playerHistory.length > 300) playerHistory.shift();
-            if(frame % 60 === 0) learning.mimicry = Math.min(100, learning.mimicry + 0.2);
+            if(playerHistory.length > RECORD_LIMIT) playerHistory.shift();
+
+            // TRACK MIMICRY
+            if(frame % 60 === 0) learning.mimicry = Math.min(100, learning.mimicry + 0.1);
+        }
+
+        // Gravity
+        if (soulColor === 'blue') {
+            yVel += 0.42; soulY += yVel;
+            if (soulY >= 242) { soulY = 242; yVel = 0; if (keys['ArrowUp'] && !activePossession) yVel = -9; }
         }
 
         soulX = Math.max(0, Math.min(422, soulX)); soulY = Math.max(0, Math.min(242, soulY));
         document.getElementById('soul').style.left = soulX+'px'; document.getElementById('soul').style.top = soulY+'px';
 
-        if(frame % 25 === 0) spawnProj();
+        if(frame % 28 === 0) spawnProj();
 
         bullets.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy;
             b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
             if(Math.hypot(b.x-soulX, b.y-soulY) < 14) {
-                hp -= 2; b.el.remove(); bullets.splice(i,1); updateStatsUI();
+                hp -= 1; b.el.remove(); bullets.splice(i,1); updateStatsUI();
                 if(hp <= 0) location.reload();
             } else if(b.y > 300 || b.x > 500 || b.x < -100) { b.el.remove(); bullets.splice(i,1); }
         });
@@ -347,8 +408,14 @@
     }
 
     function spawnProj() {
-        const b = { x: Math.random()*440, y: -20, vx: (Math.random()-0.5)*4, vy: 4, el: document.createElement('div') };
-        b.el.className = 'bullet'; b.el.style.width = '16px'; b.el.style.height = '16px'; b.el.style.background = "#fff";
+        const p = enemy.p[Math.floor(Math.random()*enemy.p.length)];
+        let x = Math.random()*440, y = -20, vx = 0, vy = 5, isB = (p==='BLUE_BONE');
+        if(p === 'BONE_JUMP') { x = 440; y = 230; vx = -6.5; vy = 0; }
+        const b = { x, y, vx, vy, isBlue: isB, el: document.createElement('div') };
+        b.el.className = 'bullet';
+        b.el.style.width = p.includes('BONE') ? '12px' : '18px';
+        b.el.style.height = p.includes('BONE') ? '70px' : '18px';
+        b.el.style.background = isB ? "var(--blue)" : "#fff";
         document.getElementById('box').appendChild(b.el); bullets.push(b);
     }
 
@@ -361,40 +428,54 @@
         document.getElementById('mimic-txt').innerText = Math.floor(learning.mimicry);
     }
 
+    // --- GEMINI 2.5 FLASH PROMPT ENGINE ---
     async function talk(txt) {
         if(!storage.apiKey) return;
-        const context = `SYSTEM: You are Chara. Current Enemy: ${enemy.n}. LV: ${lv}, Sync: ${sync}%. 
-        The player is speaking to you. You are becoming more accurate in combat and learning their movement patterns.
-        If Sync > 70, you are aggressive. If Sync < 30, you are mocking.
-        Output JSON only: {"reply": "text", "controlMod": number}`;
+        
+        // ADVANCED PROMPT
+        const context = `
+        SYSTEM: You are Chara from Undertale. The player is in a battle with ${enemy ? enemy.n : 'an enemy'}.
+        STATE: LV ${lv}, Sync ${sync}%, Mimicry ${learning.mimicry}%, HP ${hp}/${maxHp}.
+        BEHAVIOR: You are becoming the dominant consciousness. 
+        - If Sync > 50: Use "We" instead of "I". 
+        - If HP is low: Express disappointment in the player's fragility.
+        - Comment on the fact that you are recording their movements to dodge exactly like them.
+        - Reference the specific monster (${enemy ? enemy.n : 'them'}) and their inevitable dust.
+        JSON ONLY: {"reply": "text", "controlMod": number from -5 to +5}`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${storage.apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: context + " Player: " + txt }] }],
+                    contents: [{ role: "user", parts: [{ text: context + "\n\nPlayer says: " + txt }] }],
                     generationConfig: { responseMimeType: "application/json" }
                 })
             });
             const data = await response.json();
             const result = JSON.parse(data.candidates[0].content.parts[0].text);
+            
             logMsg("Chara", result.reply, "msg-chara");
             sync = Math.min(100, Math.max(0, sync + (result.controlMod || 0)));
             updateStatsUI();
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error("API Connection Failed", e);
+        }
     }
 
     document.getElementById('chat-input').onkeypress = e => { 
         if(e.key === 'Enter'){ 
             logMsg("You", e.target.value, "msg-player"); 
-            talk(e.target.value); e.target.value = ''; 
+            talk(e.target.value); 
+            e.target.value = ''; 
         }
     };
 
     function logMsg(s, t, c) { 
-        const l = document.getElementById('log'); const d = document.createElement('div'); 
-        d.className = c; d.innerText = t; l.appendChild(d); l.scrollTop = l.scrollHeight; 
+        const l = document.getElementById('log'); 
+        const d = document.createElement('div'); 
+        d.className = c; d.innerText = t; 
+        l.appendChild(d); l.scrollTop = l.scrollHeight; 
     }
 </script>
 </body>
