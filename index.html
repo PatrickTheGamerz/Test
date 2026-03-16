@@ -2,79 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Web RNG: Sol's Edition</title>
+    <title>UNDERTALE RNG</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #050510; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; user-select: none; }
-        
-        /* UI Layout */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'VT323', monospace; color: white; user-select: none; 
+            transition: background 0.5s;
+        }
+
+        /* Battle Mode Background (Moving Squares) */
+        body.battle-mode {
+            background: 
+                linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)),
+                repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
+                repeating-linear-gradient(45deg, #000 25%, #222 25%, #222 75%, #000 75%, #000);
+            background-size: 60px 60px;
+            animation: moveGrid 2s linear infinite;
+        }
+        @keyframes moveGrid { 100% { background-position: 60px 60px; } }
+
+        /* Undertale UI Layout */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; }
         .interactive { pointer-events: auto; }
         
-        /* Top Bar & Stats */
+        /* Top Stats */
         #top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
-        #stats { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; border: 1px solid #444; }
-        .stat-line { font-size: 16px; margin-bottom: 5px; text-shadow: 1px 1px 2px black; }
-        
-        /* Left Sidebar (Settings) */
-        #left-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .toggle-btn { background: #222; color: #fff; border: 2px solid #555; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .toggle-btn.active { background: #2E7D32; border-color: #4CAF50; }
-        .setting-box { background: rgba(0,0,0,0.8); padding: 10px; border-radius: 6px; border: 1px solid #444; font-size: 14px; }
-        select { background: #222; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; width: 100%; margin-top: 5px; }
+        .ut-box { background: #000; padding: 20px; border: 4px solid white; font-size: 24px; text-shadow: 2px 2px 0px #000; }
+        .stat-line { margin-bottom: 10px; }
+        .stat-val { color: #ffff00; }
 
-        /* Right Sidebar (Menus) */
-        #right-controls { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
-        .menu-btn { background: #222; color: #fff; border: 2px solid #666; padding: 10px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 150px; }
-        .menu-btn:hover { background: #444; }
-        
-        /* Panels (Inventory / Crafting) */
-        .side-panel { display: none; position: absolute; top: 80px; right: 180px; width: 320px; height: 70vh; background: rgba(15,15,20,0.95); border: 2px solid #555; border-radius: 8px; padding: 15px; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 10; }
-        .panel-header { margin-top:0; border-bottom: 1px solid #555; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .close-btn { background: red; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        /* Menus */
+        #right-controls { display: flex; flex-direction: column; gap: 15px; align-items: flex-end; }
+        .ut-btn { 
+            background: #000; color: #fff; border: 4px solid white; padding: 15px 25px; 
+            font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; transition: 0.1s;
+        }
+        .ut-btn:hover { border-color: #ffff00; color: #ffff00; }
+        .ut-btn:active { background: #222; }
+
+        /* Panels (Inventory) */
+        .side-panel { 
+            display: none; position: absolute; top: 100px; right: 200px; width: 400px; height: 60vh; 
+            background: #000; border: 6px solid white; padding: 20px; overflow-y: auto; 
+            pointer-events: auto; z-index: 10; 
+        }
+        .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 32px; }
+        .close-btn { background: #000; color: white; border: none; font-family: 'VT323', monospace; font-size: 28px; cursor: pointer; }
+        .close-btn:hover { color: red; }
         
         /* Inventory Items */
-        .inv-item { background: #222; margin-bottom: 10px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid gray; }
-        .inv-item-actions button { background: #444; color: white; border: none; padding: 5px 8px; cursor: pointer; border-radius: 4px; margin-left: 5px; font-size: 12px; }
-        .inv-item-actions button:hover { background: #666; }
-        .inv-item-actions .btn-del { background: #aa3333; }
-        .inv-item-actions .btn-del:hover { background: #ff4444; }
+        .inv-item { border-bottom: 2px dashed #555; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
+        .inv-item-actions button { background: #000; color: white; border: 2px solid white; padding: 5px 10px; font-family: 'VT323'; font-size: 18px; cursor: pointer; margin-left: 5px; }
+        .inv-item-actions button:hover { color: #ffff00; border-color: #ffff00; }
 
-        /* Crafting Items */
-        .craft-item { background: #222; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #555; }
-        .craft-req { font-size: 12px; color: #aaa; margin: 5px 0; }
-        .craft-btn { width: 100%; background: #4CAF50; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .craft-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
+        /* Bottom Controls (Auto, Roll, Fast) */
+        #bottom-bar { display: flex; justify-content: center; align-items: center; gap: 40px; padding-bottom: 30px; }
+        #btn-roll { font-size: 40px; padding: 20px 60px; font-weight: bold; border: 6px solid white; }
+        #btn-roll:hover { color: #ffff00; border-color: #ffff00; }
+        .ut-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
+        
+        /* Roulette / Roll Overlay */
+        #roulette-overlay {
+            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 50; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        #roulette-soul { font-size: 80px; color: red; animation: pulse 0.5s infinite alternate; margin-bottom: 20px; }
+        #roulette-name { font-size: 60px; text-transform: uppercase; letter-spacing: 2px; }
+        #roulette-chance { font-size: 30px; color: #888; margin-top: 10px; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
 
-        /* Bottom Controls */
-        #bottom-bar { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
-        #roll-result { font-size: 40px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.5); opacity: 0; transition: opacity 0.3s; text-align: center; }
-        #roll-chance { font-size: 20px; opacity: 0.8; }
-        #btn-roll { background: linear-gradient(45deg, #4CAF50, #2E7D32); border: 3px solid #81C784; color: white; font-size: 32px; font-weight: bold; padding: 15px 50px; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,255,0,0.2); transition: 0.1s; letter-spacing: 2px; }
-        #btn-roll:hover { transform: translateY(-3px) scale(1.05); }
-        #btn-roll:disabled { background: #555; border-color: #444; cursor: not-allowed; box-shadow: none; transform: none; }
+        /* Keep / Skip Box */
+        #kd-modal {
+            display: none; position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%);
+            background: #000; border: 6px solid white; padding: 30px; text-align: center; pointer-events: auto; z-index: 100; min-width: 400px;
+        }
+        .kd-buttons { display: flex; justify-content: space-around; margin-top: 30px; }
+        .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
+        .kd-btn::before { content: '  '; white-space: pre; }
+        .kd-btn:hover::before { content: '♥ '; color: red; }
+        .kd-btn:hover { color: #ffff00; }
 
-        /* Keep / Skip Modal */
-        #kd-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,10,15,0.95); border: 2px solid #aaa; border-radius: 12px; padding: 30px; text-align: center; pointer-events: auto; z-index: 100; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-        #kd-modal h2 { margin-top: 0; font-size: 30px; }
-        .kd-buttons { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
-        .kd-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-        #btn-keep { background: #4CAF50; color: white; }
-        #btn-skip { background: #F44336; color: white; }
-
-        /* Loader */
-        #rolling-text { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-style: italic; color: #aaa; display: none; }
-
-        /* Rarity Colors (Sol's RNG Style) */
-        .r-1 { color: #aaaaaa; } /* Common */
-        .r-2 { color: #55ff55; } /* Good */
-        .r-3 { color: #5555ff; } /* Rare */
-        .r-4 { color: #ffddaa; text-shadow: 0 0 5px #ffddaa; } /* Divinus */
-        .r-5 { color: #ffaaff; text-shadow: 0 0 8px #ffaaff; } /* Crystallized */
-        .r-6 { color: #ff0000; text-shadow: 0 0 10px #ff0000; font-weight: bold; } /* Rage */
-        .r-7 { color: #00ffff; text-shadow: 0 0 10px #00ffff; } /* Glacier */
-        .r-8 { color: #ff00ff; text-shadow: 0 0 15px #ff00ff; letter-spacing: 2px; } /* Magnetic */
-        .r-9 { color: #ffaa00; text-shadow: 0 0 20px #ffaa00; font-style: italic; letter-spacing: 3px; } /* Solar/Lunar */
-        .r-10 { color: #ffffff; text-shadow: 0 0 30px #ffffff, 0 0 10px #00aaff; font-weight: 900; letter-spacing: 5px; } /* Archangel */
+        /* Rarity Colors */
+        .r-common { color: #ffffff; }
+        .r-uncommon { color: #aaffaa; }
+        .r-rare { color: #5555ff; }
+        .r-epic { color: #ff8800; }
+        .r-legendary { color: #ff00ff; text-shadow: 2px 2px 0px #880088; }
+        .r-mythic { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        .r-god { color: #ff0000; text-shadow: 2px 2px 0px #880000, 0 0 10px #ff0000; }
 
     </style>
 </head>
@@ -82,74 +98,42 @@
 
     <div id="ui-layer">
         <div id="top-bar">
-            <div>
-                <div id="stats" class="interactive">
-                    <div class="stat-line">Rolls: <span id="stat-rolls">0</span></div>
-                    <div class="stat-line">Luck Multiplier: <span id="stat-luck" style="color: #55ff55">x1.0</span></div>
-                    <div class="stat-line" style="font-size: 14px; color:#aaa; margin-top:10px;">Equipped: <span id="stat-equipped" style="color:white">None</span></div>
-                </div>
-                
-                <div id="left-controls" class="interactive">
-                    <button id="toggle-autoroll" class="toggle-btn" onclick="toggleAutoRoll()">Auto-Roll: OFF</button>
-                    <button id="toggle-quickroll" class="toggle-btn" onclick="toggleQuickRoll()">Quick-Roll: OFF</button>
-                    
-                    <div class="setting-box">
-                        <label>Auto-Skip Below:</label>
-                        <select id="auto-skip-val" onchange="updateSkipVal()">
-                            <option value="0">Never Skip (Keep All)</option>
-                            <option value="16">Skip < Rare (1 in 16)</option>
-                            <option value="64">Skip < Crystallized (1 in 64)</option>
-                            <option value="1000">Skip < 1 in 1,000</option>
-                            <option value="10000">Skip < 1 in 10,000</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="ut-box interactive">
+                <div class="stat-line">LV: <span class="stat-val" id="stat-rolls">0</span></div>
+                <div class="stat-line">EQUIPPED: <br><span id="stat-equipped" style="color:#888; font-size: 20px;">None</span></div>
             </div>
 
             <div id="right-controls" class="interactive">
-                <button class="menu-btn" onclick="openPanel('inventory-panel')">Inventory (<span id="inv-count">0</span>/<span id="inv-max">30</span>)</button>
-                <button class="menu-btn" onclick="openPanel('crafting-panel')">Crafting</button>
-                <button class="menu-btn" onclick="alert('Shop coming soon! (Need coins feature)')">Shop</button>
+                <button class="ut-btn" onclick="openPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/30)</button>
+                <button class="ut-btn" onclick="alert('* You try to open the shop.\n* But nobody came.')">SHOP</button>
             </div>
         </div>
 
         <div id="inventory-panel" class="side-panel">
-            <h2 class="panel-header">Inventory <button class="close-btn" onclick="closePanels()">X</button></h2>
+            <div class="panel-header">INVENTORY <button class="close-btn" onclick="closePanels()">X</button></div>
             <div id="inv-list"></div>
         </div>
 
-        <div id="crafting-panel" class="side-panel">
-            <h2 class="panel-header">Crafting <button class="close-btn" onclick="closePanels()">X</button></h2>
-            
-            <div class="craft-item">
-                <strong style="color: #55ff55">Luck Glove (+0.5x Luck)</strong>
-                <div class="craft-req" id="req-glove">Requires: 5x Good, 2x Rare</div>
-                <button class="craft-btn" id="btn-craft-glove" onclick="craftItem('glove')">Craft</button>
-            </div>
-
-            <div class="craft-item">
-                <strong style="color: #ffaa00">Solar Device (+2.0x Luck)</strong>
-                <div class="craft-req" id="req-solar">Requires: 1x Solar, 10x Divinus</div>
-                <button class="craft-btn" id="btn-craft-solar" onclick="craftItem('solar')">Craft</button>
-            </div>
-        </div>
-
-        <div id="bottom-bar">
-            <div id="rolling-text">Rolling...</div>
-            <div id="roll-result">
-                <div id="roll-name">COMMON</div>
-                <div id="roll-chance">1 in 2</div>
-            </div>
-            <button id="btn-roll" class="interactive" onclick="triggerRoll()">ROLL</button>
+        <div id="bottom-bar" class="interactive">
+            <button id="btn-autoroll" class="ut-btn" onclick="toggleAutoRoll()">AUTO: OFF</button>
+            <button id="btn-roll" class="ut-btn" onclick="triggerRoll()">♥ ROLL</button>
+            <button id="btn-fastroll" class="ut-btn" onclick="toggleQuickRoll()">FAST: OFF</button>
         </div>
     </div>
 
+    <div id="roulette-overlay">
+        <div id="roulette-soul">♥</div>
+        <div id="roulette-name" class="r-common">???</div>
+        <div id="roulette-chance">Calculating...</div>
+    </div>
+
     <div id="kd-modal">
-        <h2 id="kd-name" class="r-1">Aura Name</h2>
-        <div style="color: #aaa">Chance: <span id="kd-chance">1 in ?</span></div>
+        <div style="font-size: 24px; color: #aaa; margin-bottom: 10px;">YOU ENCOUNTERED:</div>
+        <div id="kd-name" style="font-size: 40px; margin-bottom: 10px;">Aura Name</div>
+        <div style="font-size: 20px; color: #888;">ODDS: 1 in <span id="kd-chance">?</span></div>
         <div class="kd-buttons">
-            <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">KEEP</button>
-            <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">SKIP</button>
+            <button id="btn-keep" class="kd-btn" onclick="resolveRoll('keep')">ACT (Keep)</button>
+            <button id="btn-skip" class="kd-btn" onclick="resolveRoll('skip')">FLEE (Skip)</button>
         </div>
     </div>
 
@@ -166,100 +150,118 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- GAME DATA: The Sol's RNG Style Table ---
+        // --- UNDERTALE RNG DATA ---
         const AURAS = [
-            { id: 'common', name: 'Common', chance: 2, color: 0xaaaaaa, class: 'r-1', particles: 0 },
-            { id: 'uncommon', name: 'Uncommon', chance: 4, color: 0x88ff88, class: 'r-1', particles: 0 },
-            { id: 'good', name: 'Good', chance: 5, color: 0x55ff55, class: 'r-2', particles: 10 },
-            { id: 'natural', name: 'Natural', chance: 8, color: 0x22aa22, class: 'r-2', particles: 20 },
-            { id: 'rare', name: 'Rare', chance: 16, color: 0x5555ff, class: 'r-3', particles: 50 },
-            { id: 'divinus', name: 'Divinus', chance: 32, color: 0xffddaa, class: 'r-4', particles: 80, glow: true },
-            { id: 'crystallized', name: 'Crystallized', chance: 64, color: 0xffaaff, class: 'r-5', particles: 100, rings: 1 },
-            { id: 'rage', name: 'Rage', chance: 128, color: 0xff0000, class: 'r-6', particles: 150, rings: 1 },
-            { id: 'topaz', name: 'Topaz', chance: 150, color: 0xffff00, class: 'r-6', particles: 150, rings: 1 },
-            { id: 'glacier', name: 'Glacier', chance: 256, color: 0x00ffff, class: 'r-7', particles: 200, rings: 2 },
-            { id: 'magnetic', name: 'Magnetic', chance: 512, color: 0x4444ff, class: 'r-8', particles: 250, rings: 2, glow: true },
-            { id: 'sidereum', name: 'Sidereum', chance: 4096, color: 0xaa00aa, class: 'r-8', particles: 400, rings: 3, glow: true },
-            { id: 'solar', name: 'Solar', chance: 5000, color: 0xff8800, class: 'r-9', particles: 600, rings: 3, glow: true },
-            { id: 'lunar', name: 'Lunar', chance: 5000, color: 0xaaaaff, class: 'r-9', particles: 600, rings: 3, glow: true },
-            { id: 'eclipse', name: 'Eclipse', chance: 30000, color: 0x550055, class: 'r-9', particles: 1000, rings: 4, glow: true },
-            { id: 'galactic', name: 'GALACTIC', chance: 500000, color: 0xff00ff, class: 'r-10', particles: 2000, rings: 5, glow: true },
-            { id: 'archangel', name: 'ARCHANGEL', chance: 250000000, color: 0xffffff, class: 'r-10', particles: 5000, rings: 8, glow: true }
+            { id: 'candy', name: 'Monster Candy', chance: 2, color: 0xaaaaaa, class: 'r-common', particles: 0 },
+            { id: 'bandage', name: 'Bandage', chance: 4, color: 0xffaaaa, class: 'r-common', particles: 10 },
+            { id: 'froggit', name: 'Froggit', chance: 10, color: 0xffffff, class: 'r-uncommon', particles: 40, flies: true, battleBg: true },
+            { id: 'whimsun', name: 'Whimsun', chance: 20, color: 0xddddff, class: 'r-uncommon', particles: 30, glow: true },
+            { id: 'papyrus', name: 'Papyrus', chance: 100, color: 0xffaa00, class: 'r-epic', particles: 100, rings: 1 },
+            { id: 'toriel', name: 'Toriel', chance: 250, color: 0xff5500, class: 'r-epic', particles: 150, rings: 2, glow: true },
+            { id: 'undyne', name: 'Undyne The Undying', chance: 1000, color: 0x00ff00, class: 'r-legendary', particles: 300, rings: 3, glow: true },
+            { id: 'sans', name: 'Sans', chance: 5000, color: 0x00ffff, class: 'r-mythic', particles: 500, rings: 4, glow: true, battleBg: true },
+            { id: 'omega', name: 'Omega Flowey', chance: 25000, color: 0x00ff00, class: 'r-god', particles: 1000, rings: 6, glow: true },
+            { id: 'asriel', name: 'God of Hyperdeath', chance: 100000, color: 0xffffff, class: 'r-god', particles: 2000, rings: 8, glow: true, battleBg: true }
         ];
 
         // Global State
         window.playerData = {
-            rolls: 0,
-            inventory: [],
-            maxInventory: 30,
-            equipped: null,
-            luck: 1.0,
-            autoRoll: false,
-            quickRoll: false,
-            autoSkipVal: 0,
-            isRolling: false,
-            pendingAura: null
+            rolls: 0, inventory: [], maxInventory: 30, equipped: null,
+            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null
         };
 
         // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050510, 0.02);
+        // Transparent fog to blend with CSS backgrounds
+        scene.fog = new THREE.FogExp2(0x000000, 0.03); 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 12);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        camera.position.set(0, 2, 8);
+        
+        // Renderer with alpha: true so the CSS background shows through
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setClearColor(0x000000, 0); // Transparent!
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.05;
-        controls.minDistance = 5; controls.maxDistance = 20;
+        controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2;
+        controls.minDistance = 4; controls.maxDistance = 15;
 
-        const gridHelper = new THREE.GridHelper(50, 50, 0x222244, 0x111122);
-        scene.add(gridHelper);
-        const dummyGeo = new THREE.CapsuleGeometry(1, 2.5, 4, 16);
-        const dummyMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.2, metalness: 0.8 });
-        const dummy = new THREE.Mesh(dummyGeo, dummyMat);
-        dummy.position.y = 2.25;
-        scene.add(dummy);
+        // Generate an 8-bit Red Soul Canvas Texture
+        function createSoulTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ff0000';
+            // Draw pixel heart
+            const pixels = [
+                [0,1,1,0,0,1,1,0],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [0,1,1,1,1,1,1,0],
+                [0,0,1,1,1,1,0,0],
+                [0,0,0,1,1,0,0,0]
+            ];
+            for(let y=0; y<pixels.length; y++) {
+                for(let x=0; x<pixels[y].length; x++) {
+                    if(pixels[y][x]) ctx.fillRect(x*2 + 1, y*2 + 2, 2, 2);
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter; // Keep it pixelated!
+            return tex;
+        }
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(5, 10, 5);
-        scene.add(directionalLight);
+        // The central 3D Soul Sprite
+        const soulMaterial = new THREE.SpriteMaterial({ map: createSoulTexture() });
+        const soulSprite = new THREE.Sprite(soulMaterial);
+        soulSprite.scale.set(1.5, 1.5, 1);
+        soulSprite.position.y = 1;
+        scene.add(soulSprite);
 
+        // Auras Setup
         let auraGroup = new THREE.Group();
-        auraGroup.position.copy(dummy.position);
+        auraGroup.position.copy(soulSprite.position);
         scene.add(auraGroup);
+        
         let activeParticles = null; let activeRings = [];
         let auraLight = new THREE.PointLight(0xffffff, 0, 10);
         scene.add(auraLight);
 
-        // --- LOGIC FUNCTIONS (Exposed to Window for UI) ---
-        
+        // --- LOGIC FUNCTIONS ---
         window.equipAura = function(uid) {
             const auraData = window.playerData.inventory.find(i => i.uid === uid);
             if(!auraData) return;
-            window.playerData.equipped = auraData.aura;
-            document.getElementById('stat-equipped').innerText = auraData.aura.name;
-            document.getElementById('stat-equipped').className = auraData.aura.class;
+            const aura = auraData.aura;
+            window.playerData.equipped = aura;
+            
+            document.getElementById('stat-equipped').innerText = aura.name;
+            document.getElementById('stat-equipped').className = aura.class;
+
+            // Handle CSS Backgrounds
+            if (aura.battleBg) {
+                document.body.classList.add('battle-mode');
+            } else {
+                document.body.classList.remove('battle-mode');
+            }
 
             // Update 3D Visuals
             while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
             activeRings = [];
             
-            if (auraData.aura.glow) {
-                auraLight.color.setHex(auraData.aura.color); auraLight.intensity = 5;
+            if (aura.glow) {
+                auraLight.color.setHex(aura.color); auraLight.intensity = 5;
             } else {
                 auraLight.intensity = 0;
             }
 
-            if (auraData.aura.rings) {
-                for(let i=0; i<auraData.aura.rings; i++) {
+            if (aura.rings) {
+                for(let i=0; i<aura.rings; i++) {
                     const ringGeo = new THREE.TorusGeometry(1.5 + (i*0.5), 0.05, 8, 50);
-                    const ringMat = new THREE.MeshBasicMaterial({ color: auraData.aura.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-                    if (auraData.aura.glow) ringMat.blending = THREE.AdditiveBlending;
+                    const ringMat = new THREE.MeshBasicMaterial({ color: aura.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+                    if (aura.glow) ringMat.blending = THREE.AdditiveBlending;
                     const ring = new THREE.Mesh(ringGeo, ringMat);
                     ring.rotation.x = Math.PI / 2;
                     ring.userData = { speedX: (Math.random()-0.5)*0.05, speedY: (Math.random()-0.5)*0.05, speedZ: (Math.random()-0.5)*0.05 };
@@ -267,11 +269,11 @@
                 }
             }
 
-            if (auraData.aura.particles > 0) {
+            if (aura.particles > 0) {
                 const partsGeo = new THREE.BufferGeometry();
-                const partsPos = new Float32Array(auraData.aura.particles * 3);
-                for(let i=0; i<auraData.aura.particles * 3; i+=3) {
-                    const radius = 2 + Math.random() * 3;
+                const partsPos = new Float32Array(aura.particles * 3);
+                for(let i=0; i<aura.particles * 3; i+=3) {
+                    const radius = 2 + Math.random() * 2;
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos((Math.random() * 2) - 1);
                     partsPos[i] = radius * Math.sin(phi) * Math.cos(theta);
@@ -279,8 +281,12 @@
                     partsPos[i+2] = radius * Math.cos(phi);
                 }
                 partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3));
-                const partsMat = new THREE.PointsMaterial({ color: auraData.aura.color, size: 0.1, transparent: true, opacity: 0.6, blending: auraData.aura.glow ? THREE.AdditiveBlending : THREE.NormalBlending });
+                const partsMat = new THREE.PointsMaterial({ 
+                    color: aura.color, size: aura.flies ? 0.2 : 0.1, transparent: true, opacity: 0.8, 
+                    blending: aura.glow ? THREE.AdditiveBlending : THREE.NormalBlending 
+                });
                 activeParticles = new THREE.Points(partsGeo, partsMat);
+                activeParticles.userData = { isFlies: aura.flies };
                 auraGroup.add(activeParticles);
             } else { activeParticles = null; }
         };
@@ -288,69 +294,74 @@
         window.deleteAura = function(uid) {
             window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
             if(window.playerData.equipped && !window.playerData.inventory.some(i => i.aura.id === window.playerData.equipped.id)) {
-                // Un-equip if deleted
                 window.playerData.equipped = null;
                 document.getElementById('stat-equipped').innerText = "None";
                 document.getElementById('stat-equipped').className = "";
+                document.body.classList.remove('battle-mode');
                 while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
                 auraLight.intensity = 0;
             }
             window.updateInventoryUI();
         };
 
+        let rouletteInterval;
+
         window.triggerRoll = function() {
             if(window.playerData.isRolling) return;
             if(!window.playerData.autoRoll && window.playerData.inventory.length >= window.playerData.maxInventory) {
-                alert("Inventory Full! Delete some auras."); return;
+                alert("* Your inventory is full."); return;
             }
 
             window.playerData.isRolling = true;
             document.getElementById('btn-roll').disabled = true;
-            document.getElementById('rolling-text').style.display = 'block';
-            document.getElementById('roll-result').style.opacity = 0;
-
-            const rollDuration = window.playerData.quickRoll ? 200 : 2500;
+            document.getElementById('roulette-overlay').style.display = 'flex';
             
+            const rollDuration = window.playerData.quickRoll ? 300 : 2500;
+            
+            // The Roulette Slot Machine Effect
+            const nameEl = document.getElementById('roulette-name');
+            const chanceEl = document.getElementById('roulette-chance');
+            
+            rouletteInterval = setInterval(() => {
+                const randomAura = AURAS[Math.floor(Math.random() * AURAS.length)];
+                nameEl.innerText = randomAura.name;
+                nameEl.className = randomAura.class;
+                chanceEl.innerText = `1 in ???`;
+            }, 60);
+
             setTimeout(() => {
+                clearInterval(rouletteInterval);
                 window.playerData.rolls++;
                 document.getElementById('stat-rolls').innerText = window.playerData.rolls;
-                document.getElementById('rolling-text').style.display = 'none';
 
-                // Core RNG Math
+                // Actual RNG Math
                 const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
                 let rolledAura = AURAS[0]; 
-                
                 for(let a of sorted) {
-                    // Apply Luck Multiplier
-                    const adjustedChance = a.chance / window.playerData.luck;
-                    if (Math.random() <= (1 / adjustedChance)) {
-                        rolledAura = a; break;
+                    if (Math.random() <= (1 / a.chance)) { rolledAura = a; break; }
+                }
+
+                // Show Final Result on Roulette overlay briefly
+                nameEl.innerText = rolledAura.name;
+                nameEl.className = rolledAura.class;
+                chanceEl.innerText = `1 in ${rolledAura.chance.toLocaleString()}`;
+
+                setTimeout(() => {
+                    document.getElementById('roulette-overlay').style.display = 'none';
+
+                    // Auto-Keep if AutoRoll is on
+                    if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
+                        window.resolveRoll('keep', rolledAura);
+                    } else {
+                        // Encounter Prompt
+                        window.playerData.pendingAura = rolledAura;
+                        const kd = document.getElementById('kd-modal');
+                        kd.style.display = 'block';
+                        document.getElementById('kd-name').innerText = rolledAura.name;
+                        document.getElementById('kd-name').className = rolledAura.class;
+                        document.getElementById('kd-chance').innerText = rolledAura.chance.toLocaleString();
                     }
-                }
-
-                // Auto-Skip Logic
-                if(window.playerData.autoRoll && rolledAura.chance < window.playerData.autoSkipVal) {
-                    // Silently Skip
-                    window.playerData.isRolling = false;
-                    document.getElementById('btn-roll').disabled = false;
-                    if(window.playerData.autoRoll) setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 1000);
-                    return;
-                }
-
-                showRollResult(rolledAura);
-
-                // Auto-Keep if AutoRoll is on and space allows
-                if(window.playerData.autoRoll && window.playerData.inventory.length < window.playerData.maxInventory) {
-                    window.resolveRoll('keep', rolledAura);
-                } else {
-                    // Show Prompt
-                    window.playerData.pendingAura = rolledAura;
-                    const kd = document.getElementById('kd-modal');
-                    kd.style.display = 'block';
-                    document.getElementById('kd-name').innerText = rolledAura.name;
-                    document.getElementById('kd-name').className = rolledAura.class;
-                    document.getElementById('kd-chance').innerText = `1 in ${rolledAura.chance.toLocaleString()}`;
-                }
+                }, window.playerData.quickRoll ? 200 : 1000);
 
             }, rollDuration);
         };
@@ -361,7 +372,7 @@
             
             if(action === 'keep') {
                 if(window.playerData.inventory.length >= window.playerData.maxInventory) {
-                    alert("Inventory Full!");
+                    alert("* Inventory Full.");
                 } else {
                     window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: aura });
                     window.updateInventoryUI();
@@ -373,39 +384,36 @@
             window.playerData.pendingAura = null;
 
             if(window.playerData.autoRoll) {
-                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 1000);
+                setTimeout(window.triggerRoll, window.playerData.quickRoll ? 100 : 800);
             }
         };
-
-        function showRollResult(aura) {
-            const resEl = document.getElementById('roll-result');
-            document.getElementById('roll-name').innerText = aura.name;
-            document.getElementById('roll-name').className = aura.class;
-            document.getElementById('roll-chance').innerText = `1 in ${aura.chance.toLocaleString()}`;
-
-            if (aura.chance >= 4000) {
-                document.body.style.background = "#ffffff";
-                setTimeout(() => document.body.style.background = "#050510", 100);
-            }
-
-            resEl.style.opacity = 1;
-            resEl.style.transform = "scale(1.2)";
-            setTimeout(() => { resEl.style.transform = "scale(1)"; }, 100);
-        }
 
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
+            
+            // Bob the soul up and down gently
+            soulSprite.position.y = 1 + Math.sin(time * 3) * 0.1;
+
             activeRings.forEach((ring, index) => {
                 ring.rotation.x += ring.userData.speedX; ring.rotation.y += ring.userData.speedY; ring.rotation.z += ring.userData.speedZ;
                 ring.position.y = Math.sin(time * 2 + index) * 0.5;
             });
+
             if(activeParticles) {
-                activeParticles.rotation.y += 0.005;
-                if(window.playerData.equipped && window.playerData.equipped.chance >= 500000) {
-                    activeParticles.rotation.x -= 0.002; activeParticles.rotation.z += 0.003;
+                if(activeParticles.userData.isFlies) {
+                    // Jitter for Froggit "flies"
+                    const positions = activeParticles.geometry.attributes.position.array;
+                    for(let i=0; i<positions.length; i+=3) {
+                        positions[i] += (Math.random()-0.5)*0.05;
+                        positions[i+1] += (Math.random()-0.5)*0.05;
+                        positions[i+2] += (Math.random()-0.5)*0.05;
+                    }
+                    activeParticles.geometry.attributes.position.needsUpdate = true;
+                } else {
+                    activeParticles.rotation.y += 0.005;
                 }
             }
             controls.update();
@@ -422,34 +430,27 @@
     </script>
 
     <script>
-        // --- UI & NON-3D LOGIC ---
+        // --- UI LOGIC ---
 
         function toggleAutoRoll() {
             window.playerData.autoRoll = !window.playerData.autoRoll;
-            const btn = document.getElementById('toggle-autoroll');
-            btn.innerText = `Auto-Roll: ${window.playerData.autoRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.autoRoll ? 'toggle-btn active' : 'toggle-btn';
+            const btn = document.getElementById('btn-autoroll');
+            btn.innerText = `AUTO: ${window.playerData.autoRoll ? 'ON' : 'OFF'}`;
+            btn.className = window.playerData.autoRoll ? 'ut-btn active-toggle' : 'ut-btn';
             
-            if(window.playerData.autoRoll && !window.playerData.isRolling) {
-                window.triggerRoll();
-            }
+            if(window.playerData.autoRoll && !window.playerData.isRolling) window.triggerRoll();
         }
 
         function toggleQuickRoll() {
             window.playerData.quickRoll = !window.playerData.quickRoll;
-            const btn = document.getElementById('toggle-quickroll');
-            btn.innerText = `Quick-Roll: ${window.playerData.quickRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.quickRoll ? 'toggle-btn active' : 'toggle-btn';
-        }
-
-        function updateSkipVal() {
-            window.playerData.autoSkipVal = parseInt(document.getElementById('auto-skip-val').value);
+            const btn = document.getElementById('btn-fastroll');
+            btn.innerText = `FAST: ${window.playerData.quickRoll ? 'ON' : 'OFF'}`;
+            btn.className = window.playerData.quickRoll ? 'ut-btn active-toggle' : 'ut-btn';
         }
 
         function openPanel(id) {
             closePanels();
             document.getElementById(id).style.display = 'block';
-            if(id === 'crafting-panel') checkCraftingStatus();
         }
 
         function closePanels() {
@@ -464,60 +465,19 @@
             [...window.playerData.inventory].reverse().forEach((item) => {
                 const div = document.createElement('div');
                 div.className = `inv-item`;
-                div.style.borderLeftColor = "#" + item.aura.color.toString(16).padStart(6, '0');
                 div.innerHTML = `
                     <div>
                         <strong class="${item.aura.class}">${item.aura.name}</strong><br>
-                        <span style="font-size:12px; color:#888;">1 in ${item.aura.chance.toLocaleString()}</span>
+                        <span style="font-size:16px; color:#888;">1 in ${item.aura.chance.toLocaleString()}</span>
                     </div>
                     <div class="inv-item-actions">
-                        <button onclick="window.equipAura('${item.uid}')">Equip</button>
-                        <button class="btn-del" onclick="window.deleteAura('${item.uid}')">Del</button>
+                        <button onclick="window.equipAura('${item.uid}')">USE</button>
+                        <button style="color:red; border-color:red;" onclick="window.deleteAura('${item.uid}')">DROP</button>
                     </div>
                 `;
                 list.appendChild(div);
             });
-            checkCraftingStatus(); // Update crafting buttons if open
         };
-
-        // --- CRAFTING SYSTEM ---
-        function countAura(auraId) {
-            return window.playerData.inventory.filter(i => i.aura.id === auraId).length;
-        }
-
-        function removeAuras(auraId, count) {
-            let removed = 0;
-            window.playerData.inventory = window.playerData.inventory.filter(i => {
-                if(removed < count && i.aura.id === auraId) { removed++; return false; }
-                return true;
-            });
-        }
-
-        function checkCraftingStatus() {
-            // Check Glove (5 Good, 2 Rare)
-            const hasGloveReqs = countAura('good') >= 5 && countAura('rare') >= 2;
-            document.getElementById('btn-craft-glove').disabled = !hasGloveReqs;
-            document.getElementById('req-glove').style.color = hasGloveReqs ? '#55ff55' : '#aaa';
-
-            // Check Solar (1 Solar, 10 Divinus)
-            const hasSolarReqs = countAura('solar') >= 1 && countAura('divinus') >= 10;
-            document.getElementById('btn-craft-solar').disabled = !hasSolarReqs;
-            document.getElementById('req-solar').style.color = hasSolarReqs ? '#55ff55' : '#aaa';
-        }
-
-        function craftItem(type) {
-            if(type === 'glove') {
-                removeAuras('good', 5); removeAuras('rare', 2);
-                window.playerData.luck += 0.5;
-                alert("Crafted Luck Glove! Luck increased by +0.5x!");
-            } else if (type === 'solar') {
-                removeAuras('solar', 1); removeAuras('divinus', 10);
-                window.playerData.luck += 2.0;
-                alert("Crafted Solar Device! Luck increased by +2.0x!");
-            }
-            document.getElementById('stat-luck').innerText = `x${window.playerData.luck.toFixed(1)}`;
-            window.updateInventoryUI();
-        }
     </script>
 </body>
 </html>
