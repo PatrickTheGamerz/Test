@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UNDERTALE RNG - ULTIMATE BATTLE</title>
+    <title>UNDERTALE RNG - BATTLE PRECISION</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -10,95 +10,49 @@
             font-family: 'VT323', monospace; color: white; user-select: none; 
         }
 
-        /* Screen Shake Effect */
+        /* Screen Shake & Flash */
         @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(0px, 0px) rotate(0deg); }
+            0% { transform: translate(1px, 1px); }
+            20% { transform: translate(-3px, 0px); }
+            40% { transform: translate(1px, -1px); }
+            60% { transform: translate(-3px, 1px); }
+            80% { transform: translate(-1px, -1px); }
+            100% { transform: translate(0px, 0px); }
         }
         .shake-active { animation: shake 0.4s; }
+        #screen-flash { position: fixed; inset: 0; background: white; z-index: 9000; opacity: 0; pointer-events: none; }
 
-        /* Flash Effect */
-        #screen-flash {
-            position: fixed; inset: 0; background: white; z-index: 9000; opacity: 0; pointer-events: none;
-        }
-
-        /* Normal Battlebox Grid */
+        /* Swaying Battle Background */
         body.battle-mode {
             background-color: #000;
             background-image: 
                 linear-gradient(#1f501f 1px, transparent 1px),
                 linear-gradient(90deg, #1f501f 1px, transparent 1px);
             background-size: 80px 80px;
-            background-position: center bottom;
+            animation: bgSway 10s ease-in-out infinite;
+        }
+        @keyframes bgSway {
+            0%, 100% { background-position: 0px 0px; }
+            25% { background-position: 20px 10px; }
+            50% { background-position: 0px 20px; }
+            75% { background-position: -20px 10px; }
         }
 
-        /* --- NAME SELECTION SCREEN --- */
-        #name-screen {
-            position: fixed; inset: 0; background: black; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #name-screen h1 { font-size: 40px; font-weight: normal; margin-bottom: 50px; }
+        /* Name Screen */
+        #name-screen { position: fixed; inset: 0; background: black; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #name-input { background: transparent; border: none; border-bottom: 2px solid white; color: white; font-family: 'VT323'; font-size: 50px; text-align: center; width: 300px; outline: none; text-transform: uppercase; margin-bottom: 40px; }
-        .name-btn { background: transparent; color: white; border: none; font-family: 'VT323'; font-size: 32px; cursor: pointer; }
-        .name-btn:hover { color: yellow; }
 
-        /* UI Layout */
+        /* UI Layer */
         #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .interactive { pointer-events: auto; }
         
         /* Right Side Menus */
         #right-menu-col { position: absolute; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 15px; align-items: flex-end; }
-        .ut-menu-btn { 
-            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
-            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; width: 180px; text-align: center;
-        }
+        .ut-menu-btn { background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; width: 180px; text-align: center; }
         .ut-menu-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
         .ut-menu-btn:disabled { color: #555; border-color: #555; cursor: not-allowed; }
         
-        #btn-special { border-color: #00ffff; color: #00ffff; }
-        #btn-special:hover:not(:disabled) { background: #003333; color: white; border-color: white; }
-
-        /* Bottom Battle UI */
-        #bottom-ui { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 100%; }
-        
-        /* Encounter Box */
-        #kd-modal {
-            display: flex; flex-direction: column; justify-content: space-between; width: 800px; height: 180px; margin-bottom: 20px;
-            background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; box-sizing: border-box; font-size: 36px; line-height: 1.2;
-        }
-        .kd-buttons { display: flex; justify-content: space-around; margin-top: 10px; opacity: 0; pointer-events: none; transition: 0.2s; }
-        .kd-buttons.active { opacity: 1; pointer-events: auto; }
-        .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
-        .kd-btn::before { content: '  '; white-space: pre; }
-        .kd-btn:hover:not(:disabled)::before { content: '♥ '; color: red; }
-        .kd-btn:hover:not(:disabled) { color: #ffff00; }
-        .kd-btn:disabled { color: #555; cursor: not-allowed; }
-
-        .stat-yellow { color: #ffff00; }
-
-        /* Undertale Stat Bar */
-        #ut-stats { display: flex; align-items: center; gap: 40px; font-size: 32px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
-
-        /* Bottom Buttons */
-        #action-buttons { display: flex; justify-content: center; gap: 30px; }
-        .ut-action-btn { 
-            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
-            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 220px;
-        }
-        .ut-action-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
-        .ut-action-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
-        .ut-action-btn:disabled { color: #555; border-color: #555; cursor: not-allowed; }
-
-        /* --- UNIFIED LEFT PANELS (STAT, ITEM, INFO) --- */
+        /* Left Slide Panels */
         .left-panel {
             position: absolute; top: 50px; left: 0; transform: translateX(-100%); width: 400px; 
             background: #000; border: 6px solid white; border-left: none; padding: 30px; 
@@ -107,37 +61,26 @@
         }
         .left-panel.open { transform: translateX(0); }
         .stat-section { margin-top: 20px; border-top: 2px dashed #555; padding-top: 10px; }
-        
         .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 36px; }
-        .close-btn { background: transparent; color: #aaa; border: none; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; }
-        .close-btn:hover { color: white; }
 
-        /* Inventory Items */
-        .inv-item { border-bottom: 2px solid #333; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; font-size: 28px; }
-        .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
-        .inv-item-actions { display: flex; justify-content: flex-end; gap: 10px; }
-        .inv-item-actions button { background: transparent; color: white; border: none; font-family: 'VT323'; font-size: 26px; cursor: pointer; }
-        .inv-item-actions button:hover { color: #ffff00; text-decoration: underline; }
-
-        /* --- SHOP MENU --- */
-        #shop-panel { display: none; position: fixed; inset: 0; background: black; z-index: 500; pointer-events: auto; flex-direction: column; }
-        #shop-top { height: 50%; display: flex; padding: 40px; border-bottom: 4px solid white; align-items: center; gap: 40px; }
-        .shop-sans { width: 150px; height: 150px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="white" d="M20,30 Q50,10 80,30 Q90,60 70,80 Q50,90 30,80 Q10,60 20,30 Z M35,45 A5,5 0 1,0 45,45 A5,5 0 1,0 35,45 M55,45 A5,5 0 1,0 65,45 A5,5 0 1,0 55,45 M45,65 Q50,70 55,65"/></svg>') no-repeat center/contain; }
-        #shop-dialogue { font-size: 40px; flex-grow: 1; }
-        #shop-bottom { height: 50%; display: flex; padding: 40px; gap: 40px; }
-        .shop-options { flex: 1; display: flex; flex-direction: column; gap: 20px; font-size: 36px; }
-        .shop-content { flex: 2; border: 4px solid white; padding: 20px; font-size: 32px; overflow-y: auto; }
-        .shop-btn { background: transparent; color: white; border: none; font-family: 'VT323'; font-size: 36px; text-align: left; cursor: pointer; }
-        .shop-btn::before { content: '  '; white-space: pre; }
-        .shop-btn:hover::before { content: '♥ '; color: red; }
-        .shop-btn:hover { color: yellow; }
-
-        /* --- FX LAYER --- */
-        #fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
-        .dmg-text { position: absolute; color: red; font-family: 'VT323'; font-size: 80px; font-weight: bold; text-shadow: 4px 4px 0 black; animation: dmgBounce 1.5s forwards; left: 50%; transform: translateX(-50%); top: 40%; opacity: 0; }
-        @keyframes dmgBounce { 0% { top: 40%; opacity: 1; transform: translateX(-50%) scale(1); } 20% { top: 30%; transform: translateX(-50%) scale(1.2); } 100% { top: 60%; opacity: 0; transform: translateX(-50%) scale(1); } }
+        /* Bottom UI */
+        #bottom-ui { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 100%; }
+        #kd-modal { width: 800px; height: 180px; margin-bottom: 20px; background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; box-sizing: border-box; font-size: 36px; line-height: 1.2; }
+        .kd-buttons { display: flex; justify-content: space-around; margin-top: 10px; opacity: 0; pointer-events: none; transition: 0.2s; }
+        .kd-buttons.active { opacity: 1; pointer-events: auto; }
+        .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
+        .kd-btn:hover:not(:disabled) { color: #ffff00; }
+        .kd-btn:hover:not(:disabled)::before { content: '♥ '; color: red; }
         
-        .slash-fx { position: absolute; width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10,10 L90,90 M20,10 L100,90 M10,20 L90,100" stroke="red" stroke-width="12" stroke-linecap="round"/></svg>') no-repeat center/contain; animation: slashAnim 0.5s forwards; opacity: 0; }
+        #ut-stats { display: flex; align-items: center; gap: 40px; font-size: 32px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
+        #action-buttons { display: flex; justify-content: center; gap: 30px; }
+        .ut-action-btn { background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 36px; cursor: pointer; width: 220px; }
+        .ut-action-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
+        .ut-action-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
+
+        /* FX */
+        #fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
+        .slash-fx { position: absolute; width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10,10 L90,90 M20,10 L100,90" stroke="red" stroke-width="12" stroke-linecap="round"/></svg>') no-repeat center/contain; animation: slashAnim 0.5s forwards; opacity: 0; }
         @keyframes slashAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.0); } }
 
     </style>
@@ -145,38 +88,29 @@
 <body>
 
     <div id="screen-flash"></div>
-
     <div id="name-screen" class="interactive">
         <h1>Name the fallen human.</h1>
-        <input type="text" id="name-input" maxlength="6" autocomplete="off" spellcheck="false">
+        <input type="text" id="name-input" maxlength="6" autocomplete="off">
         <button class="name-btn" onclick="confirmName()">Done</button>
     </div>
 
     <div id="ui-layer">
-        
         <div id="right-menu-col" class="interactive">
             <button class="ut-menu-btn" onclick="toggleLeftPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/8)</button>
             <button class="ut-menu-btn" onclick="toggleLeftPanel('stat-panel')">STAT</button>
-            <button class="ut-menu-btn" onclick="openShop()">SHOP</button>
             <button id="btn-special" class="ut-menu-btn" onclick="triggerSpecial()">SPECIAL</button>
         </div>
 
         <div id="stat-panel" class="left-panel interactive">
             <div id="st-name" style="font-size: 40px; margin-bottom: 20px;">"CHARA"</div>
             <div>LV <span id="st-lv">1</span></div>
-            <div>HP <span id="st-hp">20 / 20</span></div>
             <div class="stat-section">
                 <div>EXP: <span id="st-exp">0</span></div>
-                <div>NEXT: <span id="st-next">10</span></div>
-            </div>
-            <div class="stat-section">
-                <div>WEAPON: <span id="st-wep" class="stat-yellow">Stick</span></div>
-                <div>ARMOR: <span id="st-arm" class="stat-yellow">Bandage</span></div>
-                <div style="margin-top: 10px;">EQUIPPED:<br><span id="st-equip" style="color:#aaa;">None</span></div>
-            </div>
-            <div class="stat-section">
                 <div>GOLD: <span id="st-gold">0</span></div>
-                <div style="font-size: 24px; color:#888; margin-top:5px;">LUCK: <span id="st-luck">x1.0</span></div>
+                <div>LUCK: <span id="st-luck">x1.0</span></div>
+            </div>
+            <div class="stat-section">
+                <div>EQUIPPED: <br><span id="st-equip" style="color:#aaa;">None</span></div>
             </div>
         </div>
 
@@ -185,31 +119,14 @@
             <div id="inv-list"></div>
         </div>
 
-        <div id="info-modal" class="left-panel interactive">
-            <div class="panel-header" id="info-name" style="color:#ffff00; font-size:40px;">Name</div>
-            <div style="margin-top: 10px;">* Rarity: 1 in <span id="info-chance"></span></div>
-            <div style="margin-bottom: 20px;">* EXP: <span id="info-exp"></span> | Val: <span id="info-price"></span>G</div>
-            <div id="info-desc" style="color: #aaa; font-size: 28px; line-height: 1.3;">* Description here.</div>
-            <div style="text-align: right; margin-top: 30px;">
-                <button class="close-btn" onclick="toggleLeftPanel('inventory-panel')">← BACK</button>
-            </div>
-        </div>
-
         <div id="bottom-ui" class="interactive">
-            <div id="kd-modal">
-                <div id="kd-text">* Waiting for encounter...</div>
+            <div id="kd-modal"><div id="kd-text">* Waiting for encounter...</div>
                 <div class="kd-buttons" id="kd-actions">
-                    <button id="btn-act" class="kd-btn" onclick="resolveRoll('act')">ACT</button>
-                    <button id="btn-fight" class="kd-btn" onclick="resolveRoll('fight')">FIGHT</button>
+                    <button class="kd-btn" onclick="resolveRoll('act')">ACT</button>
+                    <button class="kd-btn" onclick="resolveRoll('fight')">FIGHT</button>
                 </div>
             </div>
-
-            <div id="ut-stats">
-                <span id="btm-name">CHARA</span>
-                <span>LV <span id="stat-lv">1</span></span>
-                <span>EXP <span id="stat-exp">0</span>/<span id="stat-next">10</span></span>
-            </div>
-
+            <div id="ut-stats"><span id="btm-name">CHARA</span><span>LV <span id="stat-lv-btm">1</span></span></div>
             <div id="action-buttons">
                 <button id="btn-autoroll" class="ut-action-btn" onclick="toggleAutoRoll()" disabled>AUTO (LV 8)</button>
                 <button id="btn-roll" class="ut-action-btn" onclick="triggerRoll()" style="border-color: #ff0000; color: #ff0000;">♥ ROLL</button>
@@ -218,179 +135,55 @@
         </div>
     </div>
 
-    <div id="shop-panel">
-        <div id="shop-top">
-            <div class="shop-sans"></div>
-            <div id="shop-dialogue">* heya. welcome to my shop.</div>
-        </div>
-        <div id="shop-bottom">
-            <div class="shop-options">
-                <button class="shop-btn" onclick="shopMenu('buy')">Buy</button>
-                <button class="shop-btn" onclick="shopMenu('sell')">Sell</button>
-                <button class="shop-btn" onclick="shopMenu('talk')">Talk</button>
-                <button class="shop-btn" onclick="closeShop()">Exit</button>
-                <div style="margin-top: auto;">GOLD: <span id="shop-gold" class="stat-yellow">0</span></div>
-            </div>
-            <div class="shop-content" id="shop-content">* select an option.</div>
-        </div>
-    </div>
-
     <div id="fx-layer"></div>
 
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- GAME DATA ---
         const AURAS = [
-            { id: 'dummy', name: 'Dummy', chance: 2, exp: 2, price: 5, auraType: 'none', desc: '* A cotton heart and a button eye. You are the apple of my eye.' },
-            { id: 'whimsun', name: 'Whimsun', chance: 4, exp: 5, price: 10, auraType: 'flies_down', desc: '* This monster is too sensitive to fight.' },
-            { id: 'froggit', name: 'Froggit', chance: 5, exp: 8, price: 15, auraType: 'flies_random', desc: '* Life is difficult for this enemy.' },
-            { id: 'moldsmal', name: 'Moldsmal', chance: 6, exp: 12, price: 20, auraType: 'none', desc: '* Stereotypical: Curvaceously attractive, but no brains.' },
-            { id: 'loox', name: 'Loox', chance: 8, exp: 20, price: 30, auraType: 'bouncing_eyes', desc: '* Don\'t pick on him. Family name: Eyewalker.' },
-            { id: 'vegetoid', name: 'Vegetoid', chance: 10, exp: 35, price: 50, auraType: 'veggies', desc: '* Serving Size: 1 Monster. Not monitored by the USDA.' }
+            { id: 'dummy', name: 'Dummy', chance: 2, exp: 2, price: 5, auraType: 'none' },
+            { id: 'whimsun', name: 'Whimsun', chance: 4, exp: 5, price: 10, auraType: 'flies_down' },
+            { id: 'froggit', name: 'Froggit', chance: 5, exp: 8, price: 15, auraType: 'flies_random' },
+            { id: 'moldsmal', name: 'Moldsmal', chance: 6, exp: 12, price: 20, auraType: 'none' },
+            { id: 'loox', name: 'Loox', chance: 8, exp: 20, price: 30, auraType: 'bouncing_eyes' },
+            { id: 'vegetoid', name: 'Vegetoid', chance: 10, exp: 35, price: 50, auraType: 'veggies' }
         ];
 
-        const EXP_CURVE = [0, 10, 30, 70, 120, 200, 300, 500, 800, 1200, 1700, 2500, 3500, 5000, 7000, 10000, 15000, 25000, 50000, 99999];
+        window.playerData = { name: "", lv: 1, exp: 0, g: 0, rolls: 0, luck: 1.0, inventory: [], maxInventory: 8, equipped: null };
 
-        const GEAR = {
-            weapons: { stick: { name: 'Stick', luck: 0 }, toy_knife: { name: 'Toy Knife', price: 150, lvReq: 4, luck: 0.2, type: 'wep' } },
-            armor: { bandage: { name: 'Bandage', luck: 0 }, faded_ribbon: { name: 'Faded Ribbon', price: 100, lvReq: 3, luck: 0.2, type: 'arm' } }
-        };
-
-        window.playerData = {
-            name: "", lv: 1, exp: 0, g: 0, rolls: 0, baseLuck: 1.0, 
-            inventory: [], maxInventory: 8, equipped: null,
-            weapon: 'stick', armor: 'bandage',
-            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null
-        };
-
-        // --- SAVE/LOAD SYSTEM ---
-        window.saveGame = function() {
-            if(!window.playerData.name) return;
-            const data = {
-                name: window.playerData.name, lv: window.playerData.lv, exp: window.playerData.exp, g: window.playerData.g,
-                rolls: window.playerData.rolls, weapon: window.playerData.weapon, armor: window.playerData.armor,
-                equippedId: window.playerData.equipped ? window.playerData.equipped.id : null,
-                inventory: window.playerData.inventory.map(i => ({ uid: i.uid, auraId: i.aura.id }))
-            };
-            localStorage.setItem('utRngSaveV3', JSON.stringify(data));
-        };
-
-        // Auto-Save every 60 seconds
-        setInterval(() => {
-            if(window.playerData.name) { window.saveGame(); console.log("Game Auto-Saved."); }
-        }, 60000);
-
-        window.loadGame = function() {
-            const saved = localStorage.getItem('utRngSaveV3');
-            if(saved) {
-                const data = JSON.parse(saved);
-                window.playerData.name = data.name;
-                document.getElementById('name-screen').style.display = 'none'; 
-                
-                window.playerData.lv = data.lv || 1; window.playerData.exp = data.exp || 0; window.playerData.g = data.g || 0;
-                window.playerData.rolls = data.rolls || 0; 
-                window.playerData.weapon = data.weapon || 'stick'; window.playerData.armor = data.armor || 'bandage';
-                
-                window.playerData.inventory = (data.inventory || []).map(i => {
-                    return { uid: i.uid, aura: AURAS.find(a => a.id === i.auraId) };
-                }).filter(i => i.aura); 
-
-                window.calcStats();
-                window.updateInventoryUI();
-
-                if (data.equippedId) {
-                    const item = window.playerData.inventory.find(i => i.aura.id === data.equippedId);
-                    if (item) window.equipAura(item.uid, true); 
-                }
-            }
-        };
-
-        // --- STATS & PROGRESSION ---
-        window.calcStats = function() {
-            let currentExp = window.playerData.exp;
-            let newLv = 1; let nextReq = EXP_CURVE[1];
-            for(let i = 0; i < EXP_CURVE.length; i++) {
-                if (currentExp >= EXP_CURVE[i]) { newLv = i + 1; nextReq = EXP_CURVE[i+1] || "MAX"; } else break;
-            }
-            window.playerData.lv = newLv;
-
-            let totalLuck = window.playerData.baseLuck + GEAR.weapons[window.playerData.weapon].luck + GEAR.armor[window.playerData.armor].luck;
-
-            document.getElementById('st-name').innerText = `"${window.playerData.name}"`;
-            document.getElementById('btm-name').innerText = window.playerData.name.toUpperCase();
-            document.getElementById('st-lv').innerText = window.playerData.lv;
-            document.getElementById('st-hp').innerText = `${16 + (window.playerData.lv * 4)} / ${16 + (window.playerData.lv * 4)}`;
-            document.getElementById('st-exp').innerText = window.playerData.exp;
-            document.getElementById('st-next').innerText = nextReq;
-            document.getElementById('st-gold').innerText = window.playerData.g;
-            document.getElementById('st-luck').innerText = `x${totalLuck.toFixed(1)}`;
-            
-            document.getElementById('st-wep').innerText = GEAR.weapons[window.playerData.weapon].name;
-            document.getElementById('st-arm').innerText = GEAR.armor[window.playerData.armor].name;
-
-            document.getElementById('stat-lv').innerText = window.playerData.lv;
-            document.getElementById('stat-exp').innerText = window.playerData.exp;
-            document.getElementById('stat-next').innerText = nextReq;
-            
-            document.getElementById('btn-autoroll').disabled = window.playerData.lv < 8;
-            document.getElementById('btn-fastroll').disabled = window.playerData.lv < 12;
-            
-            window.saveGame();
-        };
-
-        window.confirmName = function() {
-            const input = document.getElementById('name-input').value.trim().toUpperCase();
-            if(input.length > 0) {
-                window.playerData.name = input;
-                document.getElementById('name-screen').style.display = 'none';
-                window.calcStats();
-            }
-        };
-
-        // --- 3D ENGINE ---
+        // 3D Setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 2, 9);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2; controls.minDistance = 4; controls.maxDistance = 15;
 
-        // Better Transparent 3D Battle Box (Tinted on ALL sides using BackSide rendering)
+        // Battle Box
         const boxWidth = 6, boxHeight = 6, boxDepth = 6;
         const battleBoxGroup = new THREE.Group(); battleBoxGroup.position.y = 1; scene.add(battleBoxGroup);
-        
-        const innerBoxGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        const innerBoxMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, side: THREE.BackSide });
-        const innerBoxMesh = new THREE.Mesh(innerBoxGeo, innerBoxMat);
-        battleBoxGroup.add(innerBoxMesh);
+        const innerBox = new THREE.Mesh(new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, side: THREE.BackSide }));
+        battleBoxGroup.add(innerBox);
 
         function createEdge(x, y, z, w, h, d) {
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             mesh.position.set(x, y, z); battleBoxGroup.add(mesh);
         }
-        const t = 0.1; const hw = boxWidth/2, hh = boxHeight/2, hd = boxDepth/2;
-        createEdge(0, hh, hd, boxWidth, t, t); createEdge(0, -hh, hd, boxWidth, t, t);
-        createEdge(hw, 0, hd, t, boxHeight, t); createEdge(-hw, 0, hd, t, boxHeight, t);
-        createEdge(0, hh, -hd, boxWidth, t, t); createEdge(0, -hh, -hd, boxWidth, t, t);
-        createEdge(hw, 0, -hd, t, boxHeight, t); createEdge(-hw, 0, -hd, t, boxHeight, t);
-        createEdge(hw, hh, 0, t, t, boxDepth); createEdge(-hw, hh, 0, t, t, boxDepth);
-        createEdge(hw, -hh, 0, t, t, boxDepth); createEdge(-hw, -hh, 0, t, t, boxDepth);
+        const t = 0.1, hw = 3, hh = 3, hd = 3;
+        createEdge(0, hh, hd, 6, t, t); createEdge(0, -hh, hd, 6, t, t);
+        createEdge(hw, 0, hd, t, 6, t); createEdge(-hw, 0, hd, t, 6, t);
+        createEdge(0, hh, -hd, 6, t, t); createEdge(0, -hh, -hd, 6, t, t);
+        createEdge(hw, 0, -hd, t, 6, t); createEdge(-hw, 0, -hd, t, 6, t);
+        createEdge(hw, hh, 0, t, t, 6); createEdge(-hw, hh, 0, t, t, 6);
+        createEdge(hw, -hh, 0, t, t, 6); createEdge(-hw, -hh, 0, t, t, 6);
         battleBoxGroup.visible = false;
 
-        // Monster Soul
+        // Soul
         const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16;
         const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff';
         const pixels = [[0,0,0,1,1,0,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,1,1,0,0,1,1,0]];
@@ -402,367 +195,142 @@
         let auraGroup = new THREE.Group(); auraGroup.position.copy(soulSprite.position); scene.add(auraGroup);
         let activeParticles = null; let particleVelocities = null; let active3DAttack = null;
 
-        // --- CORE INVENTORY & EQUIPPING ---
-        window.equipAura = function(uid, isLoad = false) {
-            const newEquipData = window.playerData.inventory.find(i => i.uid === uid);
-            if(!newEquipData) return;
-
-            if (!isLoad && window.playerData.equipped) {
-                const oldUid = Math.random().toString(36).substr(2, 9);
-                window.playerData.inventory.push({ uid: oldUid, aura: window.playerData.equipped });
-            }
-
-            window.playerData.equipped = newEquipData.aura;
-            if(!isLoad) window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
-            
-            document.getElementById('st-equip').innerText = window.playerData.equipped.name;
-            document.getElementById('st-equip').className = "stat-yellow";
-            soulSprite.visible = true; battleBoxGroup.visible = true; document.body.classList.add('battle-mode');
-
-            while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
-            activeParticles = null; particleVelocities = null; active3DAttack = null;
-
-            if (window.playerData.equipped.auraType !== 'none') {
-                const count = 60; const partsGeo = new THREE.BufferGeometry();
-                const partsPos = new Float32Array(count * 3); const partsColors = new Float32Array(count * 3);
-                particleVelocities = new Float32Array(count * 3);
-                
-                const c = new THREE.Color();
-                for(let i=0; i<count * 3; i+=3) {
-                    partsPos[i] = (Math.random() - 0.5) * 5.6; partsPos[i+1] = (Math.random() - 0.5) * 5.6; partsPos[i+2] = (Math.random() - 0.5) * 5.6;   
-                    if(window.playerData.equipped.auraType === 'bouncing_eyes') {
-                        particleVelocities[i] = (Math.random() - 0.5) * 0.15; particleVelocities[i+1] = (Math.random() - 0.5) * 0.15; particleVelocities[i+2] = (Math.random() - 0.5) * 0.15; 
-                    }
-                    if(window.playerData.equipped.auraType === 'veggies') c.setHex(0xffaa00); else c.setHex(0xffffff);
-                    partsColors[i] = c.r; partsColors[i+1] = c.g; partsColors[i+2] = c.b;
-                }
-                partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3)); partsGeo.setAttribute('color', new THREE.BufferAttribute(partsColors, 3));
-                const partsMat = new THREE.PointsMaterial({ size: 0.25, vertexColors: true, transparent: true, opacity: 0.9 });
-                activeParticles = new THREE.Points(partsGeo, partsMat); activeParticles.userData = { type: window.playerData.equipped.auraType };
-                auraGroup.add(activeParticles);
-            }
-            window.updateInventoryUI(); window.calcStats();
-        };
-
-        window.dropAura = function(uid) {
-            window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
-            window.updateInventoryUI(); window.calcStats();
-        };
-
-        window.sellAura = function(uid) {
+        // Equipping
+        window.equipAura = function(uid) {
             const item = window.playerData.inventory.find(i => i.uid === uid);
-            if(item) {
-                window.playerData.g += item.aura.price;
-                window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
-                window.calcStats(); window.shopMenu('sell'); 
+            if(!item) return;
+            window.playerData.equipped = item.aura;
+            document.getElementById('st-equip').innerText = item.aura.name;
+            soulSprite.visible = true; battleBoxGroup.visible = true; document.body.classList.add('battle-mode');
+            while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
+            
+            const count = 50; const partsGeo = new THREE.BufferGeometry();
+            const posArr = new Float32Array(count * 3); const colArr = new Float32Array(count * 3);
+            particleVelocities = new Float32Array(count * 3);
+            for(let i=0; i<count*3; i+=3) {
+                posArr[i] = (Math.random()-0.5)*5; posArr[i+1] = (Math.random()-0.5)*5; posArr[i+2] = (Math.random()-0.5)*5;
+                particleVelocities[i] = (Math.random()-0.5)*0.1; particleVelocities[i+1] = (Math.random()-0.5)*0.1; particleVelocities[i+2] = (Math.random()-0.5)*0.1;
+                colArr[i]=1; colArr[i+1]=1; colArr[i+2]=1;
             }
+            partsGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+            partsGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+            activeParticles = new THREE.Points(partsGeo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, opacity: 0.9 }));
+            activeParticles.userData = { type: item.aura.auraType };
+            auraGroup.add(activeParticles);
         };
 
-        // --- ENCOUNTER (ROLL) ENGINE ---
-        let rouletteInterval; let clearTextTimeout;
-
+        // Rolling Logic
         window.triggerRoll = function() {
-            if(window.playerData.isRolling) return;
-            window.playerData.isRolling = true;
-            document.getElementById('btn-roll').disabled = true;
-            document.getElementById('kd-actions').classList.remove('active');
-            clearTimeout(clearTextTimeout);
-            
             const textEl = document.getElementById('kd-text');
-
-            rouletteInterval = setInterval(() => {
-                const randomAura = AURAS[Math.floor(Math.random() * AURAS.length)];
-                textEl.innerHTML = `* You encountered <span style="color: #fff">${randomAura.name}</span>...`;
-            }, 60);
-
+            textEl.innerHTML = "* Rolling...";
             setTimeout(() => {
-                clearInterval(rouletteInterval);
-                window.playerData.rolls++;
-
-                let totalLuck = window.playerData.baseLuck + GEAR.weapons[window.playerData.weapon].luck + GEAR.armor[window.playerData.armor].luck;
-                const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
-                let rolledAura = AURAS[0]; 
-                for(let a of sorted) {
-                    const adjustedChance = a.chance / totalLuck;
-                    if (Math.random() <= (1 / adjustedChance)) { rolledAura = a; break; }
-                }
-
-                window.playerData.pendingAura = rolledAura;
-                textEl.innerHTML = `* You encountered <span class="stat-yellow">${rolledAura.name}</span>!`;
-                
-                const actBtn = document.getElementById('btn-act');
-                if (window.playerData.inventory.length >= window.playerData.maxInventory) {
-                    actBtn.disabled = true; actBtn.innerText = "ACT (Inv Full)";
-                } else {
-                    actBtn.disabled = false; actBtn.innerText = "ACT";
-                }
-                
+                const rolled = AURAS[Math.floor(Math.random() * AURAS.length)];
+                window.playerData.pendingAura = rolled;
+                textEl.innerHTML = `* You encountered ${rolled.name}!`;
                 document.getElementById('kd-actions').classList.add('active');
-
-                if(window.playerData.autoRoll) {
-                    if(window.playerData.inventory.length < window.playerData.maxInventory) window.resolveRoll('act');
-                    else window.resolveRoll('fight');
-                }
-
-            }, window.playerData.quickRoll ? 150 : 1000);
+            }, 1000);
         };
 
         window.resolveRoll = function(action) {
-            const aura = window.playerData.pendingAura;
             document.getElementById('kd-actions').classList.remove('active');
-            const textEl = document.getElementById('kd-text');
-
-            if (action === 'act') {
-                window.playerData.inventory.push({ uid: Math.random().toString(36).substr(2, 9), aura: aura });
-                textEl.innerHTML = `* You spared ${aura.name} and kept it.`;
-            } else if (action === 'fight') {
+            const aura = window.playerData.pendingAura;
+            if(action === 'act') {
+                window.playerData.inventory.push({ uid: Math.random().toString(36), aura });
+                document.getElementById('kd-text').innerText = `* You spared ${aura.name}.`;
+            } else {
                 window.playerData.exp += aura.exp;
-                textEl.innerHTML = `* You won! <br>* You earned ${aura.exp} EXP.`;
+                document.getElementById('kd-text').innerText = `* You defeated ${aura.name}!`;
             }
-
-            window.updateInventoryUI(); window.calcStats();
-
-            // FIXED: Wait exactly 1 second, then unlock roll immediately
-            clearTextTimeout = setTimeout(() => {
-                window.playerData.isRolling = false;
-                document.getElementById('btn-roll').disabled = false;
-                if(window.playerData.autoRoll) window.triggerRoll();
-                else textEl.innerHTML = "* Waiting for encounter...";
-            }, 1000); // Wait 1 second before unlock
+            setTimeout(() => document.getElementById('kd-text').innerText = "* Waiting for encounter...", 1000);
+            window.updateInventoryUI();
         };
 
-        // --- SPECIAL BUTTON ('V' ATTACKS) ENHANCED ---
-        let specialCooldown = false;
+        // Special Ability Logic
         const frogSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="white" d="M2,4 h2 v2 h-2 z M12,4 h2 v2 h-2 z M4,6 h8 v2 h-8 z M2,8 h12 v4 h-12 z M0,12 h4 v2 h-4 z M12,12 h4 v2 h-4 z"/></svg>`;
-        const frogTex = new THREE.TextureLoader().load(frogSvg); frogTex.magFilter = THREE.NearestFilter;
-
+        const frogTex = new THREE.TextureLoader().load(frogSvg);
+        
         window.triggerSpecial = function() {
-            if(specialCooldown || !window.playerData.equipped) return;
             const aura = window.playerData.equipped;
-            const btn = document.getElementById('btn-special');
-            btn.disabled = true; specialCooldown = true;
-
-            let attackDuration = 0;
-            const fxLayer = document.getElementById('fx-layer'); fxLayer.innerHTML = ''; 
-
-            if(aura.id === 'dummy' || aura.id === 'whimsun' || aura.id === 'moldsmal') {
-                attackDuration = 1500;
-                
-                // Screen Shake & Flash
-                document.body.classList.add('shake-active');
-                setTimeout(() => document.body.classList.remove('shake-active'), 400);
-                
-                const flash = document.getElementById('screen-flash');
-                flash.style.opacity = '1'; flash.style.transition = 'none';
-                setTimeout(() => { flash.style.transition = 'opacity 0.3s'; flash.style.opacity = '0'; }, 50);
-
-                let slash = document.createElement('div'); slash.className = 'slash-fx'; fxLayer.appendChild(slash);
-                setTimeout(() => {
-                    let dmg = document.createElement('div'); dmg.className = 'dmg-text';
-                    dmg.innerText = aura.id === 'dummy' ? '99999' : '9999'; fxLayer.appendChild(dmg);
-                }, 400);
-
-            } else if (aura.id === 'froggit') {
-                attackDuration = 4000; 
+            if(!aura) return;
+            if(aura.id === 'froggit') {
                 if(active3DAttack) auraGroup.remove(active3DAttack);
                 active3DAttack = new THREE.Sprite(new THREE.SpriteMaterial({ map: frogTex }));
-                active3DAttack.scale.set(1.5, 1.5, 1); active3DAttack.position.set(0, 0, 0); 
-                active3DAttack.userData = { type: 'frog_bounce', vx: 0.25, vy: 0.3, time: 0, duration: 4.0, scaleSquish: 1.0 };
-                auraGroup.add(active3DAttack);
-
-            } else if (aura.id === 'loox') {
-                attackDuration = 2000;
-                if(active3DAttack) auraGroup.remove(active3DAttack);
-                // Glowy pulsing laser
-                const geo = new THREE.BoxGeometry(boxWidth - 0.2, 0.6, 0.6);
-                active3DAttack = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending }));
-                active3DAttack.position.set(0, 0, 0);
-                active3DAttack.userData = { type: 'laser', time: 0, duration: 2.0 };
+                active3DAttack.scale.set(1.5, 1.5, 1);
+                // Target-based jump
+                active3DAttack.userData = { type: 'frog_target', timer: 0, nextJump: 0, pos: new THREE.Vector3(0, -2.5, 0), target: new THREE.Vector3(0, -2.5, 0) };
                 auraGroup.add(active3DAttack);
             } else if (aura.id === 'vegetoid') {
-                attackDuration = 2500;
-                const flash = document.getElementById('screen-flash');
-                flash.style.background = 'rgba(0, 255, 0, 0.5)'; flash.style.opacity = '1'; flash.style.transition = 'none';
-                setTimeout(() => { flash.style.transition = 'opacity 1s'; flash.style.opacity = '0'; setTimeout(()=> flash.style.background='white', 1000); }, 50);
+                const cols = activeParticles.geometry.attributes.color.array;
+                for(let i=0; i<cols.length; i+=3) { if(Math.random() < 0.4) { cols[i]=0; cols[i+1]=1; cols[i+2]=0; } }
+                activeParticles.geometry.attributes.color.needsUpdate = true;
+                setTimeout(() => {
+                    for(let i=0; i<cols.length; i+=3) { cols[i]=1; cols[i+1]=1; cols[i+2]=1; }
+                    activeParticles.geometry.attributes.color.needsUpdate = true;
+                }, 2500);
+            } else {
+                // Slash
+                const fx = document.createElement('div'); fx.className = 'slash-fx';
+                document.getElementById('fx-layer').appendChild(fx);
+                setTimeout(() => fx.remove(), 500);
             }
-
-            setTimeout(() => {
-                btn.innerText = "COOLDOWN";
-                setTimeout(() => { specialCooldown = false; btn.disabled = false; btn.innerText = "SPECIAL"; }, 3000);
-            }, attackDuration);
         };
 
-        // --- ANIMATION LOOP ---
-        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
             const delta = clock.getDelta();
-            soulSprite.position.y = 1 + Math.sin(clock.getElapsedTime() * 3) * 0.1;
 
-            if(active3DAttack) {
-                const data = active3DAttack.userData;
-                data.time += delta; 
-                
-                if(data.type === 'frog_bounce') {
-                    active3DAttack.position.x += data.vx; active3DAttack.position.y += data.vy;
-                    const b = 2.5; 
-                    let hit = false;
-                    if(active3DAttack.position.x > b || active3DAttack.position.x < -b) { data.vx *= -1.02; hit = true; }
-                    if(active3DAttack.position.y > b || active3DAttack.position.y < -b) { data.vy *= -1.02; hit = true; }
-                    
-                    // Squish effect on hit
-                    if(hit) data.scaleSquish = 0.5;
-                    data.scaleSquish += (1.5 - data.scaleSquish) * 0.1; // Lerp back to normal
-                    active3DAttack.scale.set(1.5 + (1.5 - data.scaleSquish), data.scaleSquish, 1);
+            // Sway Scene
+            battleBoxGroup.position.x = Math.sin(time * 0.5) * 0.2;
+            soulSprite.position.x = battleBoxGroup.position.x;
+            auraGroup.position.x = battleBoxGroup.position.x;
 
-                    if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
-
-                } else if (data.type === 'laser') {
-                    if(data.time < 0.3) {
-                        active3DAttack.scale.y = 1 + Math.sin(data.time * 20) * 0.5; // Pulse
-                        active3DAttack.scale.z = 1 + Math.sin(data.time * 20) * 0.5;
-                    } else {
-                        active3DAttack.material.opacity = 1.0 - ((data.time - 0.3) / 1.7);
-                    }
-                    if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
+            if(active3DAttack && active3DAttack.userData.type === 'frog_target') {
+                const d = active3DAttack.userData;
+                d.timer += 0.016;
+                if(d.timer >= d.nextJump) {
+                    // New Jump Target
+                    d.pos.copy(active3DAttack.position);
+                    d.target.set((Math.random()-0.5)*5, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
+                    d.nextJump = d.timer + 1.5; // Jump every 1.5s
                 }
+                const progress = Math.min(1, (d.nextJump - d.timer) / 0.5); // 0.5s jump duration
+                active3DAttack.position.lerpVectors(d.target, d.pos, progress);
+                active3DAttack.scale.y = 1.5 + Math.sin(progress * Math.PI) * 0.5; // Stretch
             }
 
             if(activeParticles) {
                 const pos = activeParticles.geometry.attributes.position.array;
                 const type = activeParticles.userData.type;
-                const bound = 2.8;
-
+                const b = 2.9; // Barrier
                 for(let i=0; i<pos.length; i+=3) {
-                    if (type === 'flies_random') {
+                    if(type === 'flies_random') {
                         pos[i] += (Math.random()-0.5)*0.2; pos[i+1] += (Math.random()-0.5)*0.2; pos[i+2] += (Math.random()-0.5)*0.2;
-                        if(pos[i] > bound) pos[i] = bound; if(pos[i] < -bound) pos[i] = -bound;
-                        if(pos[i+1] > bound) pos[i+1] = bound; if(pos[i+1] < -bound) pos[i+1] = -bound;
                     } else if (type === 'flies_down' || type === 'veggies') {
-                        pos[i+1] -= 0.05;
-                        if(pos[i+1] <= -bound) {
-                            pos[i+1] = bound; pos[i] = (Math.random() - 0.5) * 5.6; pos[i+2] = (Math.random() - 0.5) * 5.6;
-                        }
+                        pos[i+1] -= 0.05; if(pos[i+1] < -b) pos[i+1] = b;
                     } else if (type === 'bouncing_eyes') {
-                        pos[i] += particleVelocities[i]; pos[i+1] += particleVelocities[i+1]; pos[i+2] += particleVelocities[i+2];
-                        if(pos[i] > bound || pos[i] < -bound) particleVelocities[i] *= -1;
-                        if(pos[i+1] > bound || pos[i+1] < -bound) particleVelocities[i+1] *= -1;
-                        if(pos[i+2] > bound || pos[i+2] < -bound) particleVelocities[i+2] *= -1;
+                        pos[i]+=particleVelocities[i]; pos[i+1]+=particleVelocities[i+1]; pos[i+2]+=particleVelocities[i+2];
                     }
+                    // BORDER COLLISION - ESCAPE PREVENTION
+                    if(pos[i] > b || pos[i] < -b) { pos[i] = Math.sign(pos[i]) * b; if(particleVelocities) particleVelocities[i] *= -1; }
+                    if(pos[i+1] > b || pos[i+1] < -b) { pos[i+1] = Math.sign(pos[i+1]) * b; if(particleVelocities) particleVelocities[i+1] *= -1; }
+                    if(pos[i+2] > b || pos[i+2] < -b) { pos[i+2] = Math.sign(pos[i+2]) * b; if(particleVelocities) particleVelocities[i+2] *= -1; }
                 }
                 activeParticles.geometry.attributes.position.needsUpdate = true;
             }
-            controls.update(); renderer.render(scene, camera);
+            renderer.render(scene, camera);
         }
+        const clock = new THREE.Clock();
         animate();
-        window.loadGame();
-    </script>
-
-    <script>
-        // --- UI PANEL LOGIC ---
-        window.closeAllPanels = function() {
-            document.querySelectorAll('.left-panel').forEach(p => p.classList.remove('open'));
-        };
-
-        window.toggleLeftPanel = function(id) {
-            const panel = document.getElementById(id);
-            const isOpen = panel.classList.contains('open');
-            window.closeAllPanels();
-            if(!isOpen) {
-                panel.classList.add('open');
-                if(id === 'stat-panel') window.calcStats();
-                if(id === 'inventory-panel') window.updateInventoryUI();
-            }
-        };
-
-        window.showInfo = function(uid) {
-            const item = window.playerData.inventory.find(i => i.uid === uid);
-            if(!item) return;
-            document.getElementById('info-name').innerText = item.aura.name;
-            document.getElementById('info-chance').innerText = item.aura.chance.toLocaleString();
-            document.getElementById('info-exp').innerText = item.aura.exp;
-            document.getElementById('info-price').innerText = item.aura.price;
-            document.getElementById('info-desc').innerText = item.aura.desc;
-            window.toggleLeftPanel('info-modal');
-        };
-
-        window.updateInventoryUI = function() {
-            document.getElementById('inv-count').innerText = window.playerData.inventory.length;
-            const list = document.getElementById('inv-list');
-            list.innerHTML = '';
-            [...window.playerData.inventory].reverse().forEach((item) => {
-                const div = document.createElement('div'); div.className = `inv-item`;
-                div.innerHTML = `
-                    <div class="inv-item-top"><span>* ${item.aura.name}</span></div>
-                    <div class="inv-item-actions">
-                        <button onclick="window.equipAura('${item.uid}')">* USE</button>
-                        <button onclick="window.showInfo('${item.uid}')">* INFO</button>
-                        <button onclick="window.dropAura('${item.uid}')" style="color:#ff5555;">* DROP</button>
-                    </div>
-                `;
-                list.appendChild(div);
+        window.confirmName = () => { window.playerData.name = document.getElementById('name-input').value; document.getElementById('name-screen').remove(); };
+        window.toggleLeftPanel = (id) => { document.getElementById(id).classList.toggle('open'); };
+        window.updateInventoryUI = () => {
+            const list = document.getElementById('inv-list'); list.innerHTML = '';
+            window.playerData.inventory.forEach(i => {
+                const d = document.createElement('div'); d.className = 'inv-item';
+                d.innerHTML = `<span>* ${i.aura.name}</span><button onclick="window.equipAura('${i.uid}')">USE</button>`;
+                list.appendChild(d);
             });
-        };
-
-        // --- BUTTON LOGIC ---
-        function toggleAutoRoll() {
-            window.playerData.autoRoll = !window.playerData.autoRoll;
-            const btn = document.getElementById('btn-autoroll');
-            btn.innerText = `AUTO: ${window.playerData.autoRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.autoRoll ? 'ut-action-btn active-toggle' : 'ut-action-btn';
-            if(window.playerData.autoRoll && !window.playerData.isRolling) window.triggerRoll();
-        }
-
-        function toggleQuickRoll() {
-            window.playerData.quickRoll = !window.playerData.quickRoll;
-            const btn = document.getElementById('btn-fastroll');
-            btn.innerText = `FAST: ${window.playerData.quickRoll ? 'ON' : 'OFF'}`;
-            btn.className = window.playerData.quickRoll ? 'ut-action-btn active-toggle' : 'ut-action-btn';
-        }
-
-        // --- SHOP LOGIC ---
-        function openShop() { 
-            window.closeAllPanels(); 
-            document.getElementById('shop-panel').style.display = 'flex'; 
-            document.getElementById('shop-dialogue').innerText = "* heya. welcome to my shop.";
-            document.getElementById('shop-content').innerHTML = "* select an option.";
-            document.getElementById('shop-gold').innerText = window.playerData.g;
-        }
-        function closeShop() { document.getElementById('shop-panel').style.display = 'none'; }
-
-        window.shopMenu = function(type) {
-            const content = document.getElementById('shop-content');
-            document.getElementById('shop-gold').innerText = window.playerData.g;
-
-            if(type === 'talk') {
-                document.getElementById('shop-dialogue').innerText = "* talk? alright.";
-                content.innerHTML = `<div style="color:#aaa;">* i'd tell you a joke about a skeleton...<br><br>* but you wouldn't find it very humerus.</div>`;
-            } else if (type === 'buy') {
-                document.getElementById('shop-dialogue').innerText = "* see anything you like?";
-                let html = ``;
-                if(window.playerData.weapon === 'toy_knife') html += `<div style="color:#555; margin-bottom:15px;">* Toy Knife - BOUGHT</div>`;
-                else html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between;"><span>* Toy Knife (LV 4)</span><button onclick="buyItem('wep', 'toy_knife', 150, 4)" class="shop-btn">150G</button></div>`;
-                if(window.playerData.armor === 'faded_ribbon') html += `<div style="color:#555; margin-bottom:15px;">* Faded Ribbon - BOUGHT</div>`;
-                else html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between;"><span>* Faded Ribbon (LV 3)</span><button onclick="buyItem('arm', 'faded_ribbon', 100, 3)" class="shop-btn">100G</button></div>`;
-                content.innerHTML = html;
-            } else if (type === 'sell') {
-                document.getElementById('shop-dialogue').innerText = "* i guess i can take some junk.";
-                if(window.playerData.inventory.length === 0) { content.innerHTML = `<div style="color:#aaa;">* you have nothing to sell.</div>`; return; }
-                let html = ``;
-                window.playerData.inventory.forEach(i => {
-                    html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between; border-bottom:1px dashed #555; padding-bottom:10px;"><span>* ${i.aura.name}</span><button onclick="window.sellAura('${i.uid}')" class="shop-btn" style="color:yellow;">+${i.aura.price}G</button></div>`;
-                });
-                content.innerHTML = html;
-            }
-        };
-
-        window.buyItem = function(slot, id, price, lvReq) {
-            if(window.playerData.lv < lvReq) { document.getElementById('shop-dialogue').innerText = "* you aren't strong enough for that."; return; }
-            if(window.playerData.g < price) { document.getElementById('shop-dialogue').innerText = "* you're broke, buddy."; return; }
-            window.playerData.g -= price;
-            if(slot === 'wep') window.playerData.weapon = id;
-            if(slot === 'arm') window.playerData.armor = id;
-            window.calcStats(); document.getElementById('shop-dialogue').innerText = "* thanks."; window.shopMenu('buy'); 
         };
     </script>
 </body>
