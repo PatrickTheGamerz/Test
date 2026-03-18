@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UNDERTALE RNG - ULTIMATE BATTLE</title>
+    <title>UNDERTALE RNG - ULTIMATE MECHANICS</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -10,26 +10,16 @@
             font-family: 'VT323', monospace; color: white; user-select: none; 
         }
 
-        /* Screen Shake Effect */
+        /* Screen Shake & Flash Effects */
         @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(0px, 0px) rotate(0deg); }
+            0%, 100% { transform: translate(0,0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(3px, -3px); }
+            60% { transform: translate(-3px, -3px); }
+            80% { transform: translate(3px, 3px); }
         }
-        .shake-active { animation: shake 0.4s; }
-
-        /* Flash Effect */
-        #screen-flash {
-            position: fixed; inset: 0; background: white; z-index: 9000; opacity: 0; pointer-events: none;
-        }
+        .shake-active { animation: shake 0.3s; }
+        #screen-flash { position: fixed; inset: 0; background: white; z-index: 9000; opacity: 0; pointer-events: none; }
 
         /* Moving Battlebox Grid */
         body.battle-mode {
@@ -40,46 +30,29 @@
             background-size: 80px 80px;
             animation: panGrid 4s linear infinite;
         }
-        
-        @keyframes panGrid {
-            0% { background-position: 0px 0px; }
-            100% { background-position: 80px 80px; }
-        }
+        @keyframes panGrid { 0% { background-position: 0px 0px; } 100% { background-position: 80px 80px; } }
 
-        /* --- NAME SELECTION SCREEN --- */
-        #name-screen {
-            position: fixed; inset: 0; background: black; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        /* --- NAME SCREEN --- */
+        #name-screen { position: fixed; inset: 0; background: black; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #name-screen h1 { font-size: 40px; font-weight: normal; margin-bottom: 50px; }
         #name-input { background: transparent; border: none; border-bottom: 2px solid white; color: white; font-family: 'VT323'; font-size: 50px; text-align: center; width: 300px; outline: none; text-transform: uppercase; margin-bottom: 40px; }
         .name-btn { background: transparent; color: white; border: none; font-family: 'VT323'; font-size: 32px; cursor: pointer; }
         .name-btn:hover { color: yellow; }
 
-        /* UI Layout */
+        /* --- UI LAYOUT --- */
         #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .interactive { pointer-events: auto; }
         
-        /* Right Side Menus */
         #right-menu-col { position: absolute; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 15px; align-items: flex-end; }
-        .ut-menu-btn { 
-            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
-            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; width: 180px; text-align: center;
-        }
+        .ut-menu-btn { background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; width: 180px; text-align: center; }
         .ut-menu-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
         .ut-menu-btn:disabled { color: #555; border-color: #555; cursor: not-allowed; }
-        
         #btn-special { border-color: #00ffff; color: #00ffff; }
         #btn-special:hover:not(:disabled) { background: #003333; color: white; border-color: white; }
 
         /* Bottom Battle UI */
         #bottom-ui { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 100%; }
-        
-        /* Encounter Box */
-        #kd-modal {
-            display: flex; flex-direction: column; justify-content: space-between; width: 800px; height: 180px; margin-bottom: 20px;
-            background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; box-sizing: border-box; font-size: 36px; line-height: 1.2;
-        }
+        #kd-modal { display: flex; flex-direction: column; justify-content: space-between; width: 800px; height: 180px; margin-bottom: 20px; background: #000; border: 6px solid white; padding: 20px 30px; text-align: left; box-sizing: border-box; font-size: 36px; line-height: 1.2; }
         .kd-buttons { display: flex; justify-content: space-around; margin-top: 10px; opacity: 0; pointer-events: none; transition: 0.2s; }
         .kd-buttons.active { opacity: 1; pointer-events: auto; }
         .kd-btn { background: transparent; color: white; font-family: 'VT323'; font-size: 30px; border: none; cursor: pointer; }
@@ -89,21 +62,14 @@
         .kd-btn:disabled { color: #555; cursor: not-allowed; }
 
         .stat-yellow { color: #ffff00; }
-
-        /* Undertale Stat Bar */
         #ut-stats { display: flex; align-items: center; gap: 40px; font-size: 32px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
-
-        /* Bottom Buttons */
         #action-buttons { display: flex; justify-content: center; gap: 30px; }
-        .ut-action-btn { 
-            background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; 
-            font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 220px;
-        }
+        .ut-action-btn { background: #000; color: #ff9900; border: 4px solid #ff9900; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 220px; }
         .ut-action-btn:hover:not(:disabled) { background: #331100; color: #ffff00; border-color: #ffff00; }
         .ut-action-btn.active-toggle { color: #00ff00; border-color: #00ff00; }
         .ut-action-btn:disabled { color: #555; border-color: #555; cursor: not-allowed; }
 
-        /* --- UNIFIED LEFT PANELS (STAT, ITEM, INFO) --- */
+        /* --- UNIFIED LEFT PANELS --- */
         .left-panel {
             position: absolute; top: 50px; left: 0; transform: translateX(-100%); width: 400px; 
             background: #000; border: 6px solid white; border-left: none; padding: 30px; 
@@ -112,12 +78,10 @@
         }
         .left-panel.open { transform: translateX(0); }
         .stat-section { margin-top: 20px; border-top: 2px dashed #555; padding-top: 10px; }
-        
         .panel-header { margin-top:0; border-bottom: 4px solid white; padding-bottom: 15px; display: flex; justify-content: space-between; font-size: 36px; }
         .close-btn { background: transparent; color: #aaa; border: none; font-family: 'VT323', monospace; font-size: 32px; cursor: pointer; }
         .close-btn:hover { color: white; }
 
-        /* Inventory Items */
         .inv-item { border-bottom: 2px solid #333; padding: 15px 0; display: flex; flex-direction: column; gap: 10px; font-size: 28px; }
         .inv-item-top { display: flex; justify-content: space-between; align-items: center; }
         .inv-item-actions { display: flex; justify-content: flex-end; gap: 10px; }
@@ -137,10 +101,18 @@
         .shop-btn:hover::before { content: '♥ '; color: red; }
         .shop-btn:hover { color: yellow; }
 
-        /* --- FX LAYER --- */
+        /* --- FX LAYER & SPECIAL ANIMATIONS --- */
         #fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
-        .dmg-text { position: absolute; color: red; font-family: 'VT323'; font-size: 80px; font-weight: bold; text-shadow: 4px 4px 0 black; animation: dmgBounce 1.5s forwards; left: 50%; transform: translateX(-50%); top: 40%; opacity: 0; }
-        @keyframes dmgBounce { 0% { top: 40%; opacity: 1; transform: translateX(-50%) scale(1); } 20% { top: 30%; transform: translateX(-50%) scale(1.2); } 100% { top: 60%; opacity: 0; transform: translateX(-50%) scale(1); } }
+        
+        .fight-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 150px; border: 6px solid white; background: #000; display: flex; align-items: center; overflow: hidden; }
+        .fight-bg { position: absolute; inset: 0; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="40" ry="20" fill="none" stroke="%23333" stroke-width="4"/></svg>') no-repeat center/cover; }
+        .fight-bar { position: absolute; left: 0; width: 8px; height: 100%; background: white; animation: slideBar 0.6s linear forwards; }
+        @keyframes slideBar { to { left: 50%; transform: translateX(-50%); } }
+        .fight-flash { animation: fflash 0.4s; }
+        @keyframes fflash { 0%, 100% { filter: invert(0); } 50% { filter: invert(1); } }
+
+        .dmg-text { position: absolute; color: red; font-family: 'VT323'; font-size: 80px; font-weight: bold; text-shadow: 4px 4px 0 black; animation: dmgBounce 1.5s forwards; left: 50%; transform: translateX(-50%); top: 30%; opacity: 0; }
+        @keyframes dmgBounce { 0% { top: 30%; opacity: 1; transform: translateX(-50%) scale(1); } 20% { top: 15%; transform: translateX(-50%) scale(1.2); } 100% { top: 40%; opacity: 0; transform: translateX(-50%) scale(1); } }
         
         .slash-fx { position: absolute; width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10,10 L90,90 M20,10 L100,90 M10,20 L90,100" stroke="red" stroke-width="12" stroke-linecap="round"/></svg>') no-repeat center/contain; animation: slashAnim 0.5s forwards; opacity: 0; }
         @keyframes slashAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.0); } }
@@ -148,7 +120,6 @@
     </style>
 </head>
 <body>
-
     <div id="screen-flash"></div>
 
     <div id="name-screen" class="interactive">
@@ -158,7 +129,6 @@
     </div>
 
     <div id="ui-layer">
-        
         <div id="right-menu-col" class="interactive">
             <button class="ut-menu-btn" onclick="toggleLeftPanel('inventory-panel')">ITEM (<span id="inv-count">0</span>/8)</button>
             <button class="ut-menu-btn" onclick="toggleLeftPanel('stat-panel')">STAT</button>
@@ -170,19 +140,9 @@
             <div id="st-name" style="font-size: 40px; margin-bottom: 20px;">"CHARA"</div>
             <div>LV <span id="st-lv">1</span></div>
             <div>HP <span id="st-hp">20 / 20</span></div>
-            <div class="stat-section">
-                <div>EXP: <span id="st-exp">0</span></div>
-                <div>NEXT: <span id="st-next">10</span></div>
-            </div>
-            <div class="stat-section">
-                <div>WEAPON: <span id="st-wep" class="stat-yellow">Stick</span></div>
-                <div>ARMOR: <span id="st-arm" class="stat-yellow">Bandage</span></div>
-                <div style="margin-top: 10px;">EQUIPPED:<br><span id="st-equip" style="color:#aaa;">None</span></div>
-            </div>
-            <div class="stat-section">
-                <div>GOLD: <span id="st-gold">0</span></div>
-                <div style="font-size: 24px; color:#888; margin-top:5px;">LUCK: <span id="st-luck">x1.0</span></div>
-            </div>
+            <div class="stat-section"><div>EXP: <span id="st-exp">0</span></div><div>NEXT: <span id="st-next">10</span></div></div>
+            <div class="stat-section"><div>WEAPON: <span id="st-wep" class="stat-yellow">Stick</span></div><div>ARMOR: <span id="st-arm" class="stat-yellow">Bandage</span></div><div style="margin-top: 10px;">EQUIPPED:<br><span id="st-equip" style="color:#aaa;">None</span></div></div>
+            <div class="stat-section"><div>GOLD: <span id="st-gold">0</span></div><div style="font-size: 24px; color:#888; margin-top:5px;">LUCK: <span id="st-luck">x1.0</span></div></div>
         </div>
 
         <div id="inventory-panel" class="left-panel interactive">
@@ -195,9 +155,7 @@
             <div style="margin-top: 10px;">* Rarity: 1 in <span id="info-chance"></span></div>
             <div style="margin-bottom: 20px;">* EXP: <span id="info-exp"></span> | Val: <span id="info-price"></span>G</div>
             <div id="info-desc" style="color: #aaa; font-size: 28px; line-height: 1.3;">* Description here.</div>
-            <div style="text-align: right; margin-top: 30px;">
-                <button class="close-btn" onclick="toggleLeftPanel('inventory-panel')">← BACK</button>
-            </div>
+            <div style="text-align: right; margin-top: 30px;"><button class="close-btn" onclick="toggleLeftPanel('inventory-panel')">← BACK</button></div>
         </div>
 
         <div id="bottom-ui" class="interactive">
@@ -208,13 +166,7 @@
                     <button id="btn-fight" class="kd-btn" onclick="resolveRoll('fight')">FIGHT</button>
                 </div>
             </div>
-
-            <div id="ut-stats">
-                <span id="btm-name">CHARA</span>
-                <span>LV <span id="stat-lv">1</span></span>
-                <span>EXP <span id="stat-exp">0</span>/<span id="stat-next">10</span></span>
-            </div>
-
+            <div id="ut-stats"><span id="btm-name">CHARA</span><span>LV <span id="stat-lv">1</span></span><span>EXP <span id="stat-exp">0</span>/<span id="stat-next">10</span></span></div>
             <div id="action-buttons">
                 <button id="btn-autoroll" class="ut-action-btn" onclick="toggleAutoRoll()" disabled>AUTO (LV 8)</button>
                 <button id="btn-roll" class="ut-action-btn" onclick="triggerRoll()" style="border-color: #ff0000; color: #ff0000;">♥ ROLL</button>
@@ -232,7 +184,7 @@
             <div class="shop-options">
                 <button class="shop-btn" onclick="shopMenu('buy')">Buy</button>
                 <button class="shop-btn" onclick="shopMenu('sell')">Sell</button>
-                <button class="shop-btn" onclick="shopMenu('talk')">Talk</button>
+                <button class="shop-btn" onclick="shopMenu('collection')">Collection</button>
                 <button class="shop-btn" onclick="closeShop()">Exit</button>
                 <div style="margin-top: auto;">GOLD: <span id="shop-gold" class="stat-yellow">0</span></div>
             </div>
@@ -256,63 +208,60 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         // --- GAME DATA ---
-        const AURAS = [
+        window.AURAS = [
             { id: 'dummy', name: 'Dummy', chance: 2, exp: 2, price: 5, auraType: 'none', desc: '* A cotton heart and a button eye. You are the apple of my eye.' },
-            { id: 'whimsun', name: 'Whimsun', chance: 4, exp: 5, price: 10, auraType: 'flies_down', desc: '* This monster is too sensitive to fight.' },
+            { id: 'whimsun', name: 'Whimsun', chance: 4, exp: 5, price: 10, auraType: 'butterflies_up', desc: '* This monster is too sensitive to fight.' },
             { id: 'froggit', name: 'Froggit', chance: 5, exp: 8, price: 15, auraType: 'flies_random', desc: '* Life is difficult for this enemy.' },
-            { id: 'moldsmal', name: 'Moldsmal', chance: 6, exp: 12, price: 20, auraType: 'none', desc: '* Stereotypical: Curvaceously attractive, but no brains.' },
-            { id: 'loox', name: 'Loox', chance: 8, exp: 20, price: 30, auraType: 'bouncing_eyes', desc: '* Don\'t pick on him. Family name: Eyewalker.' },
+            { id: 'moldsmal', name: 'Moldsmal', chance: 6, exp: 12, price: 20, auraType: 'wiggle_circles', desc: '* Stereotypical: Curvaceously attractive, but no brains.' },
+            { id: 'loox', name: 'Loox', chance: 8, exp: 20, price: 30, auraType: 'horizontal_circles', desc: '* Don\'t pick on him. Family name: Eyewalker.' },
             { id: 'vegetoid', name: 'Vegetoid', chance: 10, exp: 35, price: 50, auraType: 'veggies', desc: '* Serving Size: 1 Monster. Not monitored by the USDA.' }
         ];
 
         const EXP_CURVE = [0, 10, 30, 70, 120, 200, 300, 500, 800, 1200, 1700, 2500, 3500, 5000, 7000, 10000, 15000, 25000, 50000, 99999];
 
-        const GEAR = {
-            weapons: { stick: { name: 'Stick', luck: 0 }, toy_knife: { name: 'Toy Knife', price: 150, lvReq: 4, luck: 0.2, type: 'wep' } },
-            armor: { bandage: { name: 'Bandage', luck: 0 }, faded_ribbon: { name: 'Faded Ribbon', price: 100, lvReq: 3, luck: 0.2, type: 'arm' } }
+        window.GEAR = {
+            weapons: { stick: { name: 'Stick', luck: 0, price: 0 }, toy_knife: { name: 'Toy Knife', price: 150, lvReq: 4, luck: 0.2, type: 'wep' } },
+            armor: { bandage: { name: 'Bandage', luck: 0, price: 0 }, faded_ribbon: { name: 'Faded Ribbon', price: 100, lvReq: 3, luck: 0.2, type: 'arm' } }
         };
 
         window.playerData = {
             name: "", lv: 1, exp: 0, g: 0, rolls: 0, baseLuck: 1.0, 
-            inventory: [], maxInventory: 8, equipped: null,
+            inventory: [], maxInventory: 8, equipped: null, collection: [],
             weapon: 'stick', armor: 'bandage',
             autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null, isVegetoidHealActive: false
         };
 
-        // --- AUTO SAVE SYSTEM ---
+        // --- SAVE/LOAD SYSTEM ---
         window.saveGame = function() {
             if(!window.playerData.name) return;
             const data = {
                 name: window.playerData.name, lv: window.playerData.lv, exp: window.playerData.exp, g: window.playerData.g,
                 rolls: window.playerData.rolls, weapon: window.playerData.weapon, armor: window.playerData.armor,
                 equippedId: window.playerData.equipped ? window.playerData.equipped.id : null,
-                inventory: window.playerData.inventory.map(i => ({ uid: i.uid, auraId: i.aura.id }))
+                inventory: window.playerData.inventory.map(i => ({ uid: i.uid, auraId: i.aura.id })),
+                collection: window.playerData.collection
             };
-            localStorage.setItem('utRngSaveFinal', JSON.stringify(data));
+            localStorage.setItem('utRngSaveFinalV4', JSON.stringify(data));
         };
 
-        setInterval(() => {
-            if(window.playerData.name) { window.saveGame(); console.log("Auto-Saved."); }
-        }, 60000);
+        setInterval(() => { if(window.playerData.name) { window.saveGame(); console.log("Auto-Saved."); } }, 60000);
 
         window.loadGame = function() {
-            const saved = localStorage.getItem('utRngSaveFinal');
+            const saved = localStorage.getItem('utRngSaveFinalV4');
             if(saved) {
                 const data = JSON.parse(saved);
                 window.playerData.name = data.name;
                 document.getElementById('name-screen').style.display = 'none'; 
                 
                 window.playerData.lv = data.lv || 1; window.playerData.exp = data.exp || 0; window.playerData.g = data.g || 0;
-                window.playerData.rolls = data.rolls || 0; 
+                window.playerData.rolls = data.rolls || 0; window.playerData.collection = data.collection || [];
                 window.playerData.weapon = data.weapon || 'stick'; window.playerData.armor = data.armor || 'bandage';
                 
                 window.playerData.inventory = (data.inventory || []).map(i => {
-                    return { uid: i.uid, aura: AURAS.find(a => a.id === i.auraId) };
+                    return { uid: i.uid, aura: window.AURAS.find(a => a.id === i.auraId) };
                 }).filter(i => i.aura); 
 
-                window.calcStats();
-                window.updateInventoryUI();
-
+                window.calcStats(); window.updateInventoryUI();
                 if (data.equippedId) {
                     const item = window.playerData.inventory.find(i => i.aura.id === data.equippedId);
                     if (item) window.equipAura(item.uid, true); 
@@ -322,14 +271,13 @@
 
         // --- STATS & PROGRESSION ---
         window.calcStats = function() {
-            let currentExp = window.playerData.exp;
-            let newLv = 1; let nextReq = EXP_CURVE[1];
+            let currentExp = window.playerData.exp; let newLv = 1; let nextReq = EXP_CURVE[1];
             for(let i = 0; i < EXP_CURVE.length; i++) {
                 if (currentExp >= EXP_CURVE[i]) { newLv = i + 1; nextReq = EXP_CURVE[i+1] || "MAX"; } else break;
             }
             window.playerData.lv = newLv;
 
-            let totalLuck = window.playerData.baseLuck + GEAR.weapons[window.playerData.weapon].luck + GEAR.armor[window.playerData.armor].luck;
+            let totalLuck = window.playerData.baseLuck + window.GEAR.weapons[window.playerData.weapon].luck + window.GEAR.armor[window.playerData.armor].luck;
 
             document.getElementById('st-name').innerText = `"${window.playerData.name}"`;
             document.getElementById('btm-name').innerText = window.playerData.name.toUpperCase();
@@ -340,8 +288,8 @@
             document.getElementById('st-gold').innerText = window.playerData.g;
             document.getElementById('st-luck').innerText = `x${totalLuck.toFixed(1)}`;
             
-            document.getElementById('st-wep').innerText = GEAR.weapons[window.playerData.weapon].name;
-            document.getElementById('st-arm').innerText = GEAR.armor[window.playerData.armor].name;
+            document.getElementById('st-wep').innerText = window.GEAR.weapons[window.playerData.weapon].name;
+            document.getElementById('st-arm').innerText = window.GEAR.armor[window.playerData.armor].name;
 
             document.getElementById('stat-lv').innerText = window.playerData.lv;
             document.getElementById('stat-exp').innerText = window.playerData.exp;
@@ -349,18 +297,31 @@
             
             document.getElementById('btn-autoroll').disabled = window.playerData.lv < 8;
             document.getElementById('btn-fastroll').disabled = window.playerData.lv < 12;
-            
             window.saveGame();
         };
 
         window.confirmName = function() {
             const input = document.getElementById('name-input').value.trim().toUpperCase();
-            if(input.length > 0) {
-                window.playerData.name = input;
-                document.getElementById('name-screen').style.display = 'none';
-                window.calcStats();
-            }
+            if(input.length > 0) { window.playerData.name = input; document.getElementById('name-screen').style.display = 'none'; window.calcStats(); }
         };
+
+        // --- CUSTOM TEXTURE GENERATORS ---
+        function createHollowRingTexture() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const ctx = c.getContext('2d');
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.arc(32, 32, 24, 0, Math.PI*2); ctx.stroke();
+            const tex = new THREE.CanvasTexture(c); tex.magFilter = THREE.NearestFilter; return tex;
+        }
+        function createButterflyTexture() {
+            const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+            const ctx = c.getContext('2d'); ctx.fillStyle = 'white';
+            const pixels = [[0,1,0,0,0,1,0],[1,1,1,0,1,1,1],[1,1,0,1,0,1,1],[0,1,1,1,1,1,0]];
+            for(let y=0; y<pixels.length; y++) { for(let x=0; x<pixels[y].length; x++) { if(pixels[y][x]) ctx.fillRect(x*2+1, y*3+2, 2, 3); } }
+            const tex = new THREE.CanvasTexture(c); tex.magFilter = THREE.NearestFilter; return tex;
+        }
+        const hollowRingTex = createHollowRingTexture();
+        const butterflyTex = createButterflyTexture();
 
         // --- 3D ENGINE ---
         const scene = new THREE.Scene();
@@ -372,13 +333,11 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2; controls.minDistance = 4; controls.maxDistance = 15;
 
-        // Better Transparent 3D Battle Box (Tinted on ALL sides using BackSide rendering)
+        // Better Transparent 3D Battle Box 
         const boxWidth = 6, boxHeight = 6, boxDepth = 6;
         const battleBoxGroup = new THREE.Group(); battleBoxGroup.position.y = 1; scene.add(battleBoxGroup);
-        
-        const innerBoxGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
         const innerBoxMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, side: THREE.BackSide });
-        const innerBoxMesh = new THREE.Mesh(innerBoxGeo, innerBoxMat);
+        const innerBoxMesh = new THREE.Mesh(new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth), innerBoxMat);
         battleBoxGroup.add(innerBoxMesh);
 
         function createEdge(x, y, z, w, h, d) {
@@ -395,16 +354,16 @@
         battleBoxGroup.visible = false;
 
         // Monster Soul
-        const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16;
-        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff';
-        const pixels = [[0,0,0,1,1,0,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,1,1,0,0,1,1,0]];
-        for(let y=0; y<pixels.length; y++) { for(let x=0; x<pixels[y].length; x++) { if(pixels[y][x]) ctx.fillRect(x*2+1, (6-y)*2+2, 2, 2); } }
-        const soulTex = new THREE.CanvasTexture(canvas); soulTex.magFilter = THREE.NearestFilter;
+        const sc = document.createElement('canvas'); sc.width = 16; sc.height = 16;
+        const sctx = sc.getContext('2d'); sctx.fillStyle = '#ffffff';
+        const spix = [[0,0,0,1,1,0,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,1,1,0,0,1,1,0]];
+        for(let y=0; y<spix.length; y++) { for(let x=0; x<spix[y].length; x++) { if(spix[y][x]) sctx.fillRect(x*2+1, (6-y)*2+2, 2, 2); } }
+        const soulTex = new THREE.CanvasTexture(sc); soulTex.magFilter = THREE.NearestFilter;
         const soulSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: soulTex }));
         soulSprite.scale.set(1.2, 1.2, 1); soulSprite.position.y = 1; soulSprite.visible = false; scene.add(soulSprite);
 
         let auraGroup = new THREE.Group(); auraGroup.position.copy(soulSprite.position); scene.add(auraGroup);
-        let activeParticles = null; let particleVelocities = null; let active3DAttack = null;
+        let activeParticles = null; let customData = null; let active3DAttack = null;
 
         // --- CORE INVENTORY & EQUIPPING ---
         window.equipAura = function(uid, isLoad = false) {
@@ -424,42 +383,48 @@
             soulSprite.visible = true; battleBoxGroup.visible = true; document.body.classList.add('battle-mode');
 
             while(auraGroup.children.length > 0) auraGroup.remove(auraGroup.children[0]);
-            activeParticles = null; particleVelocities = null; active3DAttack = null;
+            activeParticles = null; customData = null; active3DAttack = null;
 
             if (window.playerData.equipped.auraType !== 'none') {
-                const count = 60; const partsGeo = new THREE.BufferGeometry();
+                const count = 40; const partsGeo = new THREE.BufferGeometry();
                 const partsPos = new Float32Array(count * 3); const partsColors = new Float32Array(count * 3);
-                particleVelocities = new Float32Array(count * 3);
+                customData = new Float32Array(count * 3); // Extra data for physics
                 
+                let tex = null;
+                if(window.playerData.equipped.auraType === 'wiggle_circles' || window.playerData.equipped.auraType === 'horizontal_circles') tex = hollowRingTex;
+                else if(window.playerData.equipped.auraType === 'butterflies_up') tex = butterflyTex;
+
                 const c = new THREE.Color();
                 for(let i=0; i<count * 3; i+=3) {
                     partsPos[i] = (Math.random() - 0.5) * 5.6; partsPos[i+1] = (Math.random() - 0.5) * 5.6; partsPos[i+2] = (Math.random() - 0.5) * 5.6;   
-                    if(window.playerData.equipped.auraType === 'bouncing_eyes') {
-                        particleVelocities[i] = (Math.random() - 0.5) * 0.15; particleVelocities[i+1] = (Math.random() - 0.5) * 0.15; particleVelocities[i+2] = (Math.random() - 0.5) * 0.15; 
-                    }
-                    if(window.playerData.equipped.auraType === 'veggies') c.setHex(0xffaa00); else c.setHex(0xffffff);
+                    
+                    if(window.playerData.equipped.auraType === 'wiggle_circles') {
+                        customData[i] = partsPos[i]; // Store Base X
+                        customData[i+1] = (Math.random() * 2) + 1; // Frequency
+                        partsPos[i+1] = (Math.random() * 6); // Start top
+                    } else if(window.playerData.equipped.auraType === 'horizontal_circles') {
+                        partsPos[i] = Math.random() < 0.5 ? -3.5 : 3.5; // Spawn at edges
+                        customData[i] = partsPos[i] > 0 ? -0.05 : 0.05; // Speed X
+                    } else if(window.playerData.equipped.auraType === 'veggies') {
+                        c.setHex(0xffffff); // Veggies start white
+                    } else c.setHex(0xffffff);
+
+                    if(window.playerData.equipped.auraType !== 'veggies') c.setHex(0xffffff);
+
                     partsColors[i] = c.r; partsColors[i+1] = c.g; partsColors[i+2] = c.b;
                 }
                 partsGeo.setAttribute('position', new THREE.BufferAttribute(partsPos, 3)); partsGeo.setAttribute('color', new THREE.BufferAttribute(partsColors, 3));
-                const partsMat = new THREE.PointsMaterial({ size: 0.25, vertexColors: true, transparent: true, opacity: 0.9 });
+                const partsMat = new THREE.PointsMaterial({ size: 0.4, vertexColors: true, transparent: true, opacity: 0.9, map: tex, depthWrite: false });
                 activeParticles = new THREE.Points(partsGeo, partsMat); activeParticles.userData = { type: window.playerData.equipped.auraType };
                 auraGroup.add(activeParticles);
             }
             window.updateInventoryUI(); window.calcStats();
         };
 
-        window.dropAura = function(uid) {
-            window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
-            window.updateInventoryUI(); window.calcStats();
-        };
-
+        window.dropAura = function(uid) { window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid); window.updateInventoryUI(); window.calcStats(); };
         window.sellAura = function(uid) {
             const item = window.playerData.inventory.find(i => i.uid === uid);
-            if(item) {
-                window.playerData.g += item.aura.price;
-                window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid);
-                window.calcStats(); window.shopMenu('sell'); 
-            }
+            if(item) { window.playerData.g += item.aura.price; window.playerData.inventory = window.playerData.inventory.filter(i => i.uid !== uid); window.calcStats(); window.shopMenu('sell'); }
         };
 
         // --- ENCOUNTER (ROLL) ENGINE ---
@@ -475,7 +440,7 @@
             const textEl = document.getElementById('kd-text');
 
             rouletteInterval = setInterval(() => {
-                const randomAura = AURAS[Math.floor(Math.random() * AURAS.length)];
+                const randomAura = window.AURAS[Math.floor(Math.random() * window.AURAS.length)];
                 textEl.innerHTML = `* You encountered <span style="color: #fff">${randomAura.name}</span>...`;
             }, 60);
 
@@ -483,31 +448,29 @@
                 clearInterval(rouletteInterval);
                 window.playerData.rolls++;
 
-                let totalLuck = window.playerData.baseLuck + GEAR.weapons[window.playerData.weapon].luck + GEAR.armor[window.playerData.armor].luck;
-                const sorted = [...AURAS].sort((a,b) => b.chance - a.chance);
-                let rolledAura = AURAS[0]; 
+                let totalLuck = window.playerData.baseLuck + window.GEAR.weapons[window.playerData.weapon].luck + window.GEAR.armor[window.playerData.armor].luck;
+                const sorted = [...window.AURAS].sort((a,b) => b.chance - a.chance);
+                let rolledAura = window.AURAS[0]; 
                 for(let a of sorted) {
                     const adjustedChance = a.chance / totalLuck;
                     if (Math.random() <= (1 / adjustedChance)) { rolledAura = a; break; }
                 }
 
+                // Add to collection if new
+                if(!window.playerData.collection.includes(rolledAura.id)) window.playerData.collection.push(rolledAura.id);
+
                 window.playerData.pendingAura = rolledAura;
                 textEl.innerHTML = `* You encountered <span class="stat-yellow">${rolledAura.name}</span>!`;
                 
                 const actBtn = document.getElementById('btn-act');
-                if (window.playerData.inventory.length >= window.playerData.maxInventory) {
-                    actBtn.disabled = true; actBtn.innerText = "ACT (Inv Full)";
-                } else {
-                    actBtn.disabled = false; actBtn.innerText = "ACT";
-                }
+                if (window.playerData.inventory.length >= window.playerData.maxInventory) { actBtn.disabled = true; actBtn.innerText = "ACT (Inv Full)"; } 
+                else { actBtn.disabled = false; actBtn.innerText = "ACT"; }
                 
                 document.getElementById('kd-actions').classList.add('active');
 
                 if(window.playerData.autoRoll) {
-                    if(window.playerData.inventory.length < window.playerData.maxInventory) window.resolveRoll('act');
-                    else window.resolveRoll('fight');
+                    if(window.playerData.inventory.length < window.playerData.maxInventory) window.resolveRoll('act'); else window.resolveRoll('fight');
                 }
-
             }, window.playerData.quickRoll ? 150 : 1000);
         };
 
@@ -523,15 +486,12 @@
                 window.playerData.exp += aura.exp;
                 textEl.innerHTML = `* You won! <br>* You earned ${aura.exp} EXP.`;
             }
-
             window.updateInventoryUI(); window.calcStats();
 
             clearTextTimeout = setTimeout(() => {
-                window.playerData.isRolling = false;
-                document.getElementById('btn-roll').disabled = false;
-                if(window.playerData.autoRoll) window.triggerRoll();
-                else textEl.innerHTML = "* Waiting for encounter...";
-            }, 1000); // FIXED 1-second delay before rolling again
+                window.playerData.isRolling = false; document.getElementById('btn-roll').disabled = false;
+                if(window.playerData.autoRoll) window.triggerRoll(); else textEl.innerHTML = "* Waiting for encounter...";
+            }, 1000);
         };
 
         // --- SPECIAL BUTTON ('V' ATTACKS) ENHANCED ---
@@ -549,44 +509,60 @@
             const fxLayer = document.getElementById('fx-layer'); fxLayer.innerHTML = ''; 
 
             if(aura.id === 'dummy' || aura.id === 'whimsun' || aura.id === 'moldsmal') {
-                attackDuration = 1000;
+                attackDuration = 2500;
                 
-                // Screen Shake & Flash
-                document.body.classList.add('shake-active');
-                setTimeout(() => document.body.classList.remove('shake-active'), 400);
-                
-                const flash = document.getElementById('screen-flash');
-                flash.style.opacity = '1'; flash.style.transition = 'none';
-                setTimeout(() => { flash.style.transition = 'opacity 0.3s'; flash.style.opacity = '0'; }, 50);
+                // FIGHT Reticle Animation
+                const fightBox = document.createElement('div'); fightBox.className = 'fight-box';
+                fightBox.innerHTML = `<div class="fight-bg"></div><div class="fight-bar"></div>`;
+                fxLayer.appendChild(fightBox);
 
-                let slash = document.createElement('div'); slash.className = 'slash-fx'; fxLayer.appendChild(slash);
                 setTimeout(() => {
-                    let dmg = document.createElement('div'); dmg.className = 'dmg-text';
-                    dmg.innerText = aura.id === 'dummy' ? '99999' : '9999'; fxLayer.appendChild(dmg);
-                }, 400);
+                    fightBox.classList.add('fight-flash');
+                    setTimeout(() => {
+                        fightBox.remove();
+                        document.body.classList.add('shake-active'); setTimeout(() => document.body.classList.remove('shake-active'), 300);
+                        const flash = document.getElementById('screen-flash'); flash.style.opacity = '1'; flash.style.transition = 'none';
+                        setTimeout(() => { flash.style.transition = 'opacity 0.3s'; flash.style.opacity = '0'; }, 50);
+
+                        let slash = document.createElement('div'); slash.className = 'slash-fx'; fxLayer.appendChild(slash);
+                        setTimeout(() => {
+                            let dmg = document.createElement('div'); dmg.className = 'dmg-text';
+                            dmg.innerText = aura.id === 'dummy' ? '99999' : '9999'; fxLayer.appendChild(dmg);
+                        }, 400);
+                    }, 400);
+                }, 600); // Wait for bar to reach middle
 
             } else if (aura.id === 'froggit') {
                 attackDuration = 4500; 
                 if(active3DAttack) auraGroup.remove(active3DAttack);
                 active3DAttack = new THREE.Sprite(new THREE.SpriteMaterial({ map: frogTex }));
-                active3DAttack.scale.set(1.5, 1.5, 1); active3DAttack.position.set(0, 0, 0); 
+                active3DAttack.scale.set(1.5, 1.5, 1); active3DAttack.position.set(0, -2.8, 0); 
                 
-                // Jump State Machine
-                active3DAttack.userData = { 
-                    type: 'frog_bounce', time: 0, duration: 4.5, state: 'jumping',
-                    jumpTime: 0, jumpDuration: 0.6, pauseTime: 0, pauseDuration: 0.4,
-                    startPos: new THREE.Vector3(0, -2.8, 0),
-                    endPos: new THREE.Vector3((Math.random()-0.5)*5.4, -2.8, (Math.random()-0.5)*5.4)
+                // Random Wall Picker
+                const getWallPoint = () => {
+                    const r = () => (Math.random()-0.5)*5.6; const bound = 2.8;
+                    const wall = Math.floor(Math.random()*5);
+                    if(wall===0) return new THREE.Vector3(-bound, r(), r());
+                    if(wall===1) return new THREE.Vector3(bound, r(), r());
+                    if(wall===2) return new THREE.Vector3(r(), -bound, r());
+                    if(wall===3) return new THREE.Vector3(r(), bound, r());
+                    return new THREE.Vector3(r(), r(), -bound);
                 };
+
+                active3DAttack.userData = { type: 'frog_wall_jump', time: 0, duration: 4.5, state: 'jumping', jumpTime: 0, jumpDuration: 0.4, pauseTime: 0, pauseDuration: 0.3, startPos: new THREE.Vector3(0,-2.8,0), endPos: getWallPoint() };
                 auraGroup.add(active3DAttack);
 
             } else if (aura.id === 'loox') {
-                attackDuration = 2000;
+                attackDuration = 3000;
                 if(active3DAttack) auraGroup.remove(active3DAttack);
-                const geo = new THREE.BoxGeometry(boxWidth - 0.2, 0.5, 0.5);
-                active3DAttack = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending }));
-                active3DAttack.position.set(0, 0, 0);
-                active3DAttack.userData = { type: 'laser', time: 0, duration: 2.0 };
+                active3DAttack = new THREE.Group();
+                const mat = new THREE.SpriteMaterial({ map: hollowRingTex, transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+                const r1 = new THREE.Sprite(mat); r1.scale.set(2,2,1); active3DAttack.add(r1);
+                const r2 = new THREE.Sprite(mat); r2.scale.set(3,3,1); active3DAttack.add(r2);
+                const r3 = new THREE.Sprite(mat); r3.scale.set(4,4,1); active3DAttack.add(r3);
+                
+                active3DAttack.position.set(-4, 0, 0);
+                active3DAttack.userData = { type: 'concentric_circles', time: 0, duration: 3.0 };
                 auraGroup.add(active3DAttack);
 
             } else if (aura.id === 'vegetoid') {
@@ -610,55 +586,46 @@
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
-            soulSprite.position.y = 1 + Math.sin(clock.getElapsedTime() * 3) * 0.1;
+            const elapsed = clock.getElapsedTime();
+            soulSprite.position.y = 1 + Math.sin(elapsed * 3) * 0.1;
 
             if(active3DAttack) {
                 const data = active3DAttack.userData;
                 data.time += delta; 
                 
-                if(data.type === 'frog_bounce') {
+                if(data.type === 'frog_wall_jump') {
                     if(data.state === 'jumping') {
                         data.jumpTime += delta;
                         let p = Math.min(data.jumpTime / data.jumpDuration, 1.0);
-                        
-                        // Move X and Z
-                        active3DAttack.position.x = data.startPos.x + (data.endPos.x - data.startPos.x) * p;
-                        active3DAttack.position.z = data.startPos.z + (data.endPos.z - data.startPos.z) * p;
-                        // Jump Arc Y
-                        active3DAttack.position.y = -2.8 + Math.sin(p * Math.PI) * 3.0;
+                        active3DAttack.position.lerpVectors(data.startPos, data.endPos, p);
+                        if(p < 0.2 || p > 0.8) active3DAttack.scale.set(1.5, 1.5, 1); else active3DAttack.scale.set(1.0, 2.0, 1); 
 
-                        // Stretch while jumping
-                        if(p < 0.2 || p > 0.8) active3DAttack.scale.set(1.5, 1.5, 1);
-                        else active3DAttack.scale.set(1.2, 1.8, 1); 
-
-                        if(p >= 1.0) {
-                            data.state = 'paused'; data.pauseTime = 0;
-                            active3DAttack.scale.set(1.8, 1.2, 1); // Squish
-                            active3DAttack.position.y = -2.8;
-                        }
+                        if(p >= 1.0) { data.state = 'paused'; data.pauseTime = 0; active3DAttack.scale.set(2.0, 1.0, 1); } // Squish on wall
                     } else if (data.state === 'paused') {
                         data.pauseTime += delta;
-                        active3DAttack.scale.lerp(new THREE.Vector3(1.5, 1.5, 1), 0.1); // Recover
+                        active3DAttack.scale.lerp(new THREE.Vector3(1.5, 1.5, 1), 0.1); 
                         if(data.pauseTime >= data.pauseDuration) {
                             data.state = 'jumping'; data.jumpTime = 0;
                             data.startPos.copy(active3DAttack.position);
-                            data.endPos.set((Math.random()-0.5)*5.4, -2.8, (Math.random()-0.5)*5.4);
+                            
+                            // Pick new random wall
+                            const r = () => (Math.random()-0.5)*5.6; const bound = 2.8;
+                            const wall = Math.floor(Math.random()*5);
+                            if(wall===0) data.endPos.set(-bound, r(), r());
+                            else if(wall===1) data.endPos.set(bound, r(), r());
+                            else if(wall===2) data.endPos.set(r(), -bound, r());
+                            else if(wall===3) data.endPos.set(r(), bound, r());
+                            else data.endPos.set(r(), r(), -bound);
                         }
                     }
                     if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
 
-                } else if (data.type === 'laser') {
-                    if(data.time < 0.5) {
-                        active3DAttack.scale.y = 0.1 + (data.time * 2);
-                        active3DAttack.scale.z = 0.1 + (data.time * 2);
-                        active3DAttack.material.opacity = data.time * 2;
-                    } else if (data.time < 0.7) {
-                        active3DAttack.scale.y = 3.0; active3DAttack.scale.z = 3.0; active3DAttack.material.opacity = 1.0;
-                    } else {
-                        let p = (data.time - 0.7) / 1.3;
-                        active3DAttack.scale.y = 3.0 - (p * 2.5); active3DAttack.scale.z = 3.0 - (p * 2.5);
-                        active3DAttack.material.opacity = 1.0 - p;
-                    }
+                } else if (data.type === 'concentric_circles') {
+                    active3DAttack.position.x = -4 + (data.time * 3); // Move across
+                    active3DAttack.children.forEach((c, idx) => {
+                        c.material.opacity = 1.0 - (data.time / data.duration);
+                        c.rotation.z += 0.05 * (idx%2===0?1:-1);
+                    });
                     if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
                 }
             }
@@ -669,14 +636,10 @@
                 const type = activeParticles.userData.type;
                 const bound = 2.8;
 
-                // Vegetoid Green Fix
                 if (type === 'veggies') {
                     for(let j=0; j<pos.length; j+=3) {
-                        if(window.playerData.isVegetoidHealActive && (j/3) % 4 === 0) {
-                            col[j] = 0; col[j+1] = 1; col[j+2] = 0;
-                        } else {
-                            col[j] = 1; col[j+1] = 0.66; col[j+2] = 0;
-                        }
+                        if(window.playerData.isVegetoidHealActive && (j/3) % 4 === 0) { col[j] = 0; col[j+1] = 1; col[j+2] = 0; } 
+                        else { col[j] = 1; col[j+1] = 1; col[j+2] = 1; }
                     }
                     activeParticles.geometry.attributes.color.needsUpdate = true;
                 }
@@ -684,20 +647,25 @@
                 for(let i=0; i<pos.length; i+=3) {
                     if (type === 'flies_random') {
                         pos[i] += (Math.random()-0.5)*0.2; pos[i+1] += (Math.random()-0.5)*0.2; pos[i+2] += (Math.random()-0.5)*0.2;
-                        // Strict Z-axis fix
                         if(pos[i] > bound) pos[i] = bound; else if(pos[i] < -bound) pos[i] = -bound;
                         if(pos[i+1] > bound) pos[i+1] = bound; else if(pos[i+1] < -bound) pos[i+1] = -bound;
                         if(pos[i+2] > bound) pos[i+2] = bound; else if(pos[i+2] < -bound) pos[i+2] = -bound;
-                    } else if (type === 'flies_down' || type === 'veggies') {
+                    } else if (type === 'veggies') {
                         pos[i+1] -= 0.05;
-                        if(pos[i+1] <= -bound) {
-                            pos[i+1] = bound; pos[i] = (Math.random() - 0.5) * 5.6; pos[i+2] = (Math.random() - 0.5) * 5.6;
+                        if(pos[i+1] <= -bound) { pos[i+1] = bound; pos[i] = (Math.random() - 0.5) * 5.6; pos[i+2] = (Math.random() - 0.5) * 5.6; }
+                    } else if (type === 'butterflies_up') {
+                        pos[i+1] += 0.03; // move up
+                        if(pos[i+1] >= bound) { pos[i+1] = -bound; pos[i] = (Math.random() - 0.5) * 5.6; }
+                    } else if (type === 'wiggle_circles') {
+                        pos[i+1] -= 0.04;
+                        pos[i] = customData[i] + Math.sin(pos[i+1] * customData[i+1]) * 1.5; // Sine wave Wiggle
+                        if(pos[i+1] <= -bound) { pos[i+1] = bound; customData[i] = (Math.random() - 0.5) * 4; }
+                    } else if (type === 'horizontal_circles') {
+                        pos[i] += customData[i]; // Horizontal speed
+                        if(pos[i] > 4 || pos[i] < -4) { 
+                            pos[i] = customData[i] > 0 ? -3.5 : 3.5; 
+                            pos[i+1] = (Math.random() - 0.5) * 5.6; 
                         }
-                    } else if (type === 'bouncing_eyes') {
-                        pos[i] += particleVelocities[i]; pos[i+1] += particleVelocities[i+1]; pos[i+2] += particleVelocities[i+2];
-                        if(pos[i] > bound || pos[i] < -bound) particleVelocities[i] *= -1;
-                        if(pos[i+1] > bound || pos[i+1] < -bound) particleVelocities[i+1] *= -1;
-                        if(pos[i+2] > bound || pos[i+2] < -bound) particleVelocities[i+2] *= -1;
                     }
                 }
                 activeParticles.geometry.attributes.position.needsUpdate = true;
@@ -710,9 +678,7 @@
 
     <script>
         // --- UI PANEL LOGIC ---
-        window.closeAllPanels = function() {
-            document.querySelectorAll('.left-panel').forEach(p => p.classList.remove('open'));
-        };
+        window.closeAllPanels = function() { document.querySelectorAll('.left-panel').forEach(p => p.classList.remove('open')); };
 
         window.toggleLeftPanel = function(id) {
             const panel = document.getElementById(id);
@@ -738,8 +704,7 @@
 
         window.updateInventoryUI = function() {
             document.getElementById('inv-count').innerText = window.playerData.inventory.length;
-            const list = document.getElementById('inv-list');
-            list.innerHTML = '';
+            const list = document.getElementById('inv-list'); list.innerHTML = '';
             [...window.playerData.inventory].reverse().forEach((item) => {
                 const div = document.createElement('div'); div.className = `inv-item`;
                 div.innerHTML = `
@@ -748,13 +713,11 @@
                         <button onclick="window.equipAura('${item.uid}')">* USE</button>
                         <button onclick="window.showInfo('${item.uid}')">* INFO</button>
                         <button onclick="window.dropAura('${item.uid}')" style="color:#ff5555;">* DROP</button>
-                    </div>
-                `;
+                    </div>`;
                 list.appendChild(div);
             });
         };
 
-        // --- BUTTON LOGIC ---
         function toggleAutoRoll() {
             window.playerData.autoRoll = !window.playerData.autoRoll;
             const btn = document.getElementById('btn-autoroll');
@@ -784,16 +747,30 @@
             const content = document.getElementById('shop-content');
             document.getElementById('shop-gold').innerText = window.playerData.g;
 
-            if(type === 'talk') {
-                document.getElementById('shop-dialogue').innerText = "* talk? alright.";
-                content.innerHTML = `<div style="color:#aaa;">* i'd tell you a joke about a skeleton...<br><br>* but you wouldn't find it very humerus.</div>`;
+            if(type === 'collection') {
+                document.getElementById('shop-dialogue').innerText = "* checking your records?";
+                let html = `<div style="margin-bottom: 20px;">* ALL ENCOUNTERED AURAS</div>`;
+                [...window.AURAS].sort((a,b) => a.chance - b.chance).forEach(aura => {
+                    const unlocked = window.playerData.collection.includes(aura.id);
+                    if(unlocked) {
+                        html += `<div style="margin-bottom:10px; color:white;">* ${aura.name} (1 in ${aura.chance})</div>`;
+                    } else {
+                        // Blurred glitchy text for locked items
+                        html += `<div style="margin-bottom:10px; color:#555; filter: blur(2px);">* ??????? (1 in ${aura.chance})</div>`;
+                    }
+                });
+                content.innerHTML = html;
             } else if (type === 'buy') {
                 document.getElementById('shop-dialogue').innerText = "* see anything you like?";
                 let html = ``;
-                if(window.playerData.weapon === 'toy_knife') html += `<div style="color:#555; margin-bottom:15px;">* Toy Knife - BOUGHT</div>`;
-                else html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between;"><span>* Toy Knife (LV 4)</span><button onclick="buyItem('wep', 'toy_knife', 150, 4)" class="shop-btn">150G</button></div>`;
+                
+                // Sorted by cheapest first
                 if(window.playerData.armor === 'faded_ribbon') html += `<div style="color:#555; margin-bottom:15px;">* Faded Ribbon - BOUGHT</div>`;
                 else html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between;"><span>* Faded Ribbon (LV 3)</span><button onclick="buyItem('arm', 'faded_ribbon', 100, 3)" class="shop-btn">100G</button></div>`;
+                
+                if(window.playerData.weapon === 'toy_knife') html += `<div style="color:#555; margin-bottom:15px;">* Toy Knife - BOUGHT</div>`;
+                else html += `<div style="margin-bottom:15px; display:flex; justify-content:space-between;"><span>* Toy Knife (LV 4)</span><button onclick="buyItem('wep', 'toy_knife', 150, 4)" class="shop-btn">150G</button></div>`;
+                
                 content.innerHTML = html;
             } else if (type === 'sell') {
                 document.getElementById('shop-dialogue').innerText = "* i guess i can take some junk.";
