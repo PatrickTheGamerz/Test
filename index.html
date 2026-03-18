@@ -31,14 +31,19 @@
             position: fixed; inset: 0; background: white; z-index: 9000; opacity: 0; pointer-events: none;
         }
 
-        /* Normal Battlebox Grid */
+        /* Moving Battlebox Grid */
         body.battle-mode {
             background-color: #000;
             background-image: 
-                linear-gradient(#1f501f 1px, transparent 1px),
-                linear-gradient(90deg, #1f501f 1px, transparent 1px);
+                linear-gradient(#1f501f 2px, transparent 2px),
+                linear-gradient(90deg, #1f501f 2px, transparent 2px);
             background-size: 80px 80px;
-            background-position: center bottom;
+            animation: panGrid 4s linear infinite;
+        }
+        
+        @keyframes panGrid {
+            0% { background-position: 0px 0px; }
+            100% { background-position: 80px 80px; }
         }
 
         /* --- NAME SELECTION SCREEN --- */
@@ -271,10 +276,10 @@
             name: "", lv: 1, exp: 0, g: 0, rolls: 0, baseLuck: 1.0, 
             inventory: [], maxInventory: 8, equipped: null,
             weapon: 'stick', armor: 'bandage',
-            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null
+            autoRoll: false, quickRoll: false, isRolling: false, pendingAura: null, isVegetoidHealActive: false
         };
 
-        // --- SAVE/LOAD SYSTEM ---
+        // --- AUTO SAVE SYSTEM ---
         window.saveGame = function() {
             if(!window.playerData.name) return;
             const data = {
@@ -283,16 +288,15 @@
                 equippedId: window.playerData.equipped ? window.playerData.equipped.id : null,
                 inventory: window.playerData.inventory.map(i => ({ uid: i.uid, auraId: i.aura.id }))
             };
-            localStorage.setItem('utRngSaveV3', JSON.stringify(data));
+            localStorage.setItem('utRngSaveFinal', JSON.stringify(data));
         };
 
-        // Auto-Save every 60 seconds
         setInterval(() => {
-            if(window.playerData.name) { window.saveGame(); console.log("Game Auto-Saved."); }
+            if(window.playerData.name) { window.saveGame(); console.log("Auto-Saved."); }
         }, 60000);
 
         window.loadGame = function() {
-            const saved = localStorage.getItem('utRngSaveV3');
+            const saved = localStorage.getItem('utRngSaveFinal');
             if(saved) {
                 const data = JSON.parse(saved);
                 window.playerData.name = data.name;
@@ -522,13 +526,12 @@
 
             window.updateInventoryUI(); window.calcStats();
 
-            // FIXED: Wait exactly 1 second, then unlock roll immediately
             clearTextTimeout = setTimeout(() => {
                 window.playerData.isRolling = false;
                 document.getElementById('btn-roll').disabled = false;
                 if(window.playerData.autoRoll) window.triggerRoll();
                 else textEl.innerHTML = "* Waiting for encounter...";
-            }, 1000); // Wait 1 second before unlock
+            }, 1000); // FIXED 1-second delay before rolling again
         };
 
         // --- SPECIAL BUTTON ('V' ATTACKS) ENHANCED ---
@@ -546,7 +549,7 @@
             const fxLayer = document.getElementById('fx-layer'); fxLayer.innerHTML = ''; 
 
             if(aura.id === 'dummy' || aura.id === 'whimsun' || aura.id === 'moldsmal') {
-                attackDuration = 1500;
+                attackDuration = 1000;
                 
                 // Screen Shake & Flash
                 document.body.classList.add('shake-active');
@@ -563,24 +566,34 @@
                 }, 400);
 
             } else if (aura.id === 'froggit') {
-                attackDuration = 4000; 
+                attackDuration = 4500; 
                 if(active3DAttack) auraGroup.remove(active3DAttack);
                 active3DAttack = new THREE.Sprite(new THREE.SpriteMaterial({ map: frogTex }));
                 active3DAttack.scale.set(1.5, 1.5, 1); active3DAttack.position.set(0, 0, 0); 
-                active3DAttack.userData = { type: 'frog_bounce', vx: 0.25, vy: 0.3, time: 0, duration: 4.0, scaleSquish: 1.0 };
+                
+                // Jump State Machine
+                active3DAttack.userData = { 
+                    type: 'frog_bounce', time: 0, duration: 4.5, state: 'jumping',
+                    jumpTime: 0, jumpDuration: 0.6, pauseTime: 0, pauseDuration: 0.4,
+                    startPos: new THREE.Vector3(0, -2.8, 0),
+                    endPos: new THREE.Vector3((Math.random()-0.5)*5.4, -2.8, (Math.random()-0.5)*5.4)
+                };
                 auraGroup.add(active3DAttack);
 
             } else if (aura.id === 'loox') {
                 attackDuration = 2000;
                 if(active3DAttack) auraGroup.remove(active3DAttack);
-                // Glowy pulsing laser
-                const geo = new THREE.BoxGeometry(boxWidth - 0.2, 0.6, 0.6);
+                const geo = new THREE.BoxGeometry(boxWidth - 0.2, 0.5, 0.5);
                 active3DAttack = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending }));
                 active3DAttack.position.set(0, 0, 0);
                 active3DAttack.userData = { type: 'laser', time: 0, duration: 2.0 };
                 auraGroup.add(active3DAttack);
+
             } else if (aura.id === 'vegetoid') {
                 attackDuration = 2500;
+                window.playerData.isVegetoidHealActive = true;
+                setTimeout(() => { window.playerData.isVegetoidHealActive = false; }, 2500);
+
                 const flash = document.getElementById('screen-flash');
                 flash.style.background = 'rgba(0, 255, 0, 0.5)'; flash.style.opacity = '1'; flash.style.transition = 'none';
                 setTimeout(() => { flash.style.transition = 'opacity 1s'; flash.style.opacity = '0'; setTimeout(()=> flash.style.background='white', 1000); }, 50);
@@ -604,25 +617,47 @@
                 data.time += delta; 
                 
                 if(data.type === 'frog_bounce') {
-                    active3DAttack.position.x += data.vx; active3DAttack.position.y += data.vy;
-                    const b = 2.5; 
-                    let hit = false;
-                    if(active3DAttack.position.x > b || active3DAttack.position.x < -b) { data.vx *= -1.02; hit = true; }
-                    if(active3DAttack.position.y > b || active3DAttack.position.y < -b) { data.vy *= -1.02; hit = true; }
-                    
-                    // Squish effect on hit
-                    if(hit) data.scaleSquish = 0.5;
-                    data.scaleSquish += (1.5 - data.scaleSquish) * 0.1; // Lerp back to normal
-                    active3DAttack.scale.set(1.5 + (1.5 - data.scaleSquish), data.scaleSquish, 1);
+                    if(data.state === 'jumping') {
+                        data.jumpTime += delta;
+                        let p = Math.min(data.jumpTime / data.jumpDuration, 1.0);
+                        
+                        // Move X and Z
+                        active3DAttack.position.x = data.startPos.x + (data.endPos.x - data.startPos.x) * p;
+                        active3DAttack.position.z = data.startPos.z + (data.endPos.z - data.startPos.z) * p;
+                        // Jump Arc Y
+                        active3DAttack.position.y = -2.8 + Math.sin(p * Math.PI) * 3.0;
 
+                        // Stretch while jumping
+                        if(p < 0.2 || p > 0.8) active3DAttack.scale.set(1.5, 1.5, 1);
+                        else active3DAttack.scale.set(1.2, 1.8, 1); 
+
+                        if(p >= 1.0) {
+                            data.state = 'paused'; data.pauseTime = 0;
+                            active3DAttack.scale.set(1.8, 1.2, 1); // Squish
+                            active3DAttack.position.y = -2.8;
+                        }
+                    } else if (data.state === 'paused') {
+                        data.pauseTime += delta;
+                        active3DAttack.scale.lerp(new THREE.Vector3(1.5, 1.5, 1), 0.1); // Recover
+                        if(data.pauseTime >= data.pauseDuration) {
+                            data.state = 'jumping'; data.jumpTime = 0;
+                            data.startPos.copy(active3DAttack.position);
+                            data.endPos.set((Math.random()-0.5)*5.4, -2.8, (Math.random()-0.5)*5.4);
+                        }
+                    }
                     if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
 
                 } else if (data.type === 'laser') {
-                    if(data.time < 0.3) {
-                        active3DAttack.scale.y = 1 + Math.sin(data.time * 20) * 0.5; // Pulse
-                        active3DAttack.scale.z = 1 + Math.sin(data.time * 20) * 0.5;
+                    if(data.time < 0.5) {
+                        active3DAttack.scale.y = 0.1 + (data.time * 2);
+                        active3DAttack.scale.z = 0.1 + (data.time * 2);
+                        active3DAttack.material.opacity = data.time * 2;
+                    } else if (data.time < 0.7) {
+                        active3DAttack.scale.y = 3.0; active3DAttack.scale.z = 3.0; active3DAttack.material.opacity = 1.0;
                     } else {
-                        active3DAttack.material.opacity = 1.0 - ((data.time - 0.3) / 1.7);
+                        let p = (data.time - 0.7) / 1.3;
+                        active3DAttack.scale.y = 3.0 - (p * 2.5); active3DAttack.scale.z = 3.0 - (p * 2.5);
+                        active3DAttack.material.opacity = 1.0 - p;
                     }
                     if(data.time >= data.duration) { auraGroup.remove(active3DAttack); active3DAttack = null; }
                 }
@@ -630,14 +665,29 @@
 
             if(activeParticles) {
                 const pos = activeParticles.geometry.attributes.position.array;
+                const col = activeParticles.geometry.attributes.color.array;
                 const type = activeParticles.userData.type;
                 const bound = 2.8;
+
+                // Vegetoid Green Fix
+                if (type === 'veggies') {
+                    for(let j=0; j<pos.length; j+=3) {
+                        if(window.playerData.isVegetoidHealActive && (j/3) % 4 === 0) {
+                            col[j] = 0; col[j+1] = 1; col[j+2] = 0;
+                        } else {
+                            col[j] = 1; col[j+1] = 0.66; col[j+2] = 0;
+                        }
+                    }
+                    activeParticles.geometry.attributes.color.needsUpdate = true;
+                }
 
                 for(let i=0; i<pos.length; i+=3) {
                     if (type === 'flies_random') {
                         pos[i] += (Math.random()-0.5)*0.2; pos[i+1] += (Math.random()-0.5)*0.2; pos[i+2] += (Math.random()-0.5)*0.2;
-                        if(pos[i] > bound) pos[i] = bound; if(pos[i] < -bound) pos[i] = -bound;
-                        if(pos[i+1] > bound) pos[i+1] = bound; if(pos[i+1] < -bound) pos[i+1] = -bound;
+                        // Strict Z-axis fix
+                        if(pos[i] > bound) pos[i] = bound; else if(pos[i] < -bound) pos[i] = -bound;
+                        if(pos[i+1] > bound) pos[i+1] = bound; else if(pos[i+1] < -bound) pos[i+1] = -bound;
+                        if(pos[i+2] > bound) pos[i+2] = bound; else if(pos[i+2] < -bound) pos[i+2] = -bound;
                     } else if (type === 'flies_down' || type === 'veggies') {
                         pos[i+1] -= 0.05;
                         if(pos[i+1] <= -bound) {
