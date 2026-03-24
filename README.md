@@ -207,3 +207,760 @@ shutdown /r /f /t 0
 
 :sub_die
 shutdown /s /f /t 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <iostream>
+#include <iomanip>
+#include <thread>
+#include <chrono>
+
+int main() {
+    long long populacja = 1;
+    int godzin = 0;
+    const long long limit = 100000000;
+
+    std::cout << "\033[1;32mSYMULACJA WZROSTU BAKTERII\033[0m" << std::endl;
+    std::cout << std::string(40, '-') << std::endl;
+    std::cout << std::left << std::setw(15) << "GODZINA" << " | " << "LICZBA BAKTERII" << std::endl;
+    std::cout << std::string(40, '-') << std::endl;
+
+    while (populacja <= limit) {
+        std::cout << std::left << std::setw(15) << godzin 
+                  << " | " << std::fixed << populacja << std::endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        godzin++;
+        populacja *= 2;
+    }
+
+    std::cout << std::string(40, '-') << std::endl;
+    std::cout << "\033[1;33mLimit przekroczony po " << godzin << " godzinach.\033[0m" << std::endl;
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <iostream>
+#include <ctime>
+#include <cstdlib>
+
+using namespace std;
+
+int main()
+{
+    srand(time(NULL));
+    int liczba = rand() % 100 + 1;
+    int strzal = 0;
+    int ile_prob = 0;
+
+    system("cls"); 
+    cout << "========================================" << endl;
+    cout << "   WITAJ! POMYSLALEM LICZBE 1..100" << endl;
+    cout << "========================================" << endl << endl;
+
+    while (strzal != liczba)
+    {
+        ile_prob++;
+        cout << "\033[0mProba nr " << ile_prob << ". Zgadnij jaka: ";
+        
+        if (!(cin >> strzal)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            continue;
+        }
+
+        if (strzal == liczba)
+        {
+            cout << "\n\033[1;32mGRATULACJE! UDALO SIE! WYGRYWASZ!\033[0m" << endl;
+            cout << "Liczba prob: " << ile_prob << endl;
+        }
+        else if (strzal < liczba)
+        {
+            cout << "\033[1;36mTo za malo...\033[0m" << endl;
+        }
+        else
+        {
+            cout << "\033[1;31mTo za duzo!\033[0m" << endl;
+        }
+    }
+
+    cout << "\nNacisnij Enter, aby zakonczyc...";
+    cin.ignore();
+    cin.get();
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <iostream>
+#include <iomanip> 
+#include <vector>
+
+using namespace std;
+
+int main() {
+    int n;
+
+    cout << "========================================" << endl;
+    cout << "   GENERATOR CIAGU FIBONACCIEGO" << endl;
+    cout << "========================================" << endl;
+    cout << "Ile liczb wyznaczyc? (max 1000): ";
+    
+    if (!(cin >> n) || n <= 0) {
+        cout << "Blad: Podaj liczbe dodatnia!";
+        return 1;
+    }
+
+    vector<long double> fib(n);
+    
+    fib[0] = 1;
+    if (n > 1) fib[1] = 1;
+
+    cout << endl << setw(5) << "NR" << " | " << setw(25) << "WARTOSC" << " | " << "STOSUNEK (n/n-1)" << endl;
+    cout << string(55, '-') << endl;
+
+    cout << setw(5) << 1 << " | " << setw(25) << (long long)fib[0] << " | " << "---" << endl;
+    if (n > 1) {
+        cout << setw(5) << 2 << " | " << setw(25) << (long long)fib[1] << " | " << "1.000000" << endl;
+    }
+
+    for (int i = 2; i < n; i++) {
+        fib[i] = fib[i - 1] + fib[i - 2];
+
+        cout << setw(5) << i + 1 << " | " 
+             << setw(25) << fixed << setprecision(0) << fib[i] << " | " 
+             << setprecision(6) << (fib[i] / fib[i - 1]) << endl;
+
+        if (fib[i] > 1e30) { 
+            cout << "\n...liczby sa juz zbyt wielkie do czytelnego wyswietlenia!" << endl;
+            break; 
+        }
+    }
+
+    cout << string(55, '-') << endl;
+    cout << "Ciekawostka: Stosunek dwoch liczb zbliza sie do 1.618 (Phi)!" << endl;
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <iostream>
+#include <conio.h>
+#include <cstdlib>
+
+using namespace std;
+
+void gra2osobowa() {
+    char plansza[3][3] = { {'1','2','3'}, {'4','5','6'}, {'7','8','9'} };
+    int gracz = 1, wybor, runda = 0;
+    char znak;
+    bool wygrana = false;
+
+    while (!wygrana && runda < 9) {
+        system("cls");
+        cout << "=== KOLKO I KRZYZYK (2 GRACZY) ===" << endl << endl;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) cout << " " << plansza[i][j] << (j < 2 ? " |" : "");
+            if (i < 2) cout << endl << "-----------" << endl;
+        }
+        
+        gracz = (runda % 2 == 0) ? 1 : 2;
+        znak = (gracz == 1) ? 'X' : 'O';
+        
+        cout << "\n\nGracz " << gracz << " (" << znak << "), wybierz pole: ";
+        cin >> wybor;
+
+        int wiersz = (wybor - 1) / 3;
+        int kolumna = (wybor - 1) % 3;
+
+        if (wybor < 1 || wybor > 9 || plansza[wiersz][kolumna] == 'X' || plansza[wiersz][kolumna] == 'O') {
+            continue;
+        }
+
+        plansza[wiersz][kolumna] = znak;
+        runda++;
+
+        for (int i = 0; i < 3; i++) {
+            if (plansza[i][0] == plansza[i][1] && plansza[i][1] == plansza[i][2]) wygrana = true;
+            if (plansza[0][i] == plansza[1][i] && plansza[1][i] == plansza[2][i]) wygrana = true;
+        }
+        if (plansza[0][0] == plansza[1][1] && plansza[1][1] == plansza[2][2]) wygrana = true;
+        if (plansza[0][2] == plansza[1][1] && plansza[1][1] == plansza[2][0]) wygrana = true;
+    }
+
+    system("cls");
+    if (wygrana) cout << "WYGRAL GRACZ " << gracz << "!";
+    else cout << "REMIS!";
+    cout << "\nNacisnij dowolny klawisz...";
+    _getch();
+}
+
+int main()
+{
+    float x, y;
+    char wybor;
+
+    for (;;)
+    {
+        system("cls");
+        cout << "\033[1;36m================================" << endl;
+        cout << "       SUPER KALKULATOR" << endl;
+        cout << "================================\033[0m" << endl;
+        cout << "1. Dodawanie (+)" << endl;
+        cout << "2. Odejmowanie (-)" << endl;
+        cout << "3. Mnozenie (*)" << endl;
+        cout << "4. Dzielenie (/)" << endl;
+        cout << "5. GRA: Kolko i Krzyzyk (2 os.)" << endl;
+        cout << "6. Koniec programu" << endl;
+        cout << "--------------------------------" << endl;
+        cout << "Wybierz opcje: ";
+
+        wybor = _getch();
+        cout << wybor << endl;
+
+        if (wybor >= '1' && wybor <= '4') {
+            cout << "\nPodaj 1 liczbe: "; cin >> x;
+            cout << "Podaj 2 liczbe: "; cin >> y;
+            cout << endl;
+        }
+
+        switch (wybor)
+        {
+        case '1':
+            cout << "\033[1;32mSuma = " << x + y << "\033[0m";
+            break;
+        case '2':
+            cout << "\033[1;32mRoznica = " << x - y << "\033[0m";
+            break;
+        case '3':
+            cout << "\033[1;32mIloczyn = " << x * y << "\033[0m";
+            break;
+        case '4':
+            if (y == 0) cout << "\033[1;31mBlad: Nie dzielimy przez zero!\033[0m";
+            else cout << "\033[1;32mIloraz = " << x / y << "\033[0m";
+            break;
+        case '5':
+            gra2osobowa();
+            continue;
+        case '6':
+            exit(0);
+        default:
+            cout << "Niepoprawny wybor!";
+        }
+
+        if (wybor != '5') {
+            cout << "\n\nNacisnij dowolny klawisz, aby wrocic...";
+            _getch();
+        }
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <iostream>
+#include <string>
+#include <conio.h>
+#include <windows.h>
+#include <ctime>
+
+using namespace std;
+
+void set_color(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+class Postac {
+public:
+    string nazwa;
+    string opis;
+    int hp;
+    int max_hp;
+    int atk;
+    int def;
+    bool zyje = true;
+
+    virtual void akcja_specjalna(Postac* cel) = 0;
+    virtual void otrzymaj_obrazenia(int dmg) {
+        int final_dmg = dmg - (def / 4);
+        if (final_dmg < 2) final_dmg = 2;
+        hp -= final_dmg;
+        if (hp <= 0) {
+            hp = 0;
+            zyje = false;
+        }
+    }
+    virtual ~Postac() {}
+};
+
+class Frisk : public Postac {
+public:
+    int lv = 1;
+    Frisk() {
+        nazwa = "FRISK/CHARA";
+        opis = "Rosnie w sile z kazdym ruchem. Posiada potencjal do nieskonczonej DETERMINACJI.";
+        max_hp = 60;
+        hp = 60;
+        atk = 12;
+        def = 8;
+    }
+    void akcja_specjalna(Postac* cel) override {
+        lv++;
+        atk += 6;
+        hp += 10;
+        if (hp > max_hp) hp = max_hp;
+        set_color(12);
+        cout << "* Twoje LV rosnie do " << lv << "! Czujesz, jak grzechy pelzaja ci po plecach." << endl;
+        set_color(7);
+    }
+};
+
+class Sans : public Postac {
+public:
+    int uniki = 18;
+    Sans() {
+        nazwa = "SANS";
+        opis = "Najslabszy przeciwnik. Ma tylko 1 HP. Ale jest dosyc ciezko go trafic.";
+        max_hp = 1;
+        hp = 1;
+        atk = 1; 
+        def = 0;
+    }
+    void otrzymaj_obrazenia(int dmg) override {
+        if (uniki > 0) {
+            uniki--;
+            set_color(15);
+            cout << "* Miss. Co, myslisz, ze bede tak po prostu stal i przyjmowal ciosy?" << endl;
+            set_color(7);
+        } else {
+            hp = 0;
+            zyje = false;
+        }
+    }
+    void akcja_specjalna(Postac* cel) override {
+        set_color(11);
+        cout << "* Gaster Blaster! KR (Karmiczna Retrybucja) ignoruje obrone przeciwnika." << endl;
+        cel->hp -= (10 + rand() % 10);
+        if (cel->hp <= 0) cel->zyje = false;
+        set_color(7);
+    }
+};
+
+class Papyrus : public Postac {
+public:
+    Papyrus() {
+        nazwa = "PAPYRUS";
+        opis = "Wielki kucharz spaghetti. Ma wysoka obrone i wielkie serce (doslownie).";
+        max_hp = 120;
+        hp = 120;
+        atk = 15;
+        def = 25;
+    }
+    void akcja_specjalna(Postac* cel) override {
+        def += 10;
+        set_color(14);
+        cout << "* NYEH HEH HEH! MOJA OBRONA JEST TERAZ NIE DO PRZEBICIA!" << endl;
+        set_color(7);
+    }
+};
+
+class Undyne : public Postac {
+public:
+    bool undying_mode = false;
+    Undyne() {
+        nazwa = "UNDYNE";
+        opis = "Kapitan Gwardii Krolewskiej. Jej wola walki pozwala jej przetrwac nawet smierc.";
+        max_hp = 100;
+        hp = 100;
+        atk = 22;
+        def = 15;
+    }
+    void otrzymaj_obrazenia(int dmg) override {
+        Postac::otrzymaj_obrazenia(dmg);
+        if (hp <= 0 && !undying_mode) {
+            undying_mode = true;
+            zyje = true;
+            max_hp = 180;
+            hp = 180;
+            atk = 45;
+            def = 30;
+            nazwa = "UNDYNE THE UNDYING";
+            system("cls");
+            set_color(11);
+            cout << "****************************************" << endl;
+            cout << "   UNDYNE ODMAWIA SMIERCI! DT: 100%     " << endl;
+            cout << "****************************************" << endl;
+            set_color(7);
+            Sleep(2000);
+        }
+    }
+    void akcja_specjalna(Postac* cel) override {
+        atk += 8;
+        set_color(10);
+        cout << "* Wlocznie sprawiedliwosci! Atak Undyne wzrasta!" << endl;
+        set_color(7);
+    }
+};
+
+void rysuj_hp(Postac* p) {
+    cout << p->nazwa << " [";
+    int paski = (p->hp * 20) / p->max_hp;
+    set_color(14);
+    for (int i = 0; i < 20; i++) {
+        if (i < paski) cout << "=";
+        else cout << " ";
+    }
+    set_color(7);
+    cout << "] " << p->hp << "/" << p->max_hp << " HP" << endl;
+}
+
+Postac* wybierz_postac(int nr) {
+    for (;;) {
+        system("cls");
+        cout << "GRACZ " << nr << " - WYBIERZ SWOJE PRZEZNACZENIE" << endl;
+        cout << "----------------------------------------" << endl;
+        cout << "1. FRISK    - " << "Wyv: Wysoki | Opis: Rosnaca determinacja" << endl;
+        cout << "2. SANS     - " << "Wyv: Ekspert | Opis: Uniki i manipulacja" << endl;
+        cout << "3. PAPYRUS  - " << "Wyv: Latwy   | Opis: Potezna defensywa" << endl;
+        cout << "4. UNDYNE   - " << "Wyv: Sredni  | Opis: Druga szansa (Undying)" << endl;
+        
+        char w = _getch();
+        if (w == '1') return new Frisk();
+        if (w == '2') return new Sans();
+        if (w == '3') return new Papyrus();
+        if (w == '4') return new Undyne();
+    }
+}
+
+int main() {
+    srand(time(0));
+    set_color(7);
+
+    Postac* g1 = wybierz_postac(1);
+    Postac* g2 = wybierz_postac(2);
+
+    int runda = 1;
+    while (g1->zyje && g2->zyje) {
+        Postac* aktywny = (runda % 2 != 0) ? g1 : g2;
+        Postac* cel = (runda % 2 != 0) ? g2 : g1;
+
+        system("cls");
+        cout << "RUNDA: " << runda << " | TURA: " << aktywny->nazwa << endl;
+        cout << "----------------------------------------" << endl;
+        rysuj_hp(g1);
+        rysuj_hp(g2);
+        cout << "----------------------------------------" << endl;
+        cout << "1. ATAK | 2. AKCJA SPECJALNA" << endl;
+
+        char ruch = _getch();
+        cout << endl;
+        if (ruch == '1') {
+            int d = aktywny->atk + (rand() % 10);
+            cout << "* " << aktywny->nazwa << " zadaje " << d << " obrazen!" << endl;
+            cel->otrzymaj_obrazenia(d);
+        } else {
+            aktywny->akcja_specjalna(cel);
+        }
+
+        Sleep(1500);
+        if (cel->zyje) runda++;
+    }
+
+    system("cls");
+    set_color(10);
+    cout << "****************************************" << endl;
+    if (g1->zyje) cout << "   ZWYCIEZCA: GRACZ 1 (" << g1->nazwa << ")" << endl;
+    else cout << "   ZWYCIEZCA: GRACZ 2 (" << g2->nazwa << ")" << endl;
+    cout << "****************************************" << endl;
+    set_color(7);
+
+    delete g1;
+    delete g2;
+    cout << "\nNacisnij dowolny klawisz, aby zakonczyc...";
+    _getch();
+
+    return 0;
+}
+
+
+
+
+
